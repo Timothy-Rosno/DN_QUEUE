@@ -2215,3 +2215,41 @@ def update_machine_temperatures(request):
         'errors': errors,
         'timestamp': timezone.now().isoformat(),
     })
+
+
+@login_required
+def export_my_measurements(request):
+    """
+    Export user's own archived measurements to CSV file.
+    Available to any authenticated user.
+    """
+    import csv
+    from django.http import HttpResponse
+    from datetime import datetime
+    
+    # Get user's measurements
+    measurements = ArchivedMeasurement.objects.filter(
+        user=request.user
+    ).select_related('machine').order_by('-measurement_date')
+    
+    # Create CSV response
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="my_measurements_{request.user.username}_{datetime.now().strftime("%Y-%m-%d")}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'ID', 'Machine', 'Measurement Date', 
+        'Title', 'Notes', 'Archived At'
+    ])
+    
+    for m in measurements:
+        writer.writerow([
+            m.id,
+            m.machine.name,
+            m.measurement_date.strftime('%Y-%m-%d %H:%M:%S'),
+            m.title,
+            m.notes,
+            m.archived_at.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+    
+    return response

@@ -47,6 +47,12 @@ urlpatterns = [
     path('admin-rush-jobs-review/', admin_views.admin_rush_jobs, name='admin_rush_jobs'),
     path('admin-presets/', admin_views.admin_presets, name='admin_presets'),
 
+    # Storage & Archive Management
+    path('admin/storage-stats/', admin_views.admin_storage_stats, name='admin_storage_stats'),
+    path('admin/archive-management/', admin_views.admin_archive_management, name='admin_archive_management'),
+    path('admin/export-archive/', admin_views.admin_export_archive, name='admin_export_archive'),
+    path('admin/clear-archive/', admin_views.admin_clear_archive, name='admin_clear_archive'),
+
     # Queue Management Actions
     path('admin-queue/queue-next/<int:entry_id>/', admin_views.queue_next, name='queue_next'),
     path('admin-queue/move-up/<int:entry_id>/', admin_views.move_queue_up, name='move_queue_up'),
@@ -69,6 +75,7 @@ urlpatterns = [
     # Archive paths
     path('archive/', views.archive_list, name='archive_list'),
     path('archive/create/', views.archive_create, name='archive_create'),
+    path('archive/export-my-measurements/', views.export_my_measurements, name='export_my_measurements'),
     path('archive/save/<int:queue_entry_id>/', views.save_to_archive, name='save_to_archive'),
     path('archive/download/<int:archive_id>/', views.download_archive_file, name='download_archive_file'),
     path('archive/delete/<int:archive_id>/', views.delete_archive, name='delete_archive'),

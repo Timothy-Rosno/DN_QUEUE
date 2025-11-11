@@ -5,6 +5,9 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.urls import reverse
 from django.db.models import Count, Q
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.conf import settings
 from userRegistration.models import UserProfile
 from .models import Machine, QueueEntry, QueuePreset, ArchivedMeasurement, Notification
 from .notifications import auto_clear_notifications
@@ -1238,3 +1241,179 @@ def admin_edit_entry(request, entry_id):
             'form': form,
         }
         return render(request, 'calendarEditor/admin/admin_edit_entry.html', context)
+
+
+# ====================
+# STORAGE & ARCHIVE MANAGEMENT
+# ====================
+
+@staff_member_required
+def admin_storage_stats(request):
+    """
+    API endpoint for storage statistics.
+    Returns JSON with database size, usage percentage, and status.
+    """
+    from .storage_utils import get_storage_stats
+    
+    stats = get_storage_stats()
+    return JsonResponse(stats)
+
+
+@staff_member_required
+def admin_archive_management(request):
+    """
+    Archive management page for staff.
+    Shows storage stats and options to export/clear archive.
+    """
+    from .storage_utils import get_storage_stats, format_size_mb
+    
+    # Get storage statistics
+    storage_stats = get_storage_stats()
+    
+    # Get archive count
+    archive_count = ArchivedMeasurement.objects.count()
+    
+    # Estimate archive size (rough calculation)
+    # Each ArchivedMeasurement is roughly 1-2KB
+    estimated_archive_size_mb = (archive_count * 1.5) / 1024  # Rough estimate
+    
+    context = {
+        'storage_stats': storage_stats,
+        'archive_count': archive_count,
+        'estimated_archive_size_mb': round(estimated_archive_size_mb, 2),
+        'format_size_mb': format_size_mb,
+    }
+    
+    return render(request, 'calendarEditor/admin/archive_management.html', context)
+
+
+@staff_member_required
+def admin_export_archive(request):
+    """
+    Export all archived measurements to JSON file.
+    Staff/superuser only.
+    """
+    import json
+    from django.http import HttpResponse
+    from datetime import datetime
+    
+    # Get format from query param (default to json)
+    export_format = request.GET.get('format', 'json')
+    
+    # Get all archived measurements with related data
+    measurements = ArchivedMeasurement.objects.select_related(
+        'user', 'machine'
+    ).all().order_by('-measurement_date')
+    
+    if export_format == 'csv':
+        # Export as CSV
+        import csv
+        
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="archive_backup_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow([
+            'ID', 'User', 'Machine', 'Measurement Date', 
+            'Title', 'Notes', 'Archived At'
+        ])
+        
+        for m in measurements:
+            writer.writerow([
+                m.id,
+                m.user.username,
+                m.machine.name,
+                m.measurement_date.strftime('%Y-%m-%d %H:%M:%S'),
+                m.title,
+                m.notes,
+                m.archived_at.strftime('%Y-%m-%d %H:%M:%S')
+            ])
+        
+        return response
+    
+    else:
+        # Export as JSON (default)
+        data = []
+        for m in measurements:
+            data.append({
+                'id': m.id,
+                'user': m.user.username,
+                'user_id': m.user.id,
+                'machine': m.machine.name,
+                'machine_id': m.machine.id,
+                'measurement_date': m.measurement_date.isoformat(),
+                'title': m.title,
+                'notes': m.notes,
+                'archived_at': m.archived_at.isoformat(),
+            })
+        
+        response = HttpResponse(
+            json.dumps(data, indent=2),
+            content_type='application/json'
+        )
+        response['Content-Disposition'] = f'attachment; filename="archive_backup_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json"'
+        
+        return response
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def admin_clear_archive(request):
+    """
+    Clear all archived measurements.
+    Requires confirmation and sends notifications to all users.
+    Staff/superuser only.
+    """
+    from django.contrib.auth.models import User
+    
+    # Check confirmation
+    confirmation = request.POST.get('confirmation', '').strip()
+    if confirmation != 'CONFIRM DELETE':
+        messages.error(request, 'Incorrect confirmation text. Archive not deleted.')
+        return redirect('admin_archive_management')
+    
+    # Get count before deletion
+    count = ArchivedMeasurement.objects.count()
+    
+    if count == 0:
+        messages.info(request, 'Archive is already empty.')
+        return redirect('admin_archive_management')
+    
+    # Delete all archived measurements
+    try:
+        ArchivedMeasurement.objects.all().delete()
+        
+        # Send notification to all active users
+        active_users = User.objects.filter(is_active=True)
+        admin_name = request.user.get_full_name() or request.user.username
+        
+        notification_message = (
+            f"📢 The archived measurements database has been cleared by {admin_name} "
+            f"to free up space. {count} measurements were removed. "
+            f"Contact administrators if you need access to old archived data."
+        )
+        
+        for user in active_users:
+            notifications.create_notification(
+                user=user,
+                message=notification_message,
+                notification_type='admin_action',
+                priority='medium'
+            )
+        
+        # Send Slack notification if enabled
+        if settings.SLACK_ENABLED:
+            notifications.send_slack_notification(
+                message=f"🗑️ Archive Cleared: {count} measurements deleted by {admin_name}",
+                channel_type='admin'
+            )
+        
+        messages.success(
+            request,
+            f'Successfully deleted {count} archived measurements. All users have been notified.'
+        )
+        
+    except Exception as e:
+        messages.error(request, f'Error clearing archive: {str(e)}')
+    
+    return redirect('admin_archive_management')

@@ -219,3 +219,9 @@ TEMPERATURE_GATEWAY_API_KEY = os.environ.get('TEMPERATURE_GATEWAY_API_KEY', '')
 
 # Base URL for notification links
 BASE_URL = os.environ.get('BASE_URL', 'http://127.0.0.1:8000')
+
+# Database Storage Configuration
+# Maximum database size in MB (default 1GB for Render free tier)
+MAX_DATABASE_SIZE_MB = int(os.environ.get('MAX_DATABASE_SIZE_MB', '1024'))
+# Warning threshold as decimal (0.80 = 80%)
+STORAGE_WARNING_THRESHOLD = 0.80

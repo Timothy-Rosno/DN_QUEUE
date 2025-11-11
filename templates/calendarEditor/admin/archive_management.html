@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Archive Management - Lab Equipment Queue{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Archive Management</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">Manage database storage and archived measurements.</p>
+</div>
+
+<!-- Storage Statistics -->
+<div class="card" style="border-left: 4px solid {% if storage_stats.status == 'critical' %}#e74c3c{% elif storage_stats.status == 'warning' %}#f39c12{% else %}#2ecc71{% endif %};">
+    <h2 style="margin-top: 0;">Database Storage</h2>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;">
+        <div>
+            <p style="color: #7f8c8d; margin: 0;">Current Size</p>
+            <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">{{ storage_stats.current_size_mb }} MB</p>
+        </div>
+        <div>
+            <p style="color: #7f8c8d; margin: 0;">Maximum Size</p>
+            <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">{{ storage_stats.max_size_mb }} MB</p>
+        </div>
+        <div>
+            <p style="color: #7f8c8d; margin: 0;">Used</p>
+            <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0; color: {% if storage_stats.status == 'critical' %}#e74c3c{% elif storage_stats.status == 'warning' %}#f39c12{% else %}#2ecc71{% endif %};">
+                {{ storage_stats.used_percentage }}%
+            </p>
+        </div>
+        <div>
+            <p style="color: #7f8c8d; margin: 0;">Available</p>
+            <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">{{ storage_stats.available_mb }} MB</p>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div style="background: #ecf0f1; height: 30px; border-radius: 5px; overflow: hidden; margin: 1rem 0;">
+        <div style="
+            width: {{ storage_stats.used_percentage }}%;
+            height: 100%;
+            background: {% if storage_stats.status == 'critical' %}#e74c3c{% elif storage_stats.status == 'warning' %}#f39c12{% else %}#2ecc71{% endif %};
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        ">
+            {{ storage_stats.used_percentage }}%
+        </div>
+    </div>
+
+    {% if storage_stats.status == 'critical' %}
+    <div style="background: #fee; border-left: 4px solid #e74c3c; padding: 1rem; margin-top: 1rem;">
+        <strong style="color: #e74c3c;">⚠️ CRITICAL:</strong> Database is at {{ storage_stats.used_percentage }}% capacity.
+        Please export and clear old archived measurements immediately.
+    </div>
+    {% elif storage_stats.status == 'warning' %}
+    <div style="background: #fef9e7; border-left: 4px solid #f39c12; padding: 1rem; margin-top: 1rem;">
+        <strong style="color: #f39c12;">⚠️ WARNING:</strong> Database is at {{ storage_stats.used_percentage }}% capacity.
+        Consider exporting and clearing old archived measurements soon.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Archive Statistics -->
+<div class="card">
+    <h2 style="margin-top: 0;">Archived Measurements</h2>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;">
+        <div>
+            <p style="color: #7f8c8d; margin: 0;">Total Records</p>
+            <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">{{ archive_count }}</p>
+        </div>
+        <div>
+            <p style="color: #7f8c8d; margin: 0;">Estimated Size</p>
+            <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">~{{ estimated_archive_size_mb }} MB</p>
+        </div>
+    </div>
+</div>
+
+<!-- Export Archive -->
+<div class="card" style="border-left: 4px solid #3498db;">
+    <h2 style="margin-top: 0; color: #3498db;">Export Full Archive</h2>
+    <p style="color: #7f8c8d;">Download a complete backup of all archived measurements before clearing.</p>
+
+    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+        <a href="{% url 'admin_export_archive' %}?format=json" class="btn" style="background: #3498db;">
+            📄 Export as JSON ({{ archive_count }} records)
+        </a>
+        <a href="{% url 'admin_export_archive' %}?format=csv" class="btn" style="background: #27ae60;">
+            📊 Export as CSV ({{ archive_count }} records)
+        </a>
+    </div>
+
+    <p style="color: #7f8c8d; margin-top: 1rem; font-size: 0.9rem;">
+        💡 JSON format preserves all data and can be re-imported. CSV format is easier to view in spreadsheets.
+    </p>
+</div>
+
+<!-- Clear Archive -->
+<div class="card" style="border-left: 4px solid #e74c3c;">
+    <h2 style="margin-top: 0; color: #e74c3c;">⚠️ Clear Archive (Danger Zone)</h2>
+    <p style="color: #7f8c8d;">Permanently delete all archived measurements to free up database space.</p>
+
+    {% if archive_count == 0 %}
+    <div style="background: #e8f5e9; border-left: 4px solid #2ecc71; padding: 1rem; margin: 1rem 0;">
+        <strong style="color: #2ecc71;">✅ Archive is empty.</strong> No measurements to clear.
+    </div>
+    {% else %}
+    <div style="background: #fee; border: 2px solid #e74c3c; padding: 1.5rem; border-radius: 5px; margin-top: 1rem;">
+        <h3 style="margin-top: 0; color: #e74c3c;">⚠️ DANGER: This action cannot be undone!</h3>
+
+        <ul style="color: #7f8c8d;">
+            <li>This will permanently delete <strong>{{ archive_count }} archived measurements</strong></li>
+            <li>An automatic backup will NOT be downloaded - export manually first!</li>
+            <li>All users will be notified that the archive was cleared</li>
+            <li>Users should contact you for old data if needed</li>
+        </ul>
+
+        <form method="POST" action="{% url 'admin_clear_archive' %}" onsubmit="return confirmDelete();" style="margin-top: 1rem;">
+            {% csrf_token %}
+
+            <label for="confirmation" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                Type <code style="background: #ecf0f1; padding: 2px 6px; border-radius: 3px;">CONFIRM DELETE</code> to proceed:
+            </label>
+            <input
+                type="text"
+                id="confirmation"
+                name="confirmation"
+                required
+                style="width: 100%; max-width: 400px; padding: 0.5rem; border: 2px solid #e74c3c; border-radius: 5px; font-family: monospace;"
+                placeholder="CONFIRM DELETE"
+            >
+
+            <div style="margin-top: 1rem;">
+                <button type="submit" class="btn" style="background: #e74c3c;">
+                    🗑️ Delete All {{ archive_count }} Archived Measurements
+                </button>
+                <a href="{% url 'admin_dashboard' %}" class="btn" style="background: #95a5a6; margin-left: 0.5rem;">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <a href="{% url 'admin_dashboard' %}" class="btn" style="background: #95a5a6;">
+        ← Back to Dashboard
+    </a>
+</div>
+
+<script>
+function confirmDelete() {
+    const confirmation = document.getElementById('confirmation').value;
+    if (confirmation !== 'CONFIRM DELETE') {
+        alert('Please type exactly "CONFIRM DELETE" to proceed.');
+        return false;
+    }
+
+    return confirm(
+        'This will permanently delete {{ archive_count }} archived measurements.\n\n' +
+        'All users will be notified.\n\n' +
+        'Are you absolutely sure you want to continue?'
+    );
+}
+</script>
+{% endblock %}
