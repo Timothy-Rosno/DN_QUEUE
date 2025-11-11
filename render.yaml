@@ -30,14 +30,14 @@ services:
           name: scheduler-redis
           property: connectionString
 
+  # Redis service (for Django Channels/WebSockets)
+  - type: redis
+    name: scheduler-redis
+    plan: free
+    maxmemoryPolicy: noeviction
+
 databases:
   - name: scheduler-db
     databaseName: scheduler
     user: scheduler
     plan: free
-
-services:
-  - type: redis
-    name: scheduler-redis
-    plan: free
-    maxmemoryPolicy: noeviction
