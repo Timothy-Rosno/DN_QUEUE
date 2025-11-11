@@ -1254,8 +1254,20 @@ def admin_storage_stats(request):
     Returns JSON with database size, usage percentage, and status.
     """
     from .storage_utils import get_storage_stats
-    
+
     stats = get_storage_stats()
+    return JsonResponse(stats)
+
+
+@staff_member_required
+def admin_render_usage_stats(request):
+    """
+    API endpoint for Render usage statistics.
+    Returns JSON with request counts, estimated uptime, and status.
+    """
+    from .render_usage import get_render_usage_stats
+
+    stats = get_render_usage_stats()
     return JsonResponse(stats)
 
 

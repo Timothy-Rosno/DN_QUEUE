@@ -49,6 +49,7 @@ urlpatterns = [
 
     # Storage & Archive Management
     path('admin/storage-stats/', admin_views.admin_storage_stats, name='admin_storage_stats'),
+    path('admin/render-usage-stats/', admin_views.admin_render_usage_stats, name='admin_render_usage_stats'),
     path('admin/archive-management/', admin_views.admin_archive_management, name='admin_archive_management'),
     path('admin/export-archive/', admin_views.admin_export_archive, name='admin_export_archive'),
     path('admin/clear-archive/', admin_views.admin_clear_archive, name='admin_clear_archive'),

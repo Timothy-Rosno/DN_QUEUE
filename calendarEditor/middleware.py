@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.db import transaction
 from .models import QueueEntry
 from . import notifications
+from .render_usage import increment_request_count
 
 
 class CheckReminderMiddleware:
@@ -73,3 +74,20 @@ class CheckReminderMiddleware:
         except Exception as e:
             # Don't break the request if reminder checking fails
             print(f"Error checking pending reminders: {e}")
+
+
+class RenderUsageMiddleware:
+    """
+    Middleware to track request counts for Render usage monitoring.
+    Increments counter for each request to help track usage against free tier limits.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Increment request counter before processing request
+        increment_request_count()
+
+        response = self.get_response(request)
+        return response

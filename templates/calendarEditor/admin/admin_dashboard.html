@@ -71,6 +71,16 @@
         <a href="{% url 'admin_archive_management' %}" class="btn" style="margin-top: 0.5rem;">Manage Storage</a>
     </div>
 
+    <!-- Render Usage -->
+    <div class="card" id="render-widget" style="border-left: 4px solid #8e44ad; text-align: center;">
+        <h3 style="margin-top: 0; color: #8e44ad;">Render Usage</h3>
+        <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;" id="render-usage">
+            <span style="font-size: 1rem; color: #7f8c8d;">Loading...</span>
+        </p>
+        <div id="render-tooltip" style="display: none; position: absolute; background: #2c3e50; color: white; padding: 0.5rem; border-radius: 4px; font-size: 0.9rem; white-space: nowrap; z-index: 1000; pointer-events: none;"></div>
+        <a href="https://dashboard.render.com" target="_blank" class="btn" style="margin-top: 0.5rem;">View Dashboard</a>
+    </div>
+
     <!-- Django Admin Link -->
     <div class="card" style="border-left: 4px solid #34495e; text-align: center;">
         <h3 style="margin-top: 0; color: #34495e;">Django Admin</h3>
@@ -151,5 +161,54 @@ if (machinesCount && machinesTooltip) {
         machinesTooltip.style.display = 'none';
     });
 }
+
+// Load Render usage stats dynamically
+fetch('{% url "admin_render_usage_stats" %}')
+    .then(response => response.json())
+    .then(data => {
+        const usageText = document.getElementById('render-usage');
+        const widget = document.getElementById('render-widget');
+        const tooltip = document.getElementById('render-tooltip');
+
+        // Color based on status
+        let color = '#000000';  // black for below 80%
+        let borderColor = '#8e44ad';  // default purple border
+
+        if (data.status === 'critical') {
+            color = '#e74c3c';  // red (95%+)
+            borderColor = '#e74c3c';
+        } else if (data.status === 'warning') {
+            color = '#f39c12';  // orange (80%+)
+            borderColor = '#f39c12';
+        }
+
+        usageText.innerHTML = '<span id="render-percentage" style="color: ' + color + ';">' + data.uptime_percentage + '%</span>';
+        widget.querySelector('h3').style.color = borderColor;
+        widget.style.borderLeftColor = borderColor;
+
+        // Custom tooltip with 0.1s delay
+        const percentage = document.getElementById('render-percentage');
+        let renderTooltipTimeout;
+
+        percentage.addEventListener('mouseenter', function(e) {
+            renderTooltipTimeout = setTimeout(function() {
+                tooltip.textContent = data.estimated_uptime_hours + ' hrs / ' + data.max_uptime_hours + ' hrs (' + data.requests_this_month.toLocaleString() + ' requests)';
+                tooltip.style.display = 'block';
+
+                const rect = percentage.getBoundingClientRect();
+                tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+                tooltip.style.top = (rect.bottom + 5) + 'px';
+            }, 100);
+        });
+
+        percentage.addEventListener('mouseleave', function() {
+            clearTimeout(renderTooltipTimeout);
+            tooltip.style.display = 'none';
+        });
+    })
+    .catch(error => {
+        console.error('Error loading Render usage stats:', error);
+        document.getElementById('render-usage').innerHTML = '<span style="font-size: 1rem; color: #e74c3c;">Error</span>';
+    });
 </script>
 {% endblock %}
