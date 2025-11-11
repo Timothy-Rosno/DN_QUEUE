@@ -5,7 +5,7 @@ services:
     env: python
     region: oregon
     plan: free
-    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py create_superuser_if_none"
     startCommand: "daphne -b 0.0.0.0 -p $PORT mysite.asgi:application"
     envVars:
       - key: PYTHON_VERSION
@@ -19,6 +19,12 @@ services:
       - key: SLACK_BOT_TOKEN
         sync: false
       - key: BASE_URL
+        sync: false
+      - key: DJANGO_SUPERUSER_USERNAME
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
         sync: false
       - key: DATABASE_URL
         fromDatabase:
