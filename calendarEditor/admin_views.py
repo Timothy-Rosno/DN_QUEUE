@@ -1272,30 +1272,71 @@ def admin_render_usage_stats(request):
 
 
 @staff_member_required
+def admin_render_usage(request):
+    """
+    Render usage management page for staff.
+    Shows uptime usage, request counts, and status against free tier limits.
+    """
+    from .render_usage import get_render_usage_stats
+    import calendar
+
+    stats = get_render_usage_stats()
+
+    # Get total days in current month
+    now = timezone.now()
+    days_in_month = calendar.monthrange(now.year, now.month)[1]
+
+    # Calculate average requests per day
+    avg_requests_per_day = 0
+    if stats['days_this_month'] > 0:
+        avg_requests_per_day = stats['requests_this_month'] / stats['days_this_month']
+
+    context = {
+        'requests_this_month': stats['requests_this_month'],
+        'estimated_uptime_hours': stats['estimated_uptime_hours'],
+        'max_uptime_hours': stats['max_uptime_hours'],
+        'uptime_percentage': stats['uptime_percentage'],
+        'hours_remaining': stats['hours_remaining'],
+        'days_this_month': stats['days_this_month'],
+        'days_remaining': stats['days_remaining'],
+        'uptime_status': stats['status'],
+        'days_in_month': days_in_month,
+        'avg_requests_per_day': avg_requests_per_day,
+    }
+
+    return render(request, 'calendarEditor/admin/render_usage.html', context)
+
+
+@staff_member_required
 def admin_archive_management(request):
     """
     Archive management page for staff.
     Shows storage stats and options to export/clear archive.
     """
-    from .storage_utils import get_storage_stats, format_size_mb
-    
+    from .storage_utils import get_storage_stats, get_storage_breakdown, format_size_mb
+
     # Get storage statistics
     storage_stats = get_storage_stats()
-    
+
+    # Get storage breakdown
+    breakdown_data = get_storage_breakdown()
+
     # Get archive count
     archive_count = ArchivedMeasurement.objects.count()
-    
+
     # Estimate archive size (rough calculation)
     # Each ArchivedMeasurement is roughly 1-2KB
     estimated_archive_size_mb = (archive_count * 1.5) / 1024  # Rough estimate
-    
+
     context = {
         'storage_stats': storage_stats,
+        'storage_breakdown': breakdown_data['breakdown'],
+        'total_estimated_mb': breakdown_data['total_estimated_mb'],
         'archive_count': archive_count,
         'estimated_archive_size_mb': round(estimated_archive_size_mb, 2),
         'format_size_mb': format_size_mb,
     }
-    
+
     return render(request, 'calendarEditor/admin/archive_management.html', context)
 
 

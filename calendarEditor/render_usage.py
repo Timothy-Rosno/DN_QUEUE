@@ -71,9 +71,9 @@ def get_render_usage_stats():
 
     # Calculate days remaining in month
     if now.month == 12:
-        next_month = datetime(now.year + 1, 1, 1)
+        next_month = timezone.make_aware(datetime(now.year + 1, 1, 1))
     else:
-        next_month = datetime(now.year, now.month + 1, 1)
+        next_month = timezone.make_aware(datetime(now.year, now.month + 1, 1))
 
     days_remaining = (next_month - now.replace(hour=0, minute=0, second=0, microsecond=0)).days
 

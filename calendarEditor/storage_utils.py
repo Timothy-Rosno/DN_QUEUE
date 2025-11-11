@@ -7,6 +7,124 @@ from pathlib import Path
 import os
 
 
+def get_table_row_count(model):
+    """Get the row count for a given model."""
+    try:
+        return model.objects.count()
+    except:
+        return 0
+
+
+def estimate_table_size_mb(model, avg_row_size_kb=1.5):
+    """
+    Estimate table size based on row count.
+    Uses average row size estimate (default 1.5 KB per row for typical Django tables).
+    """
+    row_count = get_table_row_count(model)
+    size_mb = (row_count * avg_row_size_kb) / 1024
+    return round(size_mb, 2)
+
+
+def get_uploaded_files_size_mb():
+    """Calculate total size of uploaded files in media directory."""
+    try:
+        media_root = settings.MEDIA_ROOT
+        total_size = 0
+
+        for dirpath, dirnames, filenames in os.walk(media_root):
+            for filename in filenames:
+                filepath = os.path.join(dirpath, filename)
+                if os.path.exists(filepath):
+                    total_size += os.path.getsize(filepath)
+
+        return round(total_size / (1024 * 1024), 2)
+    except:
+        return 0
+
+
+def get_storage_breakdown():
+    """
+    Get detailed breakdown of database storage by table/category.
+
+    Returns:
+        dict: Storage breakdown with sizes and row counts
+    """
+    from django.contrib.auth.models import User
+    from calendarEditor.models import (
+        Machine, QueueEntry, QueuePreset, ArchivedMeasurement,
+        Notification, NotificationPreference, OneTimeLoginToken
+    )
+    from userRegistration.models import UserProfile
+
+    breakdown = {
+        'users': {
+            'name': 'User Accounts',
+            'row_count': get_table_row_count(User),
+            'estimated_size_mb': estimate_table_size_mb(User, avg_row_size_kb=2),
+        },
+        'user_profiles': {
+            'name': 'User Profiles',
+            'row_count': get_table_row_count(UserProfile),
+            'estimated_size_mb': estimate_table_size_mb(UserProfile, avg_row_size_kb=1),
+        },
+        'machines': {
+            'name': 'Machines',
+            'row_count': get_table_row_count(Machine),
+            'estimated_size_mb': estimate_table_size_mb(Machine, avg_row_size_kb=2),
+        },
+        'queue_entries': {
+            'name': 'Queue Entries',
+            'row_count': get_table_row_count(QueueEntry),
+            'estimated_size_mb': estimate_table_size_mb(QueueEntry, avg_row_size_kb=3),
+        },
+        'presets': {
+            'name': 'Queue Presets',
+            'row_count': get_table_row_count(QueuePreset),
+            'estimated_size_mb': estimate_table_size_mb(QueuePreset, avg_row_size_kb=2),
+        },
+        'archived_measurements': {
+            'name': 'Archived Measurements (Records)',
+            'row_count': get_table_row_count(ArchivedMeasurement),
+            'estimated_size_mb': estimate_table_size_mb(ArchivedMeasurement, avg_row_size_kb=2),
+        },
+        'uploaded_files': {
+            'name': 'Uploaded Files (Media)',
+            'row_count': ArchivedMeasurement.objects.filter(uploaded_file__isnull=False).count(),
+            'estimated_size_mb': get_uploaded_files_size_mb(),
+        },
+        'notifications': {
+            'name': 'Notifications',
+            'row_count': get_table_row_count(Notification),
+            'estimated_size_mb': estimate_table_size_mb(Notification, avg_row_size_kb=1),
+        },
+        'notification_preferences': {
+            'name': 'Notification Preferences',
+            'row_count': get_table_row_count(NotificationPreference),
+            'estimated_size_mb': estimate_table_size_mb(NotificationPreference, avg_row_size_kb=0.5),
+        },
+        'login_tokens': {
+            'name': 'One-Time Login Tokens',
+            'row_count': get_table_row_count(OneTimeLoginToken),
+            'estimated_size_mb': estimate_table_size_mb(OneTimeLoginToken, avg_row_size_kb=0.5),
+        },
+    }
+
+    # Calculate total
+    total_estimated_mb = sum(item['estimated_size_mb'] for item in breakdown.values())
+
+    # Add percentage to each item
+    for item in breakdown.values():
+        if total_estimated_mb > 0:
+            item['percentage'] = round((item['estimated_size_mb'] / total_estimated_mb) * 100, 1)
+        else:
+            item['percentage'] = 0
+
+    return {
+        'breakdown': breakdown,
+        'total_estimated_mb': round(total_estimated_mb, 2),
+    }
+
+
 def get_database_size_mb():
     """
     Get the current database size in megabytes.
