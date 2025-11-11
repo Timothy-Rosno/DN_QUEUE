@@ -4,6 +4,7 @@ This is used during Render deployment to populate the database.
 """
 from django.core.management.base import BaseCommand
 from django.core.management import call_command
+from django.db import connection
 from calendarEditor.models import Machine
 from django.contrib.auth import get_user_model
 
@@ -21,6 +22,19 @@ class Command(BaseCommand):
                 )
             )
             return
+
+        # Check if there's partial data from a failed previous deployment
+        user_count = User.objects.count()
+        if user_count > 0:
+            self.stdout.write(
+                self.style.WARNING(
+                    f'Database has {user_count} users but no machines.\n'
+                    f'This indicates a failed previous deployment.\n'
+                    f'Clearing all data and reloading...'
+                )
+            )
+            # Flush all data to start clean
+            call_command('flush', '--noinput', verbosity=0)
 
         # Load the fixture
         self.stdout.write('Loading initial data from initial_data.json...')
