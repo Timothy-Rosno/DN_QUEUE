@@ -112,11 +112,11 @@ class TemperatureGateway:
                 }
 
             elif api_type == 'none':
-                # No API - skip
+                # No API - mark as disconnected
                 return {
                     'id': machine_id,
                     'temperature': None,
-                    'online': True  # Assume available if no monitoring
+                    'online': False  # No way to monitor, so show as disconnected
                 }
 
             else:
