@@ -1417,6 +1417,111 @@ def admin_export_archive(request):
         return response
 
 
+def _create_full_database_export():
+    """
+    Internal function to create full database export.
+    Returns backup data dictionary.
+    """
+    from django.core import serializers
+    from django.contrib.auth.models import User
+    from userRegistration.models import UserProfile
+    from datetime import datetime
+    import json
+
+    # Models to backup (in dependency order for restore)
+    models_to_backup = [
+        ('auth.User', User),
+        ('userRegistration.UserProfile', UserProfile),
+        ('calendarEditor.Machine', Machine),
+        ('calendarEditor.QueuePreset', QueuePreset),
+        ('calendarEditor.QueueEntry', QueueEntry),
+        ('calendarEditor.ArchivedMeasurement', ArchivedMeasurement),
+        ('calendarEditor.NotificationPreference', NotificationPreference),
+        ('calendarEditor.Notification', Notification),
+    ]
+
+    backup_data = {
+        'export_date': datetime.now().isoformat(),
+        'export_type': 'full_database_backup',
+        'django_version': '4.2.25',
+        'models': {}
+    }
+
+    # Serialize each model
+    for model_name, model_class in models_to_backup:
+        try:
+            queryset = model_class.objects.all()
+            serialized = serializers.serialize('json', queryset)
+            backup_data['models'][model_name] = json.loads(serialized)
+        except Exception as e:
+            backup_data['models'][model_name] = {
+                'error': str(e),
+                'count': 0
+            }
+
+    return backup_data
+
+
+@staff_member_required
+def admin_export_full_database(request):
+    """
+    Export complete database backup for disaster recovery.
+    Includes all models: users, machines, queue entries, presets, archives, notifications.
+    Staff/superuser only - requires login.
+    """
+    from django.http import HttpResponse
+    from datetime import datetime
+    import json
+
+    backup_data = _create_full_database_export()
+
+    # Create response
+    response = HttpResponse(
+        json.dumps(backup_data, indent=2),
+        content_type='application/json'
+    )
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    response['Content-Disposition'] = f'attachment; filename="full_database_backup_{timestamp}.json"'
+
+    return response
+
+
+def api_export_database_backup(request):
+    """
+    API endpoint for automated database backups (GitHub Actions, etc.)
+    Requires BACKUP_API_KEY in Authorization header.
+    """
+    from django.http import HttpResponse, JsonResponse
+    from django.conf import settings
+    from datetime import datetime
+    import json
+
+    # Check API key
+    backup_api_key = getattr(settings, 'BACKUP_API_KEY', None)
+    if not backup_api_key:
+        return JsonResponse({'error': 'Backup API not configured'}, status=500)
+
+    # Verify authorization header
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return JsonResponse({'error': 'Missing or invalid Authorization header'}, status=401)
+
+    provided_key = auth_header.replace('Bearer ', '')
+    if provided_key != backup_api_key:
+        return JsonResponse({'error': 'Invalid API key'}, status=403)
+
+    # Create backup
+    backup_data = _create_full_database_export()
+
+    # Return as JSON
+    response = HttpResponse(
+        json.dumps(backup_data, indent=2),
+        content_type='application/json'
+    )
+
+    return response
+
+
 @staff_member_required
 @require_http_methods(["POST"])
 def admin_clear_archive(request):

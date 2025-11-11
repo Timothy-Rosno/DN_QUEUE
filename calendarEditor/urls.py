@@ -53,7 +53,11 @@ urlpatterns = [
     path('admin/render-usage/', admin_views.admin_render_usage, name='admin_render_usage'),
     path('admin/database-management/', admin_views.admin_database_management, name='admin_database_management'),
     path('admin/export-archive/', admin_views.admin_export_archive, name='admin_export_archive'),
+    path('admin/export-full-database/', admin_views.admin_export_full_database, name='admin_export_full_database'),
     path('admin/clear-archive/', admin_views.admin_clear_archive, name='admin_clear_archive'),
+
+    # API endpoint for automated backups (GitHub Actions)
+    path('api/backup/database/', admin_views.api_export_database_backup, name='api_export_database_backup'),
 
     # Backwards compatibility aliases
     path('admin/archive-management/', admin_views.admin_archive_management, name='admin_archive_management'),

@@ -7,6 +7,11 @@ services:
     plan: free
     buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py load_initial_data && python manage.py create_superuser_if_none"
     startCommand: "daphne -b 0.0.0.0 -p $PORT mysite.asgi:application"
+    # Persistent disk for SQLite database (1GB free)
+    disk:
+      name: qhog-data
+      mountPath: /opt/render/project/data
+      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.12
@@ -28,10 +33,8 @@ services:
         sync: false
       - key: TEMPERATURE_GATEWAY_API_KEY
         sync: false
-      - key: DATABASE_URL
-        fromDatabase:
-          name: qhog-db
-          property: connectionString
+      - key: BACKUP_API_KEY
+        generateValue: true
       - key: REDIS_URL
         fromService:
           type: redis
@@ -45,8 +48,5 @@ services:
     maxmemoryPolicy: noeviction
     ipAllowList: []  # Allow connections from any Render service
 
-databases:
-  - name: qhog-db
-    databaseName: qhog
-    user: qhog
-    plan: free
+# Note: No external database needed - using SQLite on persistent disk
+# This avoids PostgreSQL costs while maintaining data persistence

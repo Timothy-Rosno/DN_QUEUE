@@ -28,6 +28,9 @@ load_dotenv(BASE_DIR / '.env')
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-kf#!#6nzs&(x*=bjel79=0!&vp2y$2lszvxj5!5*o*tl@2&i6l')
 
+# API key for automated database backups (GitHub Actions, etc.)
+BACKUP_API_KEY = os.environ.get('BACKUP_API_KEY', None)
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
@@ -113,12 +116,26 @@ CHANNEL_LAYERS = {
 # Use DATABASE_URL environment variable if available (for production)
 # Otherwise use SQLite for local development
 database_url = os.environ.get('DATABASE_URL')
-if database_url:
+
+# Check if we're on Render (RENDER env var is set automatically)
+is_render = os.environ.get('RENDER') == 'true'
+
+if database_url and not is_render:
+    # External PostgreSQL/MySQL (if DATABASE_URL is set manually)
     DATABASES = {
         "default": dj_database_url.parse(database_url, conn_max_age=600)
     }
+elif is_render:
+    # Render: Use SQLite on persistent disk (/opt/render/project/data)
+    # This avoids PostgreSQL costs while maintaining persistence
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": "/opt/render/project/data/db.sqlite3",
+        }
+    }
 else:
-    # SQLite for local development
+    # Local development: SQLite in project directory
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",

@@ -141,10 +141,27 @@
     </div>
 </div>
 
-<!-- Export Archive -->
+<!-- Export Full Database Backup -->
+<div class="card" style="border-left: 4px solid #8e44ad;">
+    <h2 style="margin-top: 0; color: #8e44ad;">Export Full Database Backup</h2>
+    <p style="color: #7f8c8d;">Download a complete backup of the entire database for disaster recovery.</p>
+
+    <div style="margin-top: 1rem;">
+        <a href="{% url 'admin_export_full_database' %}" class="btn" style="background: #8e44ad;">
+            Export Complete Database
+        </a>
+    </div>
+
+    <p style="color: #7f8c8d; margin-top: 1rem; font-size: 0.9rem;">
+        Includes all data: users, machines, queue entries, presets, archived measurements, and notifications.
+        Recommended before major system changes or monthly for backups.
+    </p>
+</div>
+
+<!-- Export Archive Measurements -->
 <div class="card" style="border-left: 4px solid #3498db;">
-    <h2 style="margin-top: 0; color: #3498db;">Export Full Archive</h2>
-    <p style="color: #7f8c8d;">Download a complete backup of all archived measurements before clearing.</p>
+    <h2 style="margin-top: 0; color: #3498db;">Export Archived Measurements</h2>
+    <p style="color: #7f8c8d;">Download archived measurement records only.</p>
 
     <div style="display: flex; gap: 1rem; margin-top: 1rem;">
         <a href="{% url 'admin_export_archive' %}?format=json" class="btn" style="background: #3498db;">
@@ -156,7 +173,7 @@
     </div>
 
     <p style="color: #7f8c8d; margin-top: 1rem; font-size: 0.9rem;">
-        JSON format preserves all data and can be re-imported. CSV format is easier to view in spreadsheets.
+        JSON format preserves all data. CSV format is easier to view in spreadsheets.
     </p>
 </div>
 

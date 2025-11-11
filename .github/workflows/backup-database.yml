@@ -1,0 +1,90 @@
+name: Backup Database
+
+# Runs weekly on Sunday at midnight UTC
+# Exports full database and commits to database-backups branch
+on:
+  schedule:
+    # Runs every Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+
+  # Allow manual triggering for testing
+  workflow_dispatch:
+
+jobs:
+  backup-database:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: database-backups
+          # Create branch if it doesn't exist
+          fetch-depth: 0
+
+      - name: Create backups directory
+        run: mkdir -p backups
+
+      - name: Export database backup
+        env:
+          BACKUP_API_KEY: ${{ secrets.BACKUP_API_KEY }}
+        run: |
+          echo "Exporting database backup..."
+
+          # Generate filename with timestamp
+          timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+          filename="backups/database_backup_${timestamp}.json"
+
+          # Call backup API endpoint
+          response_code=$(curl -s -w "%{http_code}" \
+            -H "Authorization: Bearer ${BACKUP_API_KEY}" \
+            -o "${filename}" \
+            https://qhog.onrender.com/schedule/api/backup/database/)
+
+          echo "Response code: ${response_code}"
+
+          if [ "${response_code}" = "200" ]; then
+            echo "✅ Database backup successful"
+            echo "Backup saved to: ${filename}"
+
+            # Check file size
+            file_size=$(du -h "${filename}" | cut -f1)
+            echo "Backup size: ${file_size}"
+          else
+            echo "❌ Database backup failed with status ${response_code}"
+            cat "${filename}"
+            exit 1
+          fi
+
+      - name: Keep only last 8 weeks of backups
+        run: |
+          echo "Cleaning up old backups..."
+
+          # Keep only the 8 most recent backup files
+          cd backups
+          ls -t database_backup_*.json | tail -n +9 | xargs -r rm
+
+          remaining=$(ls -1 database_backup_*.json 2>/dev/null | wc -l)
+          echo "Backups remaining: ${remaining}"
+
+      - name: Commit and push backup
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+          git add backups/
+
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Database backup: $(date '+%Y-%m-%d %H:%M:%S UTC')"
+            git push origin database-backups
+            echo "✅ Backup committed and pushed"
+          fi
+
+      - name: Log completion
+        if: success()
+        run: |
+          echo "Database backup completed successfully at $(date)"
+          echo "Backup stored in 'database-backups' branch"
