@@ -2049,20 +2049,16 @@ def machine_status_api(request):
     """
     API endpoint to get current machine status and temperatures.
 
-    This endpoint actively updates temperature cache for all machines with APIs,
-    making it suitable for frontend polling to keep temperatures fresh.
+    Returns cached temperature data that is updated by the temperature gateway
+    script running on the university network. This endpoint no longer tries to
+    read from machines directly since Render cannot reach local IPs.
     """
     machines = Machine.objects.all().order_by('name')
 
     data = []
     for machine in machines:
-        # Update temperature cache for machines with API monitoring
-        # This replaces the background temperature update task
-        if machine.ip_address and machine.api_type != 'none':
-            try:
-                machine.update_temperature_cache()
-            except Exception as e:
-                print(f"Error updating temperature for {machine.name}: {e}")
+        # Just return cached values - the temperature gateway updates these
+        # No longer trying to read from machines directly (Render can't reach local IPs)
 
         data.append({
             'id': machine.id,
