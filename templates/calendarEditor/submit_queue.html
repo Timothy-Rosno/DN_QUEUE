@@ -1,0 +1,1330 @@
+{% extends 'base.html' %}
+
+{% block title %}Submit Queue Request - Lab Equipment Queue{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div id="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h1 style="margin: 0;">Submit Queue Request</h1>
+    </div>
+    <p style="margin: 1rem 0;">Fill out your experiment requirements below. The system will automatically assign you to the best matching machine.</p>
+    <p style="margin: 0.5rem 0; font-size: 0.95rem;">
+        Check <a href="{% url 'fridge_list' %}" style="color: #3498db; text-decoration: underline;">here</a> for the most up-to-date fridge specifications.
+    </p>
+
+    <form method="post" id="queueForm" action="{% url 'submit_queue' %}">
+        {% csrf_token %}
+        {% if next_url %}
+            <input type="hidden" name="next" value="{{ next_url }}">
+        {% endif %}
+
+        <!-- Preset Management Buttons -->
+        <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="{% url 'create_preset' %}" class="btn btn-secondary">Create New Preset</a>
+            <a href="#" id="editPresetBtn" class="btn btn-secondary" style="display: none;">Edit This Preset</a>
+            <a href="#" id="copyPresetBtn" class="btn btn-secondary" style="display: none;">Copy This Preset</a>
+            <button type="button" id="followPresetBtn" class="btn btn-secondary" onclick="toggleFollowPreset()" style="display: none;" title="Get notified when this preset is edited or deleted">Follow This Preset</button>
+            <button type="button" id="deletePresetBtn" class="btn" onclick="confirmDeleteFromSubmit()" style="display: none; background-color: #e74c3c; color: white;">Delete This Preset</button>
+        </div>
+
+        <!-- Preset Dropdown -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="presetDropdown" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Load Preset (Optional)
+            </label>
+            <select id="presetDropdown" style="width: 100%; padding: 0.5rem; font-size: 1rem; border: 1px solid #bdc3c7; border-radius: 4px;">
+                <option value="">-- No Preset --</option>
+                {% if presets.private %}
+                    <optgroup label="My Private Presets">
+                        {% for preset in presets.private %}
+                            <option value="{{ preset.id }}">{{ preset.display_name }} (Private)</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endif %}
+                {% if presets.public %}
+                    <optgroup label="Public Presets">
+                        {% for preset in presets.public %}
+                            <option value="{{ preset.id }}">{{ preset.display_name }}</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endif %}
+            </select>
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">
+                Select a preset to auto-fill the form with saved parameters
+            </small>
+        </div>
+
+        <div style="margin-top: 1.5rem;">
+            <button type="submit" class="btn" id="submitBtn">Submit Request</button>
+            <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.title.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.title.label }}
+            </label>
+            {{ form.title }}
+            {% if form.title.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.title.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.title.help_text }}</small>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.description.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.description.label }}
+            </label>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.description.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.description.help_text }}</small>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_min_temp.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_min_temp.label }}
+            </label>
+            {{ form.required_min_temp }}
+            {% if form.required_min_temp.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_min_temp.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_min_temp.help_text }}</small>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_max_temp.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_max_temp.label }}
+            </label>
+            {{ form.required_max_temp }}
+            {% if form.required_max_temp.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_max_temp.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_max_temp.help_text }}</small>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="requireBField" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+                <input type="checkbox" id="requireBField" style="margin-right: 0.5rem; width: auto; cursor: pointer;">
+                <span style="font-weight: bold;">Require Magnetic B-field</span>
+            </label>
+
+            <div id="bFieldError" style="color: #e74c3c; margin-top: 0.5rem; display: none; font-weight: bold;">
+                Please select at least one B-field axis and specify its strength.
+            </div>
+
+            <div id="bFieldOptions" style="margin-left: 1.5rem; margin-top: 1rem; display: none;">
+                <p style="margin-bottom: 0.75rem; color: #7f8c8d; font-size: 0.9rem;">
+                    Select which axes you need and specify the required field strength:
+                </p>
+
+                <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                    <label for="requireBFieldX" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+                        <input type="checkbox" id="requireBFieldX" style="margin-right: 0.5rem; width: auto; cursor: pointer;">
+                        <strong>X-axis (T)</strong>
+                    </label>
+                    <span id="bFieldXInput" style="display: none; margin-left: 1rem;">
+                        {{ form.required_b_field_x }}
+                    </span>
+                </div>
+
+                <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                    <label for="requireBFieldY" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+                        <input type="checkbox" id="requireBFieldY" style="margin-right: 0.5rem; width: auto; cursor: pointer;">
+                        <strong>Y-axis (T)</strong>
+                    </label>
+                    <span id="bFieldYInput" style="display: none; margin-left: 1rem;">
+                        {{ form.required_b_field_y }}
+                    </span>
+                </div>
+
+                <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                    <label for="requireBFieldZ" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+                        <input type="checkbox" id="requireBFieldZ" style="margin-right: 0.5rem; width: auto; cursor: pointer;">
+                        <strong>Z-axis (T)</strong>
+                    </label>
+                    <span id="bFieldZInput" style="display: none; margin-left: 1rem;">
+                        {{ form.required_b_field_z }}
+                    </span>
+                </div>
+
+
+                <div id="bFieldZDirection"
+                    style="margin-top: 0.75rem; margin-left: 1.5rem; padding: 0.75rem; background-color: white; border-radius: 4px; border: 1px solid #ddd; display: none;">
+                    <label for="{{ form.required_b_field_direction.id_for_label }}"
+                        style="display: inline-block; font-weight: bold; margin-right: 0.5rem;">
+                        {{ form.required_b_field_direction.label }}:
+                    </label>
+                    {{ form.required_b_field_direction }}
+                    <small style="color: #7f8c8d; margin-left: 0.5rem;">
+                        {{ form.required_b_field_direction.help_text }}
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_dc_lines.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_dc_lines.label }}
+            </label>
+            {{ form.required_dc_lines }}
+            {% if form.required_dc_lines.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_dc_lines.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_dc_lines.help_text }}</small>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_rf_lines.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_rf_lines.label }}
+            </label>
+            {{ form.required_rf_lines }}
+            {% if form.required_rf_lines.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_rf_lines.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_rf_lines.help_text }}</small>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_daughterboard.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_daughterboard.label }}
+            </label>
+            {{ form.required_daughterboard }}
+            {% if form.required_daughterboard.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_daughterboard.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_daughterboard.help_text }}</small>
+        </div>
+        <!-- Optical Requirements -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.requires_optical.id_for_label }}" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+                
+                <span title="">{{ form.requires_optical }}</span>
+                
+                <span style="margin-left: 0.5rem; font-weight: bold;">{{ form.requires_optical.label }}</span>
+            </label>
+            
+            {% if form.requires_optical.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.requires_optical.errors }}</div>
+            {% endif %}
+            
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.requires_optical.help_text }}</small>
+        </div>
+        <!-- Hidden field to store rush job explanation -->
+        <div style="display: none;">
+            {{ form.special_requirements }}
+        </div>
+
+        <div id="durationNote" style="margin-bottom: 1.5rem; padding: 1rem; background-color: #e8f4f8; border-radius: 4px; border-left: 4px solid #3498db;">
+            <strong>Note:</strong> Estimated measurement duration will be automatically calculated as (Machine Cooldown × 2) and displayed after submission.
+        </div>
+
+        <!-- Rush Job -->
+        <div id="rushJobField" style="margin-bottom: 1.5rem;">
+            <label for="{{ form.is_rush_job.id_for_label }}" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+
+                <span title="">{{ form.is_rush_job }}</span>
+
+                <span style="margin-left: 0.5rem; font-weight: bold; color: #e74c3c;">{{ form.is_rush_job.label }}</span>
+            </label>
+
+            {% if form.is_rush_job.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.is_rush_job.errors }}</div>
+            {% endif %}
+
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.is_rush_job.help_text }}</small>
+
+            <!-- Display current rush job explanation if exists -->
+            <div id="rushJobExplanationDisplay" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <strong style="color: #856404;">Explanation for Hugh:</strong>
+                        <p id="rushJobExplanationText" style="margin: 0.5rem 0 0 0; color: #856404;"></p>
+                    </div>
+                    <button type="button" id="editRushJobBtn" style="background: none; border: none; color: #856404; cursor: pointer; font-size: 0.9rem; text-decoration: underline;">Edit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rush Job Explanation Modal -->
+        <div id="rushJobModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+            <div style="background-color: #fefefe; margin: 10% auto; padding: 2rem; border: 1px solid #888; border-radius: 8px; width: 80%; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h2 style="margin-top: 0; color: #e74c3c;">Rush Job Appeal</h2>
+                <p style="color: #7f8c8d; margin-bottom: 1.5rem;">Please explain the situation to Hugh:</p>
+
+                <textarea 
+                    id="rushJobExplanationInput"
+                    rows="5"
+                    maxlength="150"
+                    style="width: 100%; padding: 0.75rem; font-size: 1rem; border: 1px solid #bdc3c7; border-radius: 4px; font-family: inherit; resize: vertical;"
+                    placeholder="Minimum 15 characters required..."
+                ></textarea>
+                <div id="rushJobExplanationError" style="color: #e74c3c; margin-top: 0.5rem; display: none; font-weight: bold;"></div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
+                    <small style="color: #7f8c8d;"><span id="rushJobCharCount"></span></small>
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="button" id="cancelRushJobBtn" class="btn btn-secondary">Cancel</button>
+                        <button type="button" id="saveRushJobBtn" class="btn">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Follow/Unfollow Confirmation Modal -->
+        <div id="followModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+            <div style="background:white; padding:2rem; border-radius:10px; max-width:400px; width:90%; text-align:center; position:relative;">
+                <p id="followModalText" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
+                <div style="display:flex; justify-content:space-around; gap:1rem;">
+                    <button type="button" id="followModalYes" class="btn">Yes</button>
+                    <button type="button" id="followModalNo" class="btn btn-secondary">No</button>
+                </div>
+                <span id="followModalClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
+            </div>
+        </div>
+
+        <div style="margin-top: 1.5rem;">
+            <button type="submit" class="btn" id="submitBtn">Submit Request</button>
+            <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
+        </div>
+    </form>
+
+    <style>
+        /* Make all checkboxes have pointer cursor */
+        input[type="checkbox"] {
+            cursor: pointer !important;
+        }
+        label:has(input[type="checkbox"]) {
+            cursor: pointer !important;
+        }
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const modal = document.getElementById("rushJobModal");
+            const textarea = document.getElementById("rushJobExplanationInput");
+            const charCount = document.getElementById("rushJobCharCount");
+            const error = document.getElementById("rushJobExplanationError");
+            const saveBtn = document.getElementById("saveRushJobBtn");
+            const cancelBtn = document.getElementById("cancelRushJobBtn");
+
+            const hiddenField = document.querySelector("[name='special_requirements']");
+
+            const MIN = 15;
+            const MAX = parseInt(textarea.getAttribute('maxlength')) || 150;
+
+            function updateCounter() {
+                let length = textarea.value.length;
+
+                // Enforce max length
+                if (length > MAX) {
+                    textarea.value = textarea.value.slice(0, MAX);
+                    length = MAX;
+                }
+
+                const remaining = MAX - length;
+
+                // Display counter only when near the limit
+                if (remaining <= 25) {
+                    charCount.textContent = remaining + " characters remaining";
+                    if (remaining <= 10) {
+                        charCount.style.color = "#e74c3c"; // danger
+                    } else {
+                        charCount.style.color = "#f39c12"; // warning
+                    }
+                } else {
+                    charCount.textContent = "";
+                    charCount.style.color = "#7f8c8d"; // normal
+                }
+
+                // Enable Save only if minimum length is met
+                if (length < MIN) {
+                    saveBtn.disabled = true;
+                } else {
+                    saveBtn.disabled = false;
+                }
+
+                // Hide error display (not used)
+                error.style.display = "none";
+            }
+
+            textarea.addEventListener("input", updateCounter);
+            textarea.addEventListener("keyup", updateCounter);
+
+            // Initialize modal with hidden field value
+            if (hiddenField && hiddenField.value) {
+                textarea.value = hiddenField.value;
+            }
+            updateCounter();
+
+            saveBtn.addEventListener("click", () => {
+                if (hiddenField) hiddenField.value = textarea.value.trim();
+                modal.style.display = "none";
+            });
+
+            cancelBtn.addEventListener("click", () => {
+                modal.style.display = "none";
+            });
+        });
+        </script>
+
+    <script>
+        // Rush Job Modal Logic
+        (function() {
+            const rushJobCheckbox = document.getElementById('{{ form.is_rush_job.id_for_label }}');
+            const rushJobModal = document.getElementById('rushJobModal');
+            const rushJobInput = document.getElementById('rushJobExplanationInput');
+            const rushJobError = document.getElementById('rushJobExplanationError');
+            const rushJobCharCount = document.getElementById('rushJobCharCount');
+            const rushJobDisplay = document.getElementById('rushJobExplanationDisplay');
+            const rushJobText = document.getElementById('rushJobExplanationText');
+            const specialReqField = document.querySelector('textarea[name="special_requirements"]');
+            const saveBtn = document.getElementById('saveRushJobBtn');
+            const cancelBtn = document.getElementById('cancelRushJobBtn');
+            const editBtn = document.getElementById('editRushJobBtn');
+
+            // Show modal when rush job is checked
+            rushJobCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    // Load existing explanation if any
+                    rushJobInput.value = specialReqField.value || '';
+                    rushJobError.style.display = 'none';
+                    rushJobModal.style.display = 'block';
+                } else {
+                    // Clear explanation when unchecked
+                    specialReqField.value = '';
+                    rushJobDisplay.style.display = 'none';
+                }
+            });
+
+            // Edit button - reopen modal
+            editBtn.addEventListener('click', function() {
+                rushJobInput.value = specialReqField.value || '';
+                rushJobCharCount.textContent = rushJobInput.value.trim().length;
+                rushJobError.style.display = 'none';
+                rushJobModal.style.display = 'block';
+            });
+
+            // Save button - validate and save
+            saveBtn.addEventListener('click', function() {
+                const explanation = rushJobInput.value.trim();
+                rushJobError.style.display = 'none';
+                rushJobInput.style.borderColor = '';
+
+                if (explanation.length < 15) {
+                    rushJobError.textContent = `Explanation must be at least 15 characters (currently ${explanation.length})`;
+                    rushJobError.style.display = 'block';
+                    rushJobInput.style.borderColor = '#e74c3c';
+                    return;
+                }
+
+                // Save to hidden field
+                specialReqField.value = explanation;
+
+                // Update display
+                rushJobText.textContent = explanation;
+                rushJobDisplay.style.display = 'block';
+
+                // Close modal
+                rushJobModal.style.display = 'none';
+            });
+
+            // Cancel button - revert checkbox if no explanation exists
+            cancelBtn.addEventListener('click', function() {
+                if (!specialReqField.value || specialReqField.value.trim().length < 15) {
+                    rushJobCheckbox.checked = false;
+                    rushJobDisplay.style.display = 'none';
+                }
+                rushJobModal.style.display = 'none';
+            });
+
+            // Close modal on outside click
+            rushJobModal.addEventListener('click', function(e) {
+                if (e.target === rushJobModal) {
+                    cancelBtn.click();
+                }
+            });
+
+            // Initialize display if rush job is already checked (e.g., validation error)
+            if (rushJobCheckbox.checked && specialReqField.value && specialReqField.value.trim().length >= 15) {
+                rushJobText.textContent = specialReqField.value;
+                rushJobDisplay.style.display = 'block';
+            }
+        })();
+    </script>
+
+    <script>
+        // B-field hierarchical checkbox logic
+        document.getElementById('requireBField').addEventListener('change', function() {
+            document.getElementById('bFieldOptions').style.display = this.checked ? 'block' : 'none';
+            document.getElementById('bFieldError').style.display = 'none';
+            if (!this.checked) {
+                // Reset all B-field inputs when unchecked
+                document.getElementById('requireBFieldX').checked = false;
+                document.getElementById('requireBFieldY').checked = false;
+                document.getElementById('requireBFieldZ').checked = false;
+                document.getElementById('bFieldXInput').style.display = 'none';
+                document.getElementById('bFieldYInput').style.display = 'none';
+                document.getElementById('bFieldZInput').style.display = 'none';
+                document.getElementById('bFieldZDirection').style.display = 'none';
+                // Reset field values
+                document.getElementById('{{ form.required_b_field_x.id_for_label }}').value = '0';
+                document.getElementById('{{ form.required_b_field_y.id_for_label }}').value = '0';
+                document.getElementById('{{ form.required_b_field_z.id_for_label }}').value = '0';
+            }
+        });
+
+        document.getElementById('requireBFieldX').addEventListener('change', function() {
+            document.getElementById('bFieldXInput').style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                document.getElementById('{{ form.required_b_field_x.id_for_label }}').value = '0';
+            }
+        });
+
+        document.getElementById('requireBFieldY').addEventListener('change', function() {
+            document.getElementById('bFieldYInput').style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                document.getElementById('{{ form.required_b_field_y.id_for_label }}').value = '0';
+            }
+        });
+
+        document.getElementById('requireBFieldZ').addEventListener('change', function() {
+            document.getElementById('bFieldZInput').style.display = this.checked ? 'block' : 'none';
+            document.getElementById('bFieldZDirection').style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                document.getElementById('{{ form.required_b_field_z.id_for_label }}').value = '0';
+            }
+        });
+
+        // Form validation before submission
+        document.getElementById('queueForm').addEventListener('submit', function(e) {
+            const requireBField = document.getElementById('requireBField').checked;
+            const rushJobCheckbox = document.getElementById('{{ form.is_rush_job.id_for_label }}');
+            const specialReqField = document.querySelector('textarea[name="special_requirements"]');
+
+            // Validate B-field
+            if (requireBField) {
+                const bFieldX = parseFloat(document.getElementById('{{ form.required_b_field_x.id_for_label }}').value) || 0;
+                const bFieldY = parseFloat(document.getElementById('{{ form.required_b_field_y.id_for_label }}').value) || 0;
+                const bFieldZ = parseFloat(document.getElementById('{{ form.required_b_field_z.id_for_label }}').value) || 0;
+
+                if (bFieldX <= 0 && bFieldY <= 0 && bFieldZ <= 0) {
+                    e.preventDefault();
+                    document.getElementById('bFieldError').style.display = 'block';
+                    document.getElementById('bFieldOptions').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return false;
+                }
+            }
+
+            // Validate rush job has explanation
+            if (rushJobCheckbox.checked) {
+                const explanation = specialReqField.value.trim();
+                if (explanation.length < 15) {
+                    e.preventDefault();
+                    alert('Rush Job Appeal requires an explanation to Hugh (minimum 15 characters). Please provide an explanation.');
+                    rushJobCheckbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return false;
+                }
+            }
+        });
+
+        // Initialize form state based on existing values (for validation errors)
+        window.addEventListener('DOMContentLoaded', function() {
+            const bFieldX = parseFloat(document.getElementById('{{ form.required_b_field_x.id_for_label }}').value) || 0;
+            const bFieldY = parseFloat(document.getElementById('{{ form.required_b_field_y.id_for_label }}').value) || 0;
+            const bFieldZ = parseFloat(document.getElementById('{{ form.required_b_field_z.id_for_label }}').value) || 0;
+
+            if (bFieldX > 0 || bFieldY > 0 || bFieldZ > 0) {
+                document.getElementById('requireBField').checked = true;
+                document.getElementById('bFieldOptions').style.display = 'block';
+
+                if (bFieldX > 0) {
+                    document.getElementById('requireBFieldX').checked = true;
+                    document.getElementById('bFieldXInput').style.display = 'block';
+                }
+                if (bFieldY > 0) {
+                    document.getElementById('requireBFieldY').checked = true;
+                    document.getElementById('bFieldYInput').style.display = 'block';
+                }
+                if (bFieldZ > 0) {
+                    document.getElementById('requireBFieldZ').checked = true;
+                    document.getElementById('bFieldZInput').style.display = 'block';
+                    document.getElementById('bFieldZDirection').style.display = 'block';
+                }
+            }
+        });
+
+        // ===============================
+        // Preset Management JavaScript
+        // ===============================
+
+        // Preset dropdown handling
+        document.getElementById('presetDropdown').addEventListener('change', function() {
+            const value = this.value;
+            const editPresetBtn = document.getElementById('editPresetBtn');
+            const copyPresetBtn = document.getElementById('copyPresetBtn');
+            const followPresetBtn = document.getElementById('followPresetBtn');
+            const deletePresetBtn = document.getElementById('deletePresetBtn');
+
+            if (value) {
+                // Load preset data
+                loadPresetData(value);
+            } else {
+                // No preset selected, hide all buttons
+                editPresetBtn.style.display = 'none';
+                copyPresetBtn.style.display = 'none';
+                followPresetBtn.style.display = 'none';
+                deletePresetBtn.style.display = 'none';
+            }
+        });
+
+        // Load preset data via AJAX
+        function loadPresetData(presetId) {
+            fetch(`/schedule/api/preset/${presetId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Error loading preset: ' + data.error);
+                        return;
+                    }
+
+                    // Populate form fields
+                    document.getElementById('{{ form.title.id_for_label }}').value = data.title || '';
+                    document.getElementById('{{ form.description.id_for_label }}').value = data.description || '';
+                    document.getElementById('{{ form.required_min_temp.id_for_label }}').value = data.required_min_temp || '';
+                    document.getElementById('{{ form.required_max_temp.id_for_label }}').value = data.required_max_temp || '';
+                    document.getElementById('{{ form.required_b_field_x.id_for_label }}').value = data.required_b_field_x || 0;
+                    document.getElementById('{{ form.required_b_field_y.id_for_label }}').value = data.required_b_field_y || 0;
+                    document.getElementById('{{ form.required_b_field_z.id_for_label }}').value = data.required_b_field_z || 0;
+                    document.getElementById('{{ form.required_b_field_direction.id_for_label }}').value = data.required_b_field_direction || '';
+                    document.getElementById('{{ form.required_dc_lines.id_for_label }}').value = data.required_dc_lines || 0;
+                    document.getElementById('{{ form.required_rf_lines.id_for_label }}').value = data.required_rf_lines || 0;
+                    document.getElementById('{{ form.required_daughterboard.id_for_label }}').value = data.required_daughterboard || '';
+                    document.getElementById('{{ form.requires_optical.id_for_label }}').checked = data.requires_optical || false;
+
+                    // Update B-field checkboxes
+                    updateBFieldCheckboxes(data);
+
+                    // Show/hide buttons based on permissions
+                    const editPresetBtn = document.getElementById('editPresetBtn');
+                    const copyPresetBtn = document.getElementById('copyPresetBtn');
+                    const followPresetBtn = document.getElementById('followPresetBtn');
+                    const deletePresetBtn = document.getElementById('deletePresetBtn');
+
+                    // Copy button: always visible when preset loaded
+                    copyPresetBtn.href = `/schedule/preset/copy/${data.preset_id}/`;
+                    copyPresetBtn.style.display = 'inline-block';
+
+                    // Follow button: only visible for public presets
+                    if (data.is_public) {
+                        followPresetBtn.dataset.presetId = data.preset_id;
+                        followPresetBtn.dataset.isFollowing = data.is_following;
+                        followPresetBtn.textContent = data.is_following ? 'Unfollow This Preset' : 'Follow This Preset';
+                        followPresetBtn.style.display = 'inline-block';
+                    } else {
+                        followPresetBtn.style.display = 'none';
+                    }
+
+                    // Edit and Delete buttons: only if user can edit
+                    if (data.can_edit) {
+                        editPresetBtn.href = `/schedule/preset/edit/${data.preset_id}/`;
+                        editPresetBtn.style.display = 'inline-block';
+
+                        // Store preset info for delete confirmation
+                        deletePresetBtn.dataset.presetId = data.preset_id;
+                        deletePresetBtn.dataset.presetName = data.title || 'this preset';
+                        deletePresetBtn.style.display = 'inline-block';
+                    } else {
+                        editPresetBtn.style.display = 'none';
+                        deletePresetBtn.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading preset:', error);
+                    alert('Failed to load preset. Please try again.');
+                });
+        }
+
+        // Update B-field checkboxes based on loaded data
+        function updateBFieldCheckboxes(data) {
+            const hasAnyBField = (data.required_b_field_x > 0) || (data.required_b_field_y > 0) || (data.required_b_field_z > 0);
+
+            if (hasAnyBField) {
+                document.getElementById('requireBField').checked = true;
+                document.getElementById('bFieldOptions').style.display = 'block';
+
+                if (data.required_b_field_x > 0) {
+                    document.getElementById('requireBFieldX').checked = true;
+                    document.getElementById('bFieldXInput').style.display = 'block';
+                }
+                if (data.required_b_field_y > 0) {
+                    document.getElementById('requireBFieldY').checked = true;
+                    document.getElementById('bFieldYInput').style.display = 'block';
+                }
+                if (data.required_b_field_z > 0) {
+                    document.getElementById('requireBFieldZ').checked = true;
+                    document.getElementById('bFieldZInput').style.display = 'block';
+                    document.getElementById('bFieldZDirection').style.display = 'block';
+                }
+            } else {
+                document.getElementById('requireBField').checked = false;
+                document.getElementById('bFieldOptions').style.display = 'none';
+            }
+        }
+
+        // Delete confirmation for submit page
+        function confirmDeleteFromSubmit() {
+            const deleteBtn = document.getElementById('deletePresetBtn');
+            const presetId = deleteBtn.dataset.presetId;
+            const presetName = deleteBtn.dataset.presetName;
+
+            if (confirm(`Are you sure you want to delete "${presetName}"? This cannot be undone.`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/schedule/preset/delete/${presetId}/`;
+
+                // Add CSRF token
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        // Toggle follow/unfollow preset
+        let pendingFollowAction = null;
+        let pendingFollowPresetId = null;
+
+        function toggleFollowPreset() {
+            const followBtn = document.getElementById('followPresetBtn');
+            const presetId = followBtn.dataset.presetId;
+            const isFollowing = followBtn.dataset.isFollowing === 'true';
+            const action = isFollowing ? 'unfollow' : 'follow';
+
+            // If unfollowing, show confirmation modal
+            if (action === 'unfollow') {
+                const modal = document.getElementById('followModal');
+                const modalText = document.getElementById('followModalText');
+                modalText.textContent = 'Are you sure you want to unfollow this preset? You will no longer receive notifications about changes to it.';
+                pendingFollowAction = action;
+                pendingFollowPresetId = presetId;
+                modal.style.display = 'flex';
+            } else {
+                // For follow action, proceed directly
+                executeFollowAction(presetId, action);
+            }
+        }
+
+        function executeFollowAction(presetId, action) {
+            const followBtn = document.getElementById('followPresetBtn');
+
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            // Send follow/unfollow request
+            fetch(`/schedule/preset/${presetId}/${action}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.followed !== undefined) {
+                    // Reload page with preset selected to show Django message
+                    location.href = '?selected_preset=' + presetId;
+                } else if (data.error) {
+                    console.error('Error:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error toggling follow:', error);
+            });
+        }
+
+        // Follow modal event handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('followModal');
+            const btnYes = document.getElementById('followModalYes');
+            const btnNo = document.getElementById('followModalNo');
+            const btnClose = document.getElementById('followModalClose');
+
+            // Yes button: execute the unfollow action
+            btnYes.addEventListener('click', function() {
+                if (pendingFollowAction && pendingFollowPresetId) {
+                    executeFollowAction(pendingFollowPresetId, pendingFollowAction);
+                    modal.style.display = 'none';
+                    pendingFollowAction = null;
+                    pendingFollowPresetId = null;
+                }
+            });
+
+            // No button: close modal
+            btnNo.addEventListener('click', function() {
+                modal.style.display = 'none';
+                pendingFollowAction = null;
+                pendingFollowPresetId = null;
+            });
+
+            // Close icon
+            btnClose.addEventListener('click', function() {
+                modal.style.display = 'none';
+                pendingFollowAction = null;
+                pendingFollowPresetId = null;
+            });
+
+            // Click outside modal content closes
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                    pendingFollowAction = null;
+                    pendingFollowPresetId = null;
+                }
+            });
+        });
+
+        // ===============================
+        // WebSocket Real-Time Updates
+        // ===============================
+
+        let socket = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        const currentUserId = {{ request.user.id }};
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/queue-updates/`;
+
+            try {
+                socket = new WebSocket(wsUrl);
+
+                socket.onopen = function(e) {
+                    console.log('WebSocket connection established');
+                    reconnectAttempts = 0;
+                    updateConnectionStatus('connected');
+                };
+
+                socket.onmessage = function(e) {
+                    const data = JSON.parse(e.data);
+                    console.log('Received WebSocket message:', data);
+
+                    if (data.message_type === 'preset_update') {
+                        handlePresetUpdate(data);
+                    }
+                };
+
+                socket.onclose = function(e) {
+                    console.log('WebSocket connection closed');
+                    updateConnectionStatus('disconnected');
+
+                    // Attempt to reconnect with exponential backoff
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 16000);
+                        console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
+                        updateConnectionStatus('reconnecting');
+                        setTimeout(connectWebSocket, delay);
+                    } else {
+                        console.log('Max reconnection attempts reached. Real-time updates disabled.');
+                        updateConnectionStatus('offline');
+                    }
+                };
+
+                socket.onerror = function(e) {
+                    console.error('WebSocket error:', e);
+                };
+            } catch (error) {
+                console.error('Failed to create WebSocket:', error);
+                updateConnectionStatus('offline');
+            }
+        }
+
+        // Update connection status indicator
+        function updateConnectionStatus(status) {
+            let indicator = document.getElementById('ws-status-indicator');
+            if (!indicator) {
+                // Create status indicator if it doesn't exist
+                indicator = document.createElement('div');
+                indicator.id = 'ws-status-indicator';
+                indicator.style.cssText = 'padding: 8px 12px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; gap: 6px;';
+
+                // Insert into the page header flex container
+                const pageHeader = document.getElementById('page-header');
+                if (pageHeader) {
+                    pageHeader.appendChild(indicator);
+                } else {
+                    document.body.appendChild(indicator);
+                }
+            }
+
+            const statusConfig = {
+                connected: { text: 'Live Updates Active', color: '#27ae60', dot: '🟢' },
+                reconnecting: { text: 'Reconnecting...', color: '#f39c12', dot: '🟡' },
+                disconnected: { text: 'Disconnected', color: '#e74c3c', dot: '🔴' },
+                offline: { text: 'Offline (Refresh for updates)', color: '#95a5a6', dot: '⚫' }
+            };
+
+            const config = statusConfig[status] || statusConfig.offline;
+            indicator.innerHTML = `<span>${config.dot}</span><span>${config.text}</span>`;
+            indicator.style.backgroundColor = config.color + '22';
+            indicator.style.border = `1px solid ${config.color}`;
+            indicator.style.color = config.color;
+        }
+
+        // Handle preset updates from WebSocket
+        function handlePresetUpdate(data) {
+            const updateType = data.update_type;
+            const presetId = data.preset_id;
+            const presetData = data.preset_data;
+            const triggeringUserId = data.triggering_user_id;
+
+            // Ignore updates triggered by current user (they already see the result)
+            if (triggeringUserId === currentUserId) {
+                console.log('Ignoring self-triggered update');
+                return;
+            }
+
+            if (updateType === 'deleted') {
+                // Check if the deleted preset was currently selected
+                const presetDropdown = document.getElementById('presetDropdown');
+                if (presetDropdown.value == presetId) {
+                    // Reset the form if current preset was deleted
+                    presetDropdown.value = '';
+                    document.getElementById('editPresetBtn').style.display = 'none';
+                    document.getElementById('copyPresetBtn').style.display = 'none';
+                    document.getElementById('followPresetBtn').style.display = 'none';
+                    document.getElementById('deletePresetBtn').style.display = 'none';
+                    alert('The preset you were viewing has been deleted by another user.');
+                    // Auto-reload since their selection is gone
+                    reloadPresetDropdown();
+                } else {
+                    // Show notification banner instead of auto-reload
+                    showPresetUpdateNotification(updateType);
+                }
+            } else {
+                // created or edited - show notification instead of auto-reload
+                showPresetUpdateNotification(updateType);
+            }
+        }
+
+        // Show notification banner for preset updates
+        function showPresetUpdateNotification(updateType) {
+            let banner = document.getElementById('preset-update-banner');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'preset-update-banner';
+                banner.style.cssText = 'background-color: #3498db; color: white; padding: 8px 12px; border-radius: 4px; display: flex; align-items: center; gap: 8px;';
+
+                const message = document.createElement('span');
+                message.textContent = 'Presets updated';
+                banner.appendChild(message);
+
+                const refreshBtn = document.createElement('button');
+                refreshBtn.textContent = 'Refresh';
+                refreshBtn.style.cssText = 'background-color: white; color: #3498db; border: none; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 11px;';
+                refreshBtn.onclick = function() {
+                    reloadPresetDropdown();
+                    banner.remove();
+                };
+                banner.appendChild(refreshBtn);
+
+                const dismissBtn = document.createElement('button');
+                dismissBtn.textContent = '✕';
+                dismissBtn.style.cssText = 'background: none; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0 4px;';
+                dismissBtn.onclick = function() {
+                    banner.remove();
+                };
+                banner.appendChild(dismissBtn);
+
+                // Insert into the page header
+                const pageHeader = document.getElementById('page-header');
+                if (pageHeader) {
+                    pageHeader.appendChild(banner);
+                } else {
+                    document.body.appendChild(banner);
+                }
+            }
+        }
+
+        // Initialize WebSocket connection
+        connectWebSocket();
+        // Reload the preset dropdown via AJAX
+        // Reload the preset dropdown via AJAX
+        // Reload the preset dropdown via AJAX
+        function reloadPresetDropdown() {
+            return fetch('/schedule/api/presets/viewable/')
+                .then(response => response.json())
+                .then(data => {
+                    const presetDropdown = document.getElementById('presetDropdown');
+                    const currentValue = presetDropdown.value;
+
+                    // Clear existing options except "No Preset"
+                    presetDropdown.innerHTML = '<option value="">-- No Preset --</option>';
+
+                    const presets = data.presets;
+
+                    // Separate into Private and Public groups
+                    const privatePresets = presets.filter(p => !p.is_public);
+                    const publicPresets = presets.filter(p => p.is_public);
+
+                    function appendOptgroup(label, items) {
+                        if (items.length === 0) return;
+                        const group = document.createElement('optgroup');
+                        group.label = label;
+                        items.forEach(preset => {
+                            const option = document.createElement('option');
+                            option.value = preset.id;
+                            option.textContent = preset.display_name;
+                            group.appendChild(option);
+                        });
+                        presetDropdown.appendChild(group);
+                    }
+
+                    appendOptgroup('My Private Presets', privatePresets);
+                    appendOptgroup('Public Presets', publicPresets);
+
+                    // Restore previous selection if it still exists
+                    if (currentValue) {
+                        const optionExists = Array.from(presetDropdown.options).some(opt => opt.value == currentValue);
+                        if (optionExists) {
+                            presetDropdown.value = currentValue;
+                        }
+                    }
+
+                    return true; // mark success
+                })
+                .catch(error => {
+                    console.error('Error reloading preset dropdown:', error);
+                });
+        }
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const selectedPreset = params.get('selected_preset');
+
+            reloadPresetDropdown().then(() => {
+                if (selectedPreset) {
+                    const presetDropdown = document.getElementById('presetDropdown');
+                    presetDropdown.value = selectedPreset;
+
+                    // Trigger change event so it auto-loads
+                    presetDropdown.dispatchEvent(new Event('change'));
+
+                    // Optional: clean up URL so ?selected_preset=... disappears after load
+                    const url = new URL(window.location);
+                    url.searchParams.delete('selected_preset');
+                    window.history.replaceState({}, '', url);
+                }
+            });
+        });
+
+
+                //     // Restore previous selection if still exists
+                //     if (currentValue) {
+                //         const optionExists = Array.from(presetDropdown.options).some(opt => opt.value == currentValue);
+                //         if (optionExists) {
+                //             presetDropdown.value = currentValue;
+                //         }
+                //     }
+                // })
+
+        // Prevent scroll from changing number input values while still allowing page scroll
+        (function() {
+            // Get all number inputs
+            const numberInputs = document.querySelectorAll('input[type="number"]');
+
+            // Prevent mouse wheel from changing values ONLY on focused number inputs
+            numberInputs.forEach(function(input) {
+                input.addEventListener('wheel', function(e) {
+                    // Only prevent if this input is focused
+                    if (document.activeElement === this) {
+                        e.preventDefault();
+                        // Blur the input so the page can scroll
+                        this.blur();
+                    }
+                }, { passive: false });
+            });
+
+            // Also blur focused number inputs when the page is scrolled
+            window.addEventListener('scroll', function() {
+                const activeElement = document.activeElement;
+                if (activeElement && activeElement.type === 'number') {
+                    activeElement.blur();
+                }
+            }, { passive: true });
+        })();
+
+        // Real-time validation with error messages
+        (function() {
+            const numberInputs = document.querySelectorAll('input[type="number"]');
+            const descriptionField = document.querySelector('textarea[name="description"]');
+
+            // Auto-clear default values on focus
+            numberInputs.forEach(function(input) {
+                input.addEventListener('focus', function() {
+                    // Clear if the value is 0 or empty
+                    if (this.value === '0' || this.value === '0.00' || this.value === '') {
+                        this.value = '';
+                    }
+                    // Select all text on focus for easy replacement
+                    this.select();
+                });
+            });
+
+            // Create error message element for each input
+            numberInputs.forEach(function(input) {
+                // Create error message div
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = 'color: #e74c3c; font-size: 0.9rem; margin-top: 0.25rem; display: none; font-weight: bold;';
+                errorDiv.className = 'input-validation-error';
+
+                // Insert error div after the input
+                input.parentNode.insertBefore(errorDiv, input.nextSibling);
+
+                // Validation function
+                function validateInput() {
+                    const value = parseFloat(input.value);
+                    const min = parseFloat(input.getAttribute('min'));
+                    const max = parseFloat(input.getAttribute('max'));
+                    const fieldName = input.parentNode.querySelector('label')?.textContent?.replace('*', '').trim() || 'This field';
+
+                    // Clear previous error
+                    errorDiv.textContent = '';
+                    errorDiv.style.display = 'none';
+                    input.style.borderColor = '';
+
+                    // Skip validation if empty and field is not required
+                    if (input.value === '' || input.value === null) {
+                        return true;
+                    }
+
+                    // Check if value is a valid number
+                    if (isNaN(value)) {
+                        errorDiv.textContent = `${fieldName}: Please enter a valid number`;
+                        errorDiv.style.display = 'block';
+                        input.style.borderColor = '#e74c3c';
+                        return false;
+                    }
+
+                    // Check min constraint
+                    if (!isNaN(min) && value < min) {
+                        errorDiv.textContent = `${fieldName}: Must be at least ${min}`;
+                        errorDiv.style.display = 'block';
+                        input.style.borderColor = '#e74c3c';
+                        return false;
+                    }
+
+                    // Check max constraint
+                    if (!isNaN(max) && value > max) {
+                        errorDiv.textContent = `${fieldName}: Must be at most ${max}`;
+                        errorDiv.style.display = 'block';
+                        input.style.borderColor = '#e74c3c';
+                        return false;
+                    }
+
+                    return true;
+                }
+
+                // Validate on blur (clicking/tabbing away)
+                input.addEventListener('blur', validateInput);
+
+                // Validate on Enter or Tab key
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === 'Tab') {
+                        validateInput();
+                    }
+                });
+
+                // Validate on input change (real-time feedback after first interaction)
+                input.addEventListener('input', function() {
+                    // Only validate if the input has been interacted with before
+                    if (input.dataset.touched === 'true') {
+                        validateInput();
+                    }
+                });
+
+                // Mark as touched when user interacts
+                input.addEventListener('blur', function() {
+                    input.dataset.touched = 'true';
+                });
+            });
+
+            // Description field validation (required, min 15 characters)
+            if (descriptionField) {
+                const descErrorDiv = document.createElement('div');
+                descErrorDiv.style.cssText = 'color: #e74c3c; font-size: 0.9rem; margin-top: 0.25rem; display: none; font-weight: bold;';
+                descErrorDiv.className = 'input-validation-error';
+                descriptionField.parentNode.insertBefore(descErrorDiv, descriptionField.nextSibling);
+
+                function validateDescription() {
+                    const value = descriptionField.value.trim();
+                    const minLength = 15;
+
+                    // Clear previous error
+                    descErrorDiv.textContent = '';
+                    descErrorDiv.style.display = 'none';
+                    descriptionField.style.borderColor = '';
+
+                    // Check if description is empty
+                    if (value === '') {
+                        descErrorDiv.textContent = 'Measurement Description: This field is required';
+                        descErrorDiv.style.display = 'block';
+                        descriptionField.style.borderColor = '#e74c3c';
+                        return false;
+                    }
+
+                    // Check minimum length
+                    if (value.length < minLength) {
+                        descErrorDiv.textContent = `Measurement Description: Must be at least ${minLength} characters (currently ${value.length})`;
+                        descErrorDiv.style.display = 'block';
+                        descriptionField.style.borderColor = '#e74c3c';
+                        return false;
+                    }
+
+                    return true;
+                }
+
+                // Validate on blur
+                descriptionField.addEventListener('blur', function() {
+                    this.dataset.touched = 'true';
+                    validateDescription();
+                });
+
+                // Validate on Enter or Tab
+                descriptionField.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        // Allow Shift+Enter for new lines
+                        validateDescription();
+                    } else if (e.key === 'Tab') {
+                        validateDescription();
+                    }
+                });
+
+                // Real-time validation after first interaction
+                descriptionField.addEventListener('input', function() {
+                    if (this.dataset.touched === 'true') {
+                        validateDescription();
+                    }
+                });
+            }
+
+            // Validate all fields on form submit
+            const form = document.getElementById('queueForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    let hasErrors = false;
+
+                    // Validate description first
+                    if (descriptionField) {
+                        descriptionField.dataset.touched = 'true';
+                        const descValue = descriptionField.value.trim();
+                        const descErrorDiv = descriptionField.nextSibling;
+
+                        descErrorDiv.textContent = '';
+                        descErrorDiv.style.display = 'none';
+                        descriptionField.style.borderColor = '';
+
+                        if (descValue === '') {
+                            descErrorDiv.textContent = 'Measurement Description: This field is required';
+                            descErrorDiv.style.display = 'block';
+                            descriptionField.style.borderColor = '#e74c3c';
+                            hasErrors = true;
+                        } else if (descValue.length < 15) {
+                            descErrorDiv.textContent = `Measurement Description: Must be at least 15 characters (currently ${descValue.length})`;
+                            descErrorDiv.style.display = 'block';
+                            descriptionField.style.borderColor = '#e74c3c';
+                            hasErrors = true;
+                        }
+                    }
+
+                    numberInputs.forEach(function(input) {
+                        const value = parseFloat(input.value);
+                        const min = parseFloat(input.getAttribute('min'));
+                        const max = parseFloat(input.getAttribute('max'));
+                        const fieldName = input.parentNode.querySelector('label')?.textContent?.replace('*', '').trim() || 'This field';
+                        const errorDiv = input.nextSibling;
+
+                        // Mark as touched
+                        input.dataset.touched = 'true';
+
+                        // Clear previous error
+                        errorDiv.textContent = '';
+                        errorDiv.style.display = 'none';
+                        input.style.borderColor = '';
+
+                        // Skip validation if empty and field is not required
+                        if (input.value === '' || input.value === null) {
+                            return;
+                        }
+
+                        // Check if value is a valid number
+                        if (isNaN(value)) {
+                            errorDiv.textContent = `${fieldName}: Please enter a valid number`;
+                            errorDiv.style.display = 'block';
+                            input.style.borderColor = '#e74c3c';
+                            hasErrors = true;
+                            return;
+                        }
+
+                        // Check min constraint
+                        if (!isNaN(min) && value < min) {
+                            errorDiv.textContent = `${fieldName}: Must be at least ${min}`;
+                            errorDiv.style.display = 'block';
+                            input.style.borderColor = '#e74c3c';
+                            hasErrors = true;
+                            return;
+                        }
+
+                        // Check max constraint
+                        if (!isNaN(max) && value > max) {
+                            errorDiv.textContent = `${fieldName}: Must be at most ${max}`;
+                            errorDiv.style.display = 'block';
+                            input.style.borderColor = '#e74c3c';
+                            hasErrors = true;
+                            return;
+                        }
+                    });
+
+                    if (hasErrors) {
+                        e.preventDefault();
+                        // Scroll to first error
+                        const firstError = document.querySelector('.input-validation-error[style*="display: block"]');
+                        if (firstError) {
+                            firstError.previousSibling.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }
+                });
+            }
+        })();
+
+    </script>
+<!--
+</div>
+<div class="card">
+    <h2>Available Machines</h2>
+    <p style="margin-bottom: 1rem;">The following machines are available. Your request will be matched to the most suitable one:</p>
+    
+    {% for machine in machines %}
+    <div style="border: 1px solid #ddd; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+        <h3>{{ machine.name }} <span style="color: #7f8c8d; font-size: 0.9rem;">({{ machine.location }})</span></h3>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-top: 0.75rem;">
+            <div><strong>Temperature:</strong> {{ machine.min_temp }} K - {{ machine.max_temp }} K</div>
+            <div><strong>Cooldown:</strong> {{ machine.cooldown_hours }} hours</div>
+            <div><strong>B-field (X/Y/Z):</strong> {{ machine.b_field_x }}/{{ machine.b_field_y }}/{{ machine.b_field_z }} T</div>
+            <div><strong>B-field Direction:</strong> {{ machine.get_b_field_direction_display }}</div>
+            <div><strong>Connections:</strong> {{ machine.dc_lines }} DC / {{ machine.rf_lines }} RF lines</div>
+            <div><strong>Daughterboard:</strong> {{ machine.daughterboard_type }}</div>
+            <div><strong>Optical:</strong> {{ machine.get_optical_capabilities_display }}</div>
+            <div><strong>Status:</strong> {{ machine.get_current_status_display }}</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+-->

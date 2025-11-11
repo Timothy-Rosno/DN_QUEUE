@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Machine - {{ machine.name }}{% endblock %}
+
+{% block content %}
+<style>
+    .edit-form-section {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 4px;
+        margin-bottom: 1.5rem;
+    }
+
+    .edit-form-section h3 {
+        margin: 0 0 1rem 0;
+        font-size: 1.2rem;
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 0.5rem;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 0.5rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #0066cc;
+        box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: auto;
+        margin: 0;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+
+    .help-text {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+</style>
+
+<div class="card">
+    <h1>Edit Machine: {{ machine.name }}</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">Update machine specifications and settings.</p>
+    <div style="margin-top: 1rem;">
+        <a href="{% url 'admin_machines' %}" class="btn btn-secondary">← Back to Machines</a>
+    </div>
+</div>
+
+<form method="POST" class="card">
+    {% csrf_token %}
+
+    <!-- Basic Information -->
+    <div class="edit-form-section">
+        <h3>Basic Information</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="name">Machine Name *</label>
+                <input type="text" id="name" name="name" value="{{ machine.name }}" required>
+            </div>
+            <div class="form-group">
+                <label for="location">Location</label>
+                <input type="text" id="location" name="location" value="{{ machine.location|default:'' }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description">{{ machine.description|default:'' }}</textarea>
+        </div>
+    </div>
+
+    <!-- Temperature Specifications -->
+    <div class="edit-form-section">
+        <h3>Temperature Specifications</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="min_temp">Minimum Temperature (K) *</label>
+                <input type="number" id="min_temp" name="min_temp" step="0.001" value="{{ machine.min_temp }}" required>
+                <span class="help-text">Minimum temperature in Kelvin</span>
+            </div>
+            <div class="form-group">
+                <label for="max_temp">Maximum Temperature (K) *</label>
+                <input type="number" id="max_temp" name="max_temp" step="0.001" value="{{ machine.max_temp }}" required>
+                <span class="help-text">Maximum temperature in Kelvin</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Magnetic Field Specifications -->
+    <div class="edit-form-section">
+        <h3>Magnetic Field Specifications</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="b_field_x">B-field X (Tesla)</label>
+                <input type="number" id="b_field_x" name="b_field_x" step="0.001" value="{{ machine.b_field_x }}">
+                <span class="help-text">Max B-field in X direction</span>
+            </div>
+            <div class="form-group">
+                <label for="b_field_y">B-field Y (Tesla)</label>
+                <input type="number" id="b_field_y" name="b_field_y" step="0.001" value="{{ machine.b_field_y }}">
+                <span class="help-text">Max B-field in Y direction</span>
+            </div>
+            <div class="form-group">
+                <label for="b_field_z">B-field Z (Tesla)</label>
+                <input type="number" id="b_field_z" name="b_field_z" step="0.001" value="{{ machine.b_field_z }}">
+                <span class="help-text">Max B-field in Z direction</span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="b_field_direction">B-field Direction</label>
+                <select id="b_field_direction" name="b_field_direction">
+                    <option value="parallel_perpendicular" {% if machine.b_field_direction == 'parallel_perpendicular' %}selected{% endif %}>Parallel and Perpendicular</option>
+                    <option value="perpendicular" {% if machine.b_field_direction == 'perpendicular' %}selected{% endif %}>Perpendicular Only</option>
+                    <option value="parallel" {% if machine.b_field_direction == 'parallel' %}selected{% endif %}>Parallel Only</option>
+                    <option value="none" {% if machine.b_field_direction == 'none' %}selected{% endif %}>None</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Specifications -->
+    <div class="edit-form-section">
+        <h3>Connection Specifications</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="dc_lines">DC Lines</label>
+                <input type="number" id="dc_lines" name="dc_lines" min="0" value="{{ machine.dc_lines }}">
+                <span class="help-text">Number of DC lines available</span>
+            </div>
+            <div class="form-group">
+                <label for="rf_lines">RF Lines</label>
+                <input type="number" id="rf_lines" name="rf_lines" min="0" value="{{ machine.rf_lines }}">
+                <span class="help-text">Number of RF lines available</span>
+            </div>
+            <div class="form-group">
+                <label for="daughterboard_type">Daughterboard Type</label>
+                <input type="text" id="daughterboard_type" name="daughterboard_type" value="{{ machine.daughterboard_type|default:'' }}">
+                <span class="help-text">e.g., QBoard I, QBoard II, Montana Puck</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Optical Capabilities -->
+    <div class="edit-form-section">
+        <h3>Optical Capabilities</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="optical_capabilities">Optical Capabilities</label>
+                <select id="optical_capabilities" name="optical_capabilities">
+                    <option value="none" {% if machine.optical_capabilities == 'none' %}selected{% endif %}>None</option>
+                    <option value="available" {% if machine.optical_capabilities == 'available' %}selected{% endif %}>Available</option>
+                    <option value="with_work" {% if machine.optical_capabilities == 'with_work' %}selected{% endif %}>With Some Work</option>
+                    <option value="under_construction" {% if machine.optical_capabilities == 'under_construction' %}selected{% endif %}>Under Construction</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Operational Characteristics -->
+    <div class="edit-form-section">
+        <h3>Operational Characteristics</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="cooldown_hours">Cooldown Time (hours) *</label>
+                <input type="number" id="cooldown_hours" name="cooldown_hours" min="0" value="{{ machine.cooldown_hours }}" required>
+                <span class="help-text">Cooldown time in hours</span>
+            </div>
+            <div class="form-group">
+                <label for="current_status">Current Status</label>
+                <select id="current_status" name="current_status">
+                    <option value="idle" {% if machine.current_status == 'idle' %}selected{% endif %}>Idle</option>
+                    <option value="running" {% if machine.current_status == 'running' %}selected{% endif %}>Running</option>
+                    <option value="cooldown" {% if machine.current_status == 'cooldown' %}selected{% endif %}>Cooldown</option>
+                    <option value="maintenance" {% if machine.current_status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-group">
+                    <input type="checkbox" id="is_available" name="is_available" {% if machine.is_available %}checked{% endif %}>
+                    Machine is Available
+                </label>
+                <span class="help-text">Check if machine is available for use</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Usage (Read-only info) -->
+    <div class="edit-form-section">
+        <h3>Current Usage (Read-only)</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Current User</label>
+                <input type="text" value="{{ machine.current_user.username|default:'None' }}" disabled>
+            </div>
+            <div class="form-group">
+                <label>Estimated Available Time</label>
+                <input type="text" value="{% if machine.estimated_available_time %}{{ machine.estimated_available_time|date:'M d, Y g:i A' }}{% else %}Now{% endif %}" disabled>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Created</label>
+                <input type="text" value="{{ machine.created_at|date:'M d, Y g:i A' }}" disabled>
+            </div>
+            <div class="form-group">
+                <label>Last Updated</label>
+                <input type="text" value="{{ machine.updated_at|date:'M d, Y g:i A' }}" disabled>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn">Save Changes</button>
+        <a href="{% url 'admin_machines' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<div class="card" style="border-left: 4px solid #e74c3c;">
+    <h3 style="color: #e74c3c; margin-top: 0;">Danger Zone</h3>
+    <p style="color: #7f8c8d; margin-bottom: 1rem;">Permanently delete this machine. This action cannot be undone.</p>
+    <form method="POST" action="{% url 'delete_machine' machine.id %}" class="delete-machine-form" data-machine-name="{{ machine.name }}">
+        {% csrf_token %}
+        <button type="button" class="btn" style="background-color: #e74c3c; color: white;">Delete Machine</button>
+    </form>
+</div>
+
+<!-- Thanos Delete Confirmation Modal -->
+<div id="thanosModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:2rem; border-radius:10px; max-width:400px; width:90%; text-align:center; position:relative;">
+        <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto;">
+        <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
+        <div style="display:flex; justify-content:space-around; gap:1rem;">
+            <button id="thanosYes" class="btn btn-danger">Yes, snap immediately</button>
+            <button id="thanosNo" class="btn btn-secondary">No, spare its circuits</button>
+        </div>
+        <span id="thanosClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('thanosModal');
+    const message = document.getElementById('thanosMessage');
+    const btnYes = document.getElementById('thanosYes');
+    const btnNo = document.getElementById('thanosNo');
+    const btnClose = document.getElementById('thanosClose');
+    let currentForm = null;
+
+    // Open modal when delete button clicked
+    const deleteForm = document.querySelector('.delete-machine-form');
+    if (deleteForm) {
+        const deleteBtn = deleteForm.querySelector('button');
+        deleteBtn.addEventListener('click', function() {
+            currentForm = deleteForm;
+            const machineName = currentForm.getAttribute('data-machine-name');
+            message.textContent = `Are you sure you want to delete machine "${machineName}"?`;
+            modal.style.display = 'flex';
+        });
+    }
+
+    // Yes button: submit form
+    btnYes.addEventListener('click', function() {
+        if(currentForm) currentForm.submit();
+    });
+
+    // No button: close modal
+    btnNo.addEventListener('click', function() {
+        modal.style.display = 'none';
+        currentForm = null;
+    });
+
+    // Close button: close modal
+    btnClose.addEventListener('click', function() {
+        modal.style.display = 'none';
+        currentForm = null;
+    });
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if(e.target === modal) {
+            modal.style.display = 'none';
+            currentForm = null;
+        }
+    });
+});
+</script>
+{% endblock %}

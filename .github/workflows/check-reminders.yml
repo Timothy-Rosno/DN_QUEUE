@@ -1,0 +1,44 @@
+name: Check Reminders
+
+# Runs every 5 minutes to check for pending reminders
+# This keeps the Render app alive and ensures reminders are sent on time
+on:
+  schedule:
+    # Runs every 5 minutes
+    - cron: '*/5 * * * *'
+  
+  # Allow manual triggering for testing
+  workflow_dispatch:
+
+jobs:
+  check-reminders:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check for pending reminders
+        run: |
+          echo "Checking for pending reminders..."
+          
+          # Call the reminder check API endpoint
+          response=$(curl -s -w "\n%{http_code}" https://yourapp.onrender.com/api/check-reminders/)
+          
+          # Extract status code (last line)
+          http_code=$(echo "$response" | tail -n 1)
+          
+          # Extract body (everything except last line)
+          body=$(echo "$response" | head -n -1)
+          
+          echo "Response: $body"
+          echo "Status: $http_code"
+          
+          # Check if successful
+          if [ "$http_code" = "200" ]; then
+            echo "✅ Reminder check successful"
+          else
+            echo "❌ Reminder check failed with status $http_code"
+            exit 1
+          fi
+      
+      - name: Log completion
+        if: success()
+        run: echo "Reminder check completed at $(date)"

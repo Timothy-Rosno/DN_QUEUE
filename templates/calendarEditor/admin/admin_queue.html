@@ -1,0 +1,479 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Queue Management - Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Queue Management</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">View and manage all queue entries.</p>
+    <div style="margin-top: 1rem;">
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="get" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: end;">
+        <div style="min-width: 150px;">
+            <label for="status" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Status</label>
+            <select name="status" id="status" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                <option value="queued" {% if status_filter == 'queued' %}selected{% endif %}>Queued</option>
+                <option value="running" {% if status_filter == 'running' %}selected{% endif %}>Running</option>
+                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+            </select>
+        </div>
+
+        <div style="min-width: 200px;">
+            <label for="machine" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Machine</label>
+            <select name="machine" id="machine" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="all" {% if machine_filter == 'all' %}selected{% endif %}>All Machines</option>
+                {% for machine in machines %}
+                    <option value="{{ machine.id }}" {% if machine_filter == machine.id|stringformat:"s" %}selected{% endif %}>{{ machine.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <button type="submit" class="btn">Filter</button>
+            <a href="{% url 'admin_queue' %}" class="btn btn-secondary">Clear</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Queue Entries by Machine</h2>
+
+    {% if machine_queue_data %}
+        {% for machine_data in machine_queue_data %}
+            <div style="margin-bottom: 2rem; border: 2px solid #3498db; border-radius: 8px; padding: 1.5rem;">
+                <h3 style="margin-top: 0; color: #3498db;">
+                    {% if machine_data.machine %}
+                        {{ machine_data.machine.name }}
+                    {% else %}
+                        Unassigned Entries
+                    {% endif %}
+                    <span style="color: #7f8c8d; font-size: 0.9rem; font-weight: normal;">({{ machine_data.entries|length }} entries)</span>
+                </h3>
+
+                {% if machine_data.entries %}
+                <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #ddd; text-align: left;">
+                            <th style="padding: 0.75rem; width: 60px;">Position</th>
+                            <th style="padding: 0.75rem;">Title</th>
+                            <th style="padding: 0.75rem;">User</th>
+                            <th style="padding: 0.75rem;">Status</th>
+                            <th style="padding: 0.75rem;">Duration</th>
+                            <th style="padding: 0.75rem;">Submitted</th>
+                            <th style="padding: 0.75rem; width: 200px;">Queue Controls</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in machine_data.entries %}
+                        <tr style="border-bottom: 1px solid #eee; {% if entry.is_rush_job %}background-color: #fff3cd;{% elif entry.status == 'running' %}background-color: #f0e6ff;{% endif %}">
+                            <td style="padding: 0.75rem; text-align: center;">
+                                {% if entry.status == 'running' %}
+                                    <strong style="font-size: 1.2rem;">0</strong>
+                                {% else %}
+                                    <strong style="font-size: 1.2rem;">{{ entry.queue_position|default:"—" }}</strong>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.75rem;">
+                                <strong>{{ entry.title }}</strong>
+                                {% if entry.is_rush_job %}
+                                    <span style="background-color: #e67e22; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">RUSH</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.75rem;">{{ entry.user.username }}</td>
+                            <td style="padding: 0.75rem;">
+                                <span style="color: {% if entry.status == 'queued' %}#f39c12{% elif entry.status == 'running' %}#9b59b6{% elif entry.status == 'completed' %}#2ecc71{% else %}#95a5a6{% endif %}; font-weight: bold;">
+                                    {{ entry.get_status_display }}
+                                </span>
+                            </td>
+                            <td style="padding: 0.75rem;">{{ entry.estimated_duration_hours }} hrs</td>
+                            <td style="padding: 0.75rem;">{{ entry.submitted_at|date:"M d" }}</td>
+                            <td style="padding: 0.75rem; display: flex; gap: 0.5rem; align-items: stretch;">
+
+                                {% if entry.status == 'queued' and entry.assigned_machine %}
+                                    <!-- Left column: main actions (Start / Move to First) -->
+                                    <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 auto; min-height: 60px;">
+                                        {% if entry.queue_position == 1 %}
+                                            {% if entry.assigned_machine.id not in machines_with_running_jobs %}
+                                            <form method="post" action="{% url 'admin_check_in' entry.id %}" style="display: flex; flex: 1;" onsubmit="saveScrollPosition()">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-success btn-sm" style="flex: 1; width: 100%; height: 100%;" title="Start job">Start</button>
+                                            </form>
+                                            {% else %}
+                                            <div style="display: flex; flex: 1;">
+                                                <button type="button" class="btn btn-secondary btn-sm" style="flex: 1; width: 100%; height: 100%; cursor: not-allowed; opacity: 0.6;" disabled title="Machine is currently running another job">Waiting</button>
+                                            </div>
+                                            {% endif %}
+                                        {% else %}
+                                            <form method="post" action="{% url 'queue_next' entry.id %}" style="display: flex; flex: 1;" onsubmit="saveScrollPosition()">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-warning btn-sm" style="flex: 1; width: 100%; height: 100%;" title="Move to position 1">Move to First</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Middle column: Up/Down buttons stacked vertically -->
+                                    <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 0.25rem; flex: 0 0 36px;">
+                                        <!-- Up button -->
+                                        <form method="post" action="{% url 'move_queue_up' entry.id %}" style="display: flex; flex: 1;" onsubmit="saveScrollPosition()">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-primary btn-sm" style="flex: 1;" title="Move up"
+                                                {% if entry.queue_position == 1 %}disabled{% endif %}>▲</button>
+                                        </form>
+
+                                        <!-- Down button -->
+                                        <form method="post" action="{% url 'move_queue_down' entry.id %}" style="display: flex; flex: 1;" onsubmit="saveScrollPosition()">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-primary btn-sm" style="flex: 1;" title="Move down"
+                                                {% if forloop.last %}disabled{% endif %}>▼</button>
+                                        </form>
+                                    </div>
+
+                                    <!-- Right column: Edit and Delete buttons (stretch to match Start/Move height) -->
+                                    <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 auto; min-height: 60px;">
+                                        <!-- Edit button -->
+                                        <a href="{% url 'admin_edit_entry' entry.id %}"
+                                        class="btn btn-secondary btn-sm"
+                                        style="flex: 1; display: flex; align-items: center; justify-content: center;">
+                                        Edit
+                                        </a>
+
+                                        <!-- Cancel button -->
+                                        <button type="button" class="btn btn-danger btn-sm cancel-entry-btn"
+                                            data-entry-id="{{ entry.id }}"
+                                            data-entry-title="{{ entry.title }}"
+                                            style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                                            Cancel
+                                        </button>
+                                    </div>
+
+
+                                {% elif entry.status == 'running' %}
+                                    <!-- Running entry controls -->
+                                    <!-- Left column: Check Out button (matches Start/Move to First layout) -->
+                                    <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 auto; min-height: 60px;">
+                                        <button type="button" class="btn btn-success btn-sm checkout-entry-btn"
+                                            data-entry-id="{{ entry.id }}"
+                                            data-entry-title="{{ entry.title }}"
+                                            style="flex: 1; width: 100%; height: 100%;"
+                                            title="Check out and finish measurement">Check Out</button>
+                                    </div>
+
+                                    <!-- Middle column: spacer to match up/down buttons -->
+                                    <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 0.25rem; flex: 0 0 36px;">
+                                    </div>
+
+                                    <!-- Right column: Cancel button (matches Edit/Cancel layout) -->
+                                    <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 auto; min-height: 60px;">
+                                        <button type="button" class="btn btn-danger btn-sm cancel-entry-btn"
+                                            data-entry-id="{{ entry.id }}"
+                                            data-entry-title="{{ entry.title }}"
+                                            style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                {% else %}
+                                    <span style="color: #7f8c8d;">—</span>
+                                {% endif %}
+
+                            </td>
+
+
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="color: #7f8c8d; margin-top: 1rem; text-align: center; padding: 1rem; background-color: #f8f9fa; border-radius: 4px;">
+                    No entries in queue
+                </p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #7f8c8d; margin-top: 1rem;">No entries found.</p>
+    {% endif %}
+</div>
+
+<!-- Machine Status Overview (Collapsible) -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleSection('machine-status-overview')">
+        <h2 style="margin: 0; color: #16a085; display: flex; align-items: center; gap: 0.5rem;">
+            🔧 Machine Status Overview
+        </h2>
+        <span id="machine-status-overview-icon" style="font-size: 1.2rem; transition: transform 0.3s;">►</span>
+    </div>
+
+    <div id="machine-status-overview" style="display: none; margin-top: 1rem;">
+        <p style="color: #7f8c8d; margin-bottom: 1.5rem;">Real-time status of all machines and their queues</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1rem;">
+            {% for data in machine_status_data %}
+            <div data-machine-id="{{ data.machine.id }}" style="border: 2px solid {% if data.running_job %}#9b59b6{% elif data.on_deck_job %}#3498db{% else %}#95a5a6{% endif %}; border-radius: 8px; padding: 1rem; background-color: {% if data.running_job %}#f4ecf7{% elif data.on_deck_job %}#ebf5fb{% else %}#f8f9fa{% endif %};">
+                <h3 style="margin-top: 0; color: #2c3e50; font-size: 1.1rem;">
+                    {{ data.machine.name }}
+                    <span class="machine-status status-badge status-{{ data.display_status|lower|cut:' ' }}" style="font-size: 0.85rem; font-weight: bold; margin-left: 0.5rem; padding: 0.25rem 0.75rem; border-radius: 12px;">
+                        {{ data.display_status|upper }}
+                    </span>
+                </h3>
+
+                <!-- Temperature -->
+                <div style="margin-bottom: 0.75rem; font-size: 0.9rem; color: #7f8c8d;">
+                    <strong>Temperature:</strong>
+                    <span class="machine-temp">
+                    {% if data.live_temp %}
+                        {{ data.live_temp|floatformat:2 }} K
+                    {% else %}
+                        <span style="color: #999;">N/A</span>
+                    {% endif %}
+                    </span>
+                </div>
+
+                <!-- Running Job -->
+                {% if data.running_job %}
+                <div style="background-color: white; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; border-left: 4px solid #9b59b6;">
+                    <p style="margin: 0; font-weight: bold; color: #9b59b6;">RUNNING</p>
+                    <p style="margin: 0.25rem 0; font-size: 0.95rem;"><strong>{{ data.running_job.title }}</strong></p>
+                    <p style="margin: 0; font-size: 0.9rem; color: #7f8c8d;">User: {{ data.running_job.user.username }}</p>
+                    <p style="margin: 0; font-size: 0.9rem; color: #7f8c8d;">Started: {{ data.running_job.started_at|date:"M d, g:i A" }}</p>
+                    <button type="button" class="btn btn-success btn-sm btn-block checkout-entry-btn"
+                        data-entry-id="{{ data.running_job.id }}"
+                        data-entry-title="{{ data.running_job.title }}"
+                        style="margin-top: 0.5rem;">Check Out</button>
+                </div>
+                {% endif %}
+
+                <!-- On Deck Job -->
+                {% if data.on_deck_job %}
+                <div style="background-color: white; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; border-left: 4px solid #3498db;">
+                    <p style="margin: 0; font-weight: bold; color: #3498db;">🎯 ON DECK (#1)</p>
+                    <p style="margin: 0.25rem 0; font-size: 0.95rem;"><strong>{{ data.on_deck_job.title }}</strong></p>
+                    <p style="margin: 0; font-size: 0.9rem; color: #7f8c8d;">User: {{ data.on_deck_job.user.username }}</p>
+                    <p style="margin: 0; font-size: 0.9rem; color: #7f8c8d;">Duration: {{ data.on_deck_job.estimated_duration_hours }} hrs</p>
+                    {% if not data.running_job %}
+                    <form method="post" action="{% url 'admin_check_in' data.on_deck_job.id %}" style="margin-top: 0.5rem;" onsubmit="saveScrollPosition()">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-sm btn-block">Start Job</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Queue Info -->
+                <div style="padding: 0.5rem; text-align: center; color: #7f8c8d; font-size: 0.9rem; border-top: 1px solid #ddd; margin-top: 0.5rem; padding-top: 0.75rem;">
+                    {% if data.queue_count > 0 %}
+                        📋 {{ data.queue_count }} job{{ data.queue_count|pluralize }} in queue
+                    {% else %}
+                        {% if not data.running_job %}
+                            ✨ FREE - No queue
+                        {% else %}
+                            📋 No queue
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div style="margin-top: 1rem;">
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+</div>
+
+<script>
+// Toggle collapsible sections
+function toggleSection(sectionId) {
+    const content = document.getElementById(sectionId);
+    const icon = document.getElementById(sectionId + '-icon');
+
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.textContent = '▼';
+        icon.style.transform = 'rotate(0deg)';
+    } else {
+        content.style.display = 'none';
+        icon.textContent = '►';
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+// Save scroll position before form submission
+function saveScrollPosition() {
+    sessionStorage.setItem('adminQueueScrollPosition', window.scrollY);
+}
+
+// Restore scroll position after page load
+window.addEventListener('load', function() {
+    const savedPosition = sessionStorage.getItem('adminQueueScrollPosition');
+    if (savedPosition) {
+        window.scrollTo(0, parseInt(savedPosition));
+        // Clear the saved position after restoring
+        sessionStorage.removeItem('adminQueueScrollPosition');
+    }
+});
+
+// Thanos modal for cancel confirmation
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('thanosModal');
+    const message = document.getElementById('thanosMessage');
+    const btnYes = document.getElementById('thanosYes');
+    const btnNo = document.getElementById('thanosNo');
+    const btnClose = document.getElementById('thanosClose');
+    let currentEntryId = null;
+    let currentEntryTitle = null;
+
+    // Open modal when cancel button clicked
+    document.querySelectorAll('.cancel-entry-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentEntryId = this.getAttribute('data-entry-id');
+            currentEntryTitle = this.getAttribute('data-entry-title');
+            message.textContent = `Are you sure you want to cancel entry "${currentEntryTitle}"? It will be archived.`;
+            modal.style.display = 'flex';
+        });
+    });
+
+    // Yes button: submit cancel form
+    btnYes.addEventListener('click', function() {
+        if (currentEntryId) {
+            saveScrollPosition();
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/schedule/admin-queue/cancel/${currentEntryId}/`;
+
+            // Add CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+
+    // No button: close modal
+    btnNo.addEventListener('click', function() {
+        modal.style.display = 'none';
+        currentEntryId = null;
+        currentEntryTitle = null;
+    });
+
+    // Close button: close modal
+    btnClose.addEventListener('click', function() {
+        modal.style.display = 'none';
+        currentEntryId = null;
+        currentEntryTitle = null;
+    });
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if(e.target === modal) {
+            modal.style.display = 'none';
+            currentEntryId = null;
+            currentEntryTitle = null;
+        }
+    });
+});
+
+// Checkout confirmation modal
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('checkoutModal');
+    const message = document.getElementById('checkoutMessage');
+    const btnYes = document.getElementById('checkoutYes');
+    const btnNo = document.getElementById('checkoutNo');
+    const btnClose = document.getElementById('checkoutClose');
+    let currentEntryId = null;
+    let currentEntryTitle = null;
+
+    // Open modal when checkout button clicked
+    document.querySelectorAll('.checkout-entry-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentEntryId = this.getAttribute('data-entry-id');
+            currentEntryTitle = this.getAttribute('data-entry-title');
+            message.textContent = `Are you sure you want to check out "${currentEntryTitle}"? This will finish the measurement and archive it.`;
+            modal.style.display = 'flex';
+        });
+    });
+
+    // Yes button: submit checkout form
+    btnYes.addEventListener('click', function() {
+        if (currentEntryId) {
+            saveScrollPosition();
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/schedule/admin-queue/check-out/${currentEntryId}/`;
+
+            // Add CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+
+    // No button: close modal
+    btnNo.addEventListener('click', function() {
+        modal.style.display = 'none';
+        currentEntryId = null;
+        currentEntryTitle = null;
+    });
+
+    // Close button: close modal
+    btnClose.addEventListener('click', function() {
+        modal.style.display = 'none';
+        currentEntryId = null;
+        currentEntryTitle = null;
+    });
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if(e.target === modal) {
+            modal.style.display = 'none';
+            currentEntryId = null;
+            currentEntryTitle = null;
+        }
+    });
+});
+</script>
+
+<!-- Thanos Delete Confirmation Modal -->
+<div id="thanosModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:2rem; border-radius:10px; max-width:400px; width:90%; text-align:center; position:relative;">
+        <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto;">
+        <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
+        <div style="display:flex; justify-content:space-around; gap:1rem;">
+            <button id="thanosYes" class="btn btn-danger">Yes, snap it immediately</button>
+            <button id="thanosNo" class="btn btn-secondary">No, spare its variables</button>
+        </div>
+        <span id="thanosClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
+    </div>
+</div>
+
+<!-- Checkout Confirmation Modal -->
+<div id="checkoutModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:2rem; border-radius:10px; max-width:400px; width:90%; text-align:center; position:relative;">
+        <h3 style="margin-top:0; color:#27ae60;">Check Out Measurement</h3>
+        <p id="checkoutMessage" style="font-weight:bold; margin-bottom:1.5rem; font-size:1rem;"></p>
+        <div style="display:flex; justify-content:space-around; gap:1rem;">
+            <button id="checkoutYes" class="btn btn-success">Yes, Check Out</button>
+            <button id="checkoutNo" class="btn btn-secondary">No, Continue Running</button>
+        </div>
+        <span id="checkoutClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
+    </div>
+</div>
+
+{% endblock %}

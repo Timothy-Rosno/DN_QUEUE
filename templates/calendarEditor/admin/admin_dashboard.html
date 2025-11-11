@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - Lab Equipment Queue{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Admin Dashboard</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">Welcome, {{ user.username }}. Manage users, machines, and queue entries.</p>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <!-- User Stats -->
+    <div class="card" style="border-left: 4px solid #e74c3c;">
+        <h3 style="margin-top: 0; color: #e74c3c;">Pending Users</h3>
+        <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ pending_users }}</p>
+        <a href="{% url 'admin_users' %}?status=pending" class="btn">Review Pending Users</a>
+    </div>
+
+    <!-- Total Users -->
+    <div class="card" style="border-left: 4px solid #3498db;">
+        <h3 style="margin-top: 0; color: #3498db;">Total Users</h3>
+        <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ total_users }}</p>
+        <a href="{% url 'admin_users' %}" class="btn">Manage Users</a>
+    </div>
+
+    <!-- Machines -->
+    <div class="card" style="border-left: 4px solid #2ecc71;">
+        <h3 style="margin-top: 0; color: #2ecc71;">Machines</h3>
+        <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ active_machines }}/{{ total_machines }}</p>
+        <small style="color: #7f8c8d;">Active / Total</small><br>
+        <a href="{% url 'admin_machines' %}" class="btn" style="margin-top: 0.5rem;">Manage Machines</a>
+    </div>
+
+    <!-- Queue Entries -->
+    <div class="card" style="border-left: 4px solid #f39c12;">
+        <h3 style="margin-top: 0; color: #f39c12;">Queue Entries</h3>
+        <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ queued_entries }}</p>
+        <small style="color: #7f8c8d;">Queued</small><br>
+        <a href="{% url 'admin_queue' %}" class="btn" style="margin-top: 0.5rem;">Manage Queue</a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+    <!-- Running Entries -->
+    <div class="card" style="border-left: 4px solid #9b59b6;">
+        <h3 style="margin-top: 0; color: #9b59b6;">Running Experiments</h3>
+        <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ running_entries }}</p>
+        <a href="{% url 'admin_queue' %}?status=running" class="btn">View Running</a>
+    </div>
+
+    <!-- Rush Jobs -->
+    <div class="card" style="border-left: 4px solid #e67e22;">
+        <h3 style="margin-top: 0; color: #e67e22;">Rush Job Appeals</h3>
+        <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ rush_jobs }}</p>
+        <a href="{% url 'admin_rush_jobs' %}" class="btn">Review Rush Jobs</a>
+    </div>
+
+    <!-- Presets -->
+    <div class="card" style="border-left: 4px solid #1abc9c;">
+        <h3 style="margin-top: 0; color: #1abc9c;">Total Presets</h3>
+        <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ total_presets }}</p>
+        <a href="{% url 'admin_presets' %}" class="btn">Manage Presets</a>
+    </div>
+
+    <!-- Django Admin Link -->
+    <div class="card" style="border-left: 4px solid #34495e;">
+        <h3 style="margin-top: 0; color: #34495e;">Django Admin</h3>
+        <p style="color: #7f8c8d; margin: 1rem 0;">Access the default Django admin interface for advanced management.</p>
+        <a href="/admin/" class="btn">Go to Django Admin</a>
+    </div>
+</div>
+{% endblock %}

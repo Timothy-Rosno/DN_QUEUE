@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}User Management - Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>User Management</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">Approve, manage, and review all users.</p>
+    <div style="margin-top: 1rem;">
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="card">
+    <form method="get" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: end;">
+        <div style="flex: 1; min-width: 200px;">
+            <label for="search" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Search Users</label>
+            <input type="text" name="search" id="search" value="{{ search_query }}" placeholder="Username, email, name..." style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+
+        <div style="min-width: 150px;">
+            <label for="status" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Filter by Status</label>
+            <select name="status" id="status" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Users</option>
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending Approval</option>
+                <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                <option value="staff" {% if status_filter == 'staff' %}selected{% endif %}>Staff</option>
+            </select>
+        </div>
+
+        <div>
+            <button type="submit" class="btn">Filter</button>
+            <button type="button" class="btn btn-secondary" onclick="clearFilters()">Clear</button>
+        </div>
+    </form>
+</div>
+
+<!-- Users Table -->
+<div class="card">
+    <h2>Users ({{ users.count }})</h2>
+
+    {% if users %}
+        <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+            <thead>
+                <tr style="border-bottom: 2px solid #ddd; text-align: left;">
+                    <th style="padding: 0.75rem;">Username</th>
+                    <th style="padding: 0.75rem;">Email</th>
+                    <th style="padding: 0.75rem;">Name</th>
+                    <th style="padding: 0.75rem;">Status</th>
+                    <th style="padding: 0.75rem;">Joined</th>
+                    <th style="padding: 0.75rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user_item in users %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 0.75rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <!-- Promote/Demote button (superuser only) -->
+                            {% if user.is_superuser and not user_item.is_superuser %}
+                                {% if user_item.is_staff %}
+                                    <form method="post" action="{% url 'demote_from_staff' user_item.id %}" style="display: inline; margin: 0;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Demote to regular user">↓</button>
+                                    </form>
+                                {% else %}
+                                    <form method="post" action="{% url 'promote_to_staff' user_item.id %}" style="display: inline; margin: 0;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn" style="background-color: #3498db; color: white; padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Promote to staff">↑</button>
+                                    </form>
+                                {% endif %}
+                            {% endif %}
+
+                            <div>
+                                <strong>{{ user_item.username }}</strong>
+                                {% if user_item.is_staff %}
+                                    <span style="background-color: #3498db; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">STAFF</span>
+                                {% endif %}
+                                {% if user_item.is_superuser %}
+                                    <span style="background-color: #e74c3c; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">SUPERUSER</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td style="padding: 0.75rem;">{{ user_item.email|default:"—" }}</td>
+                    <td style="padding: 0.75rem;">{{ user_item.get_full_name|default:"—" }}</td>
+                    <td style="padding: 0.75rem;">
+                        {% if user_item.is_staff or user_item.is_superuser %}
+                            <span style="color: #3498db; font-weight: bold;">Staff</span>
+                        {% elif user_item.profile.is_approved %}
+                            <span style="color: #2ecc71; font-weight: bold;">Approved</span>
+                        {% else %}
+                            <span style="color: #e74c3c; font-weight: bold;">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">{{ user_item.date_joined|date:"M d, Y" }}</td>
+                    <td style="padding: 0.75rem;">
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            {% if user_item.is_superuser %}
+                                <!-- Superusers cannot be managed here -->
+                                <span style="color: #7f8c8d; font-size: 0.9rem;">Use Django Admin</span>
+                            {% elif user_item.is_staff %}
+                                <!-- Staff users (only superusers can manage) -->
+                                {% if user.is_superuser %}
+                                    <form method="post" action="{% url 'reject_user' user_item.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-warning btn-sm">Unapprove</button>
+                                    </form>
+
+                                    <form method="post" action="{% url 'delete_user' user_item.id %}" class="delete-user-form" data-username="{{ user_item.username }}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="button" class="btn btn-danger btn-sm">Delete</button>
+                                    </form>
+                                {% else %}
+                                    <!-- Regular staff cannot manage other staff -->
+                                    <span style="color: #7f8c8d; font-size: 0.9rem;">Superuser only</span>
+                                {% endif %}
+                            {% else %}
+                                <!-- Regular users -->
+                                {% if not user_item.profile.is_approved %}
+                                    <form method="post" action="{% url 'approve_user' user_item.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                                    </form>
+                                {% else %}
+                                    <form method="post" action="{% url 'reject_user' user_item.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-warning btn-sm">Unapprove</button>
+                                    </form>
+                                {% endif %}
+
+                                <form method="post" action="{% url 'delete_user' user_item.id %}" class="delete-user-form" data-username="{{ user_item.username }}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="button" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="color: #7f8c8d; margin-top: 1rem;">No users found matching your criteria.</p>
+    {% endif %}
+</div>
+
+<div style="margin-top: 1rem;">
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+</div>
+<!-- Thanos Delete Confirmation Modal -->
+<div id="thanosModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:2rem; border-radius:10px; max-width:400px; width:90%; text-align:center; position:relative;">
+        <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto;">
+        <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
+        <div style="display:flex; justify-content:space-around; gap:1rem;">
+            <button id="thanosYes" class="btn btn-danger">Yes, snap immediately</button>
+            <button id="thanosNo" class="btn btn-secondary">No, spare their life</button>
+        </div>
+        <span id="thanosClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
+    </div>
+</div>
+
+<script>
+function clearFilters() {
+    // Clear search input
+    document.getElementById('search').value = '';
+    // Reset status dropdown to "All Users"
+    document.getElementById('status').value = 'all';
+    // Submit the form to refresh with cleared filters
+    document.querySelector('form').submit();
+}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('thanosModal');
+    const message = document.getElementById('thanosMessage');
+    const btnYes = document.getElementById('thanosYes');
+    const btnNo = document.getElementById('thanosNo');
+    const btnClose = document.getElementById('thanosClose');
+    let currentForm = null;
+
+    // Open modal when delete button clicked
+    document.querySelectorAll('.delete-user-form button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentForm = this.closest('form');
+            const username = currentForm.getAttribute('data-username');
+            message.textContent = `Are you sure you want to delete the account of user "${username}"?`;
+            modal.style.display = 'flex';
+        });
+    });
+
+    // Yes button: submit form
+    btnYes.addEventListener('click', function() {
+        if(currentForm) currentForm.submit();
+    });
+
+    // No button: close modal
+    btnNo.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+
+    // Close icon
+    btnClose.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+
+    // Click outside modal content closes
+    modal.addEventListener('click', function(e) {
+        if(e.target === modal) modal.style.display = 'none';
+    });
+});
+</script>
+
+
+{% endblock %}

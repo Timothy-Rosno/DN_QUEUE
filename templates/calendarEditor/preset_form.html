@@ -1,0 +1,678 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Lab Equipment Queue{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>{{ page_title }}</h1>
+    {% if mode == 'create' %}
+    <p style="margin: 1rem 0;">Create a new preset with your experiment parameters. You can use this preset to quickly fill forms in the future.</p>
+    {% elif mode == 'view' %}
+    <p style="margin: 1rem 0;">Viewing preset parameters (read-only).</p>
+    {% else %}
+    <p style="margin: 1rem 0;">Edit your preset parameters below.</p>
+    {% endif %}
+
+    <form method="post" id="presetForm">
+        {% csrf_token %}
+        <!-- Top Submit Buttons
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+            {% if mode == 'create' %}
+            <button type="submit" class="btn">Create Preset</button>
+            {% else %}
+            <button type="submit" class="btn">Save Changes</button>
+            <button type="button" class="btn delete-preset-btn" data-preset-id="{{ preset.id }}" data-preset-name="{{ preset.name }}" style="background-color: #e74c3c; color: white;">Delete Preset</button>
+            {% endif %}
+            {% if from_admin == 'true' %}
+            <a href="{% url 'admin_presets' %}" class="btn btn-secondary">Cancel</a>
+            {% else %}
+            <a href="{% url 'submit_queue' %}" class="btn btn-secondary">Cancel</a>
+            {% endif %}
+        </div> -->
+        <!-- Preset Name Field -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.name.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.name.label }} <span style="color: #e74c3c;">*</span>
+            </label>
+            {{ form.name }}
+            {% if form.name.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.name.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.name.help_text }}</small>
+        </div>
+
+        <!-- Public/Private Selection -->
+        <div style="margin-bottom: 1.5rem; padding: 1rem; background-color: #f8f9fa; border-radius: 4px; border-left: 4px solid #3498db;">
+            
+            <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                <label for="{{ form.is_public.id_for_label }}" style="display: flex; align-items: center; cursor: pointer; white-space: nowrap;">
+                    {{ form.is_public }}
+                    <span style="margin-left: 0.5rem; font-weight: bold;">{{ form.is_public.label }}</span>
+                </label>
+            </div>
+
+            {% if form.is_public.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.is_public.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">
+                Public presets are visible to all users. Only you and admins can edit your public presets. Leave unchecked for a private preset that only you can see and edit.
+            </small>
+
+        </div>
+        <!-- Title Field -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.title.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.title.label }}
+            </label>
+            {{ form.title }}
+            {% if form.title.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.title.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.title.help_text }}</small>
+        </div>
+
+        <!-- Description Field -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.description.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.description.label }}
+            </label>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.description.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.description.help_text }}</small>
+        </div>
+
+        <!-- Temperature Fields -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_min_temp.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_min_temp.label }}
+            </label>
+            {{ form.required_min_temp }}
+            {% if form.required_min_temp.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_min_temp.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_min_temp.help_text }}</small>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_max_temp.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_max_temp.label }}
+            </label>
+            {{ form.required_max_temp }}
+            {% if form.required_max_temp.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_max_temp.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_max_temp.help_text }}</small>
+        </div>
+
+        <!-- B-field Section -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="requireBField" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+                <input type="checkbox" id="requireBField" style="margin-right: 0.5rem; width: auto; cursor: pointer;">
+                <span style="font-weight: bold;">Require Magnetic B-field</span>
+            </label>
+
+            <div id="bFieldOptions" style="margin-left: 1.5rem; margin-top: 1rem; display: none;">
+                <p style="margin-bottom: 0.75rem; color: #7f8c8d; font-size: 0.9rem;">
+                    Select which axes you need and specify the required field strength:
+                </p>
+
+                <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                    <label for="requireBFieldX" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+                        <input type="checkbox" id="requireBFieldX" style="margin-right: 0.5rem; width: auto; cursor: pointer;">
+                        <strong>X-axis</strong>
+                    </label>
+                    <span id="bFieldXInput" style="display: none; margin-left: 1rem;">
+                        {{ form.required_b_field_x.label }}: {{ form.required_b_field_x }}
+                    </span>
+                </div>
+
+                <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                    <label for="requireBFieldY" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+                        <input type="checkbox" id="requireBFieldY" style="margin-right: 0.5rem; width: auto; cursor: pointer;">
+                        <strong>Y-axis</strong>
+                    </label>
+                    <span id="bFieldYInput" style="display: none; margin-left: 1rem;">
+                        {{ form.required_b_field_y.label }}: {{ form.required_b_field_y }}
+                    </span>
+                </div>
+
+                <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                    <label for="requireBFieldZ" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+                        <input type="checkbox" id="requireBFieldZ" style="margin-right: 0.5rem; width: auto; cursor: pointer;">
+                        <strong>Z-axis</strong>
+                    </label>
+                    <span id="bFieldZInput" style="display: none; margin-left: 1rem;">
+                        {{ form.required_b_field_z.label }}: {{ form.required_b_field_z }}
+                    </span>
+                </div>
+
+                <div id="bFieldZDirection" style="margin-top: 0.75rem; margin-left: 1.5rem; padding: 0.75rem; background-color: white; border-radius: 4px; border: 1px solid #ddd; display: none;">
+                    <label for="{{ form.required_b_field_direction.id_for_label }}" style="display: inline-block; font-weight: bold; margin-right: 0.5rem;">
+                        {{ form.required_b_field_direction.label }}:
+                    </label>
+                    {{ form.required_b_field_direction }}
+                    <small style="color: #7f8c8d; margin-left: 0.5rem;">
+                        {{ form.required_b_field_direction.help_text }}
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connection Requirements -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_dc_lines.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_dc_lines.label }}
+            </label>
+            {{ form.required_dc_lines }}
+            {% if form.required_dc_lines.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_dc_lines.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_dc_lines.help_text }}</small>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_rf_lines.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_rf_lines.label }}
+            </label>
+            {{ form.required_rf_lines }}
+            {% if form.required_rf_lines.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_rf_lines.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_rf_lines.help_text }}</small>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_daughterboard.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_daughterboard.label }}
+            </label>
+            {{ form.required_daughterboard }}
+            {% if form.required_daughterboard.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_daughterboard.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_daughterboard.help_text }}</small>
+        </div>
+
+        <!-- Optical Requirements -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.requires_optical.id_for_label }}" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+                
+                <span title="">{{ form.requires_optical }}</span>
+                
+                <span style="margin-left: 0.5rem; font-weight: bold;">{{ form.requires_optical.label }}</span>
+            </label>
+            
+            {% if form.requires_optical.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.requires_optical.errors }}</div>
+            {% endif %}
+            
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.requires_optical.help_text }}</small>
+        </div>
+
+        <!-- Bottom Submit Buttons -->
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+            {% if mode == 'create' %}
+            <button type="submit" class="btn">Create Preset</button>
+            {% elif mode == 'view' %}
+            <!-- No action buttons in view mode, just navigation -->
+            {% else %}
+            <button type="submit" class="btn">Save Changes</button>
+            <button type="button" class="btn delete-preset-btn" data-preset-id="{{ preset.id }}" data-preset-name="{{ preset.name }}" style="background-color: #e74c3c; color: white;">Delete Preset</button>
+            {% endif %}
+            {% if from_admin == 'true' %}
+            <a href="{% url 'admin_presets' %}" class="btn btn-secondary">{% if mode == 'view' %}Back{% else %}Cancel{% endif %}</a>
+            {% else %}
+            <a href="{% url 'submit_queue' %}" class="btn btn-secondary">{% if mode == 'view' %}Back{% else %}Cancel{% endif %}</a>
+            {% endif %}
+        </div>
+    </form>
+
+    <style>
+        /* Make all checkboxes have pointer cursor */
+        input[type="checkbox"] {
+            cursor: pointer !important;
+        }
+        label:has(input[type="checkbox"]) {
+            cursor: pointer !important;
+        }
+    </style>
+
+    {% if mode == 'view' %}
+    <script>
+        // Disable all form fields in view mode
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('presetForm');
+            if (form) {
+                // Disable all inputs, textareas, and selects
+                const inputs = form.querySelectorAll('input, textarea, select');
+                inputs.forEach(function(input) {
+                    input.disabled = true;
+                    input.style.cursor = 'not-allowed';
+                    input.style.backgroundColor = '#f5f5f5';
+                });
+
+                // Hide form checkboxes that trigger UI changes
+                const requireBField = document.getElementById('requireBField');
+                if (requireBField) requireBField.disabled = true;
+                const requireBFieldX = document.getElementById('requireBFieldX');
+                if (requireBFieldX) requireBFieldX.disabled = true;
+                const requireBFieldY = document.getElementById('requireBFieldY');
+                if (requireBFieldY) requireBFieldY.disabled = true;
+                const requireBFieldZ = document.getElementById('requireBFieldZ');
+                if (requireBFieldZ) requireBFieldZ.disabled = true;
+            }
+        });
+    </script>
+    {% endif %}
+
+    <!-- Thanos Delete Confirmation Modal -->
+    <div id="thanosModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:2rem; border-radius:10px; max-width:400px; width:90%; text-align:center; position:relative;">
+            <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto;">
+            <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
+            <div style="display:flex; justify-content:space-around; gap:1rem;">
+                <button id="thanosYes" class="btn btn-danger">Yes, snap it immediately</button>
+                <button id="thanosNo" class="btn btn-secondary">No, spare its variables</button>
+            </div>
+            <span id="thanosClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
+        </div>
+    </div>
+
+    <script>
+        // Thanos modal for delete confirmation
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('thanosModal');
+            const message = document.getElementById('thanosMessage');
+            const btnYes = document.getElementById('thanosYes');
+            const btnNo = document.getElementById('thanosNo');
+            const btnClose = document.getElementById('thanosClose');
+            let currentPresetId = null;
+            let currentPresetName = null;
+
+            // Open modal when delete button clicked
+            document.querySelectorAll('.delete-preset-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentPresetId = this.getAttribute('data-preset-id');
+                    currentPresetName = this.getAttribute('data-preset-name');
+                    message.textContent = `Are you sure you want to delete preset "${currentPresetName}"?`;
+                    modal.style.display = 'flex';
+                });
+            });
+
+            // Yes button: submit delete form
+            btnYes.addEventListener('click', function() {
+                if (currentPresetId) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/schedule/preset/delete/${currentPresetId}/`;
+
+                    // Add CSRF token
+                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfmiddlewaretoken';
+                    csrfInput.value = csrfToken;
+                    form.appendChild(csrfInput);
+
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+
+            // No button: close modal
+            btnNo.addEventListener('click', function() {
+                modal.style.display = 'none';
+                currentPresetId = null;
+                currentPresetName = null;
+            });
+
+            // Close button: close modal
+            btnClose.addEventListener('click', function() {
+                modal.style.display = 'none';
+                currentPresetId = null;
+                currentPresetName = null;
+            });
+
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if(e.target === modal) {
+                    modal.style.display = 'none';
+                    currentPresetId = null;
+                    currentPresetName = null;
+                }
+            });
+        });
+    </script>
+
+    <script>
+        // B-field hierarchical checkbox logic
+        document.getElementById('requireBField').addEventListener('change', function() {
+            document.getElementById('bFieldOptions').style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                // Reset all B-field inputs when unchecked
+                document.getElementById('requireBFieldX').checked = false;
+                document.getElementById('requireBFieldY').checked = false;
+                document.getElementById('requireBFieldZ').checked = false;
+                document.getElementById('bFieldXInput').style.display = 'none';
+                document.getElementById('bFieldYInput').style.display = 'none';
+                document.getElementById('bFieldZInput').style.display = 'none';
+                document.getElementById('bFieldZDirection').style.display = 'none';
+                // Reset field values
+                document.getElementById('{{ form.required_b_field_x.id_for_label }}').value = '0';
+                document.getElementById('{{ form.required_b_field_y.id_for_label }}').value = '0';
+                document.getElementById('{{ form.required_b_field_z.id_for_label }}').value = '0';
+            }
+        });
+
+        document.getElementById('requireBFieldX').addEventListener('change', function() {
+            document.getElementById('bFieldXInput').style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                document.getElementById('{{ form.required_b_field_x.id_for_label }}').value = '0';
+            }
+        });
+
+        document.getElementById('requireBFieldY').addEventListener('change', function() {
+            document.getElementById('bFieldYInput').style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                document.getElementById('{{ form.required_b_field_y.id_for_label }}').value = '0';
+            }
+        });
+
+        document.getElementById('requireBFieldZ').addEventListener('change', function() {
+            document.getElementById('bFieldZInput').style.display = this.checked ? 'block' : 'none';
+            document.getElementById('bFieldZDirection').style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                document.getElementById('{{ form.required_b_field_z.id_for_label }}').value = '0';
+            }
+        });
+
+        // Initialize form state based on existing values (for edit mode or validation errors)
+        window.addEventListener('DOMContentLoaded', function() {
+            const bFieldX = parseFloat(document.getElementById('{{ form.required_b_field_x.id_for_label }}').value) || 0;
+            const bFieldY = parseFloat(document.getElementById('{{ form.required_b_field_y.id_for_label }}').value) || 0;
+            const bFieldZ = parseFloat(document.getElementById('{{ form.required_b_field_z.id_for_label }}').value) || 0;
+
+            if (bFieldX > 0 || bFieldY > 0 || bFieldZ > 0) {
+                document.getElementById('requireBField').checked = true;
+                document.getElementById('bFieldOptions').style.display = 'block';
+
+                if (bFieldX > 0) {
+                    document.getElementById('requireBFieldX').checked = true;
+                    document.getElementById('bFieldXInput').style.display = 'block';
+                }
+                if (bFieldY > 0) {
+                    document.getElementById('requireBFieldY').checked = true;
+                    document.getElementById('bFieldYInput').style.display = 'block';
+                }
+                if (bFieldZ > 0) {
+                    document.getElementById('requireBFieldZ').checked = true;
+                    document.getElementById('bFieldZInput').style.display = 'block';
+                    document.getElementById('bFieldZDirection').style.display = 'block';
+                }
+            }
+        });
+    </script>
+
+    <script>
+        // Prevent scroll from changing number input values while still allowing page scroll
+        (function() {
+            // Get all number inputs
+            const numberInputs = document.querySelectorAll('input[type="number"]');
+
+            // Prevent mouse wheel from changing values ONLY on focused number inputs
+            numberInputs.forEach(function(input) {
+                input.addEventListener('wheel', function(e) {
+                    // Only prevent if this input is focused
+                    if (document.activeElement === this) {
+                        e.preventDefault();
+                        // Blur the input so the page can scroll
+                        this.blur();
+                    }
+                }, { passive: false });
+            });
+
+            // Also blur focused number inputs when the page is scrolled
+            window.addEventListener('scroll', function() {
+                const activeElement = document.activeElement;
+                if (activeElement && activeElement.type === 'number') {
+                    activeElement.blur();
+                }
+            }, { passive: true });
+        })();
+    </script>
+
+    <script>
+        // Real-time validation with error messages
+        (function() {
+            const numberInputs = document.querySelectorAll('input[type="number"]');
+            const descriptionField = document.querySelector('textarea[name="description"]');
+
+            // Auto-clear default values on focus
+            numberInputs.forEach(function(input) {
+                input.addEventListener('focus', function() {
+                    // Clear if the value is 0 or empty
+                    if (this.value === '0' || this.value === '0.00' || this.value === '') {
+                        this.value = '';
+                    }
+                    // Select all text on focus for easy replacement
+                    this.select();
+                });
+            });
+
+            // Create error message element for each input
+            numberInputs.forEach(function(input) {
+                // Create error message div
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = 'color: #e74c3c; font-size: 0.9rem; margin-top: 0.25rem; display: none; font-weight: bold;';
+                errorDiv.className = 'input-validation-error';
+
+                // Insert error div after the input
+                input.parentNode.insertBefore(errorDiv, input.nextSibling);
+
+                // Validation function
+                function validateInput() {
+                    const value = parseFloat(input.value);
+                    const min = parseFloat(input.getAttribute('min'));
+                    const max = parseFloat(input.getAttribute('max'));
+                    const fieldName = input.parentNode.querySelector('label')?.textContent?.replace('*', '').trim() || 'This field';
+
+                    // Clear previous error
+                    errorDiv.textContent = '';
+                    errorDiv.style.display = 'none';
+                    input.style.borderColor = '';
+
+                    // Skip validation if empty and field is not required
+                    if (input.value === '' || input.value === null) {
+                        return true;
+                    }
+
+                    // Check if value is a valid number
+                    if (isNaN(value)) {
+                        errorDiv.textContent = `${fieldName}: Please enter a valid number`;
+                        errorDiv.style.display = 'block';
+                        input.style.borderColor = '#e74c3c';
+                        return false;
+                    }
+
+                    // Check min constraint
+                    if (!isNaN(min) && value < min) {
+                        errorDiv.textContent = `${fieldName}: Must be at least ${min}`;
+                        errorDiv.style.display = 'block';
+                        input.style.borderColor = '#e74c3c';
+                        return false;
+                    }
+
+                    // Check max constraint
+                    if (!isNaN(max) && value > max) {
+                        errorDiv.textContent = `${fieldName}: Must be at most ${max}`;
+                        errorDiv.style.display = 'block';
+                        input.style.borderColor = '#e74c3c';
+                        return false;
+                    }
+
+                    return true;
+                }
+
+                // Validate on blur (clicking/tabbing away)
+                input.addEventListener('blur', validateInput);
+
+                // Validate on Enter or Tab key
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === 'Tab') {
+                        validateInput();
+                    }
+                });
+
+                // Validate on input change (real-time feedback after first interaction)
+                input.addEventListener('input', function() {
+                    // Only validate if the input has been interacted with before
+                    if (input.dataset.touched === 'true') {
+                        validateInput();
+                    }
+                });
+
+                // Mark as touched when user interacts
+                input.addEventListener('blur', function() {
+                    input.dataset.touched = 'true';
+                });
+            });
+
+            // Description field validation (optional, but if provided must be at least 15 characters)
+            if (descriptionField) {
+                const descErrorDiv = document.createElement('div');
+                descErrorDiv.style.cssText = 'color: #e74c3c; font-size: 0.9rem; margin-top: 0.25rem; display: none; font-weight: bold;';
+                descErrorDiv.className = 'input-validation-error';
+                descriptionField.parentNode.insertBefore(descErrorDiv, descriptionField.nextSibling);
+
+                function validateDescription() {
+                    const value = descriptionField.value.trim();
+                    const minLength = 15;
+
+                    // Clear previous error
+                    descErrorDiv.textContent = '';
+                    descErrorDiv.style.display = 'none';
+                    descriptionField.style.borderColor = '';
+
+                    // Only validate if something is entered (optional field)
+                    if (value !== '' && value.length < minLength) {
+                        descErrorDiv.textContent = `Measurement Description: Must be at least ${minLength} characters if provided (currently ${value.length})`;
+                        descErrorDiv.style.display = 'block';
+                        descriptionField.style.borderColor = '#e74c3c';
+                        return false;
+                    }
+
+                    return true;
+                }
+
+                // Validate on blur
+                descriptionField.addEventListener('blur', function() {
+                    this.dataset.touched = 'true';
+                    validateDescription();
+                });
+
+                // Validate on Enter or Tab
+                descriptionField.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        // Allow Shift+Enter for new lines
+                        validateDescription();
+                    } else if (e.key === 'Tab') {
+                        validateDescription();
+                    }
+                });
+
+                // Real-time validation after first interaction
+                descriptionField.addEventListener('input', function() {
+                    if (this.dataset.touched === 'true') {
+                        validateDescription();
+                    }
+                });
+            }
+
+            // Validate all fields on form submit
+            const form = document.getElementById('presetForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    let hasErrors = false;
+
+                    // Validate description (optional, but must be 15+ chars if provided)
+                    if (descriptionField) {
+                        descriptionField.dataset.touched = 'true';
+                        const descValue = descriptionField.value.trim();
+                        const descErrorDiv = descriptionField.nextSibling;
+
+                        descErrorDiv.textContent = '';
+                        descErrorDiv.style.display = 'none';
+                        descriptionField.style.borderColor = '';
+
+                        if (descValue !== '' && descValue.length < 15) {
+                            descErrorDiv.textContent = `Measurement Description: Must be at least 15 characters if provided (currently ${descValue.length})`;
+                            descErrorDiv.style.display = 'block';
+                            descriptionField.style.borderColor = '#e74c3c';
+                            hasErrors = true;
+                        }
+                    }
+
+                    numberInputs.forEach(function(input) {
+                        const value = parseFloat(input.value);
+                        const min = parseFloat(input.getAttribute('min'));
+                        const max = parseFloat(input.getAttribute('max'));
+                        const fieldName = input.parentNode.querySelector('label')?.textContent?.replace('*', '').trim() || 'This field';
+                        const errorDiv = input.nextSibling;
+
+                        // Mark as touched
+                        input.dataset.touched = 'true';
+
+                        // Clear previous error
+                        errorDiv.textContent = '';
+                        errorDiv.style.display = 'none';
+                        input.style.borderColor = '';
+
+                        // Skip validation if empty and field is not required
+                        if (input.value === '' || input.value === null) {
+                            return;
+                        }
+
+                        // Check if value is a valid number
+                        if (isNaN(value)) {
+                            errorDiv.textContent = `${fieldName}: Please enter a valid number`;
+                            errorDiv.style.display = 'block';
+                            input.style.borderColor = '#e74c3c';
+                            hasErrors = true;
+                            return;
+                        }
+
+                        // Check min constraint
+                        if (!isNaN(min) && value < min) {
+                            errorDiv.textContent = `${fieldName}: Must be at least ${min}`;
+                            errorDiv.style.display = 'block';
+                            input.style.borderColor = '#e74c3c';
+                            hasErrors = true;
+                            return;
+                        }
+
+                        // Check max constraint
+                        if (!isNaN(max) && value > max) {
+                            errorDiv.textContent = `${fieldName}: Must be at most ${max}`;
+                            errorDiv.style.display = 'block';
+                            input.style.borderColor = '#e74c3c';
+                            hasErrors = true;
+                            return;
+                        }
+                    });
+
+                    if (hasErrors) {
+                        e.preventDefault();
+                        // Scroll to first error
+                        const firstError = document.querySelector('.input-validation-error[style*="display: block"]');
+                        if (firstError) {
+                            firstError.previousSibling.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }
+                });
+            }
+        })();
+    </script>
+</div>
+{% endblock %}

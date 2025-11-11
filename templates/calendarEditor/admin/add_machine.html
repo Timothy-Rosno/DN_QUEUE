@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block title %}Add New Machine{% endblock %}
+
+{% block content %}
+<style>
+    .edit-form-section {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 4px;
+        margin-bottom: 1.5rem;
+    }
+
+    .edit-form-section h3 {
+        margin: 0 0 1rem 0;
+        font-size: 1.2rem;
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 0.5rem;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 0.5rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #0066cc;
+        box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: auto;
+        margin: 0;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+
+    .help-text {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+</style>
+
+<div class="card">
+    <h1>Add New Machine</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">Create a new lab machine with specifications and settings.</p>
+    <div style="margin-top: 1rem;">
+        <a href="{% url 'admin_machines' %}" class="btn btn-secondary">← Back to Machines</a>
+    </div>
+</div>
+
+<form method="POST" class="card">
+    {% csrf_token %}
+
+    <!-- Basic Information -->
+    <div class="edit-form-section">
+        <h3>Basic Information</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="name">Machine Name *</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="location">Location</label>
+                <input type="text" id="location" name="location">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description"></textarea>
+        </div>
+    </div>
+
+    <!-- Temperature Specifications -->
+    <div class="edit-form-section">
+        <h3>Temperature Specifications</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="min_temp">Minimum Temperature (K) *</label>
+                <input type="number" id="min_temp" name="min_temp" step="0.001" required>
+                <span class="help-text">Minimum temperature in Kelvin</span>
+            </div>
+            <div class="form-group">
+                <label for="max_temp">Maximum Temperature (K) *</label>
+                <input type="number" id="max_temp" name="max_temp" step="0.001" required>
+                <span class="help-text">Maximum temperature in Kelvin</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Magnetic Field Specifications -->
+    <div class="edit-form-section">
+        <h3>Magnetic Field Specifications</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="b_field_x">B-field X (Tesla)</label>
+                <input type="number" id="b_field_x" name="b_field_x" step="0.001" value="0">
+                <span class="help-text">Max B-field in X direction</span>
+            </div>
+            <div class="form-group">
+                <label for="b_field_y">B-field Y (Tesla)</label>
+                <input type="number" id="b_field_y" name="b_field_y" step="0.001" value="0">
+                <span class="help-text">Max B-field in Y direction</span>
+            </div>
+            <div class="form-group">
+                <label for="b_field_z">B-field Z (Tesla)</label>
+                <input type="number" id="b_field_z" name="b_field_z" step="0.001" value="0">
+                <span class="help-text">Max B-field in Z direction</span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="b_field_direction">B-field Direction</label>
+                <select id="b_field_direction" name="b_field_direction">
+                    <option value="none" selected>None</option>
+                    <option value="parallel_perpendicular">Parallel and Perpendicular</option>
+                    <option value="perpendicular">Perpendicular Only</option>
+                    <option value="parallel">Parallel Only</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Specifications -->
+    <div class="edit-form-section">
+        <h3>Connection Specifications</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="dc_lines">DC Lines</label>
+                <input type="number" id="dc_lines" name="dc_lines" min="0" value="0">
+                <span class="help-text">Number of DC lines available</span>
+            </div>
+            <div class="form-group">
+                <label for="rf_lines">RF Lines</label>
+                <input type="number" id="rf_lines" name="rf_lines" min="0" value="0">
+                <span class="help-text">Number of RF lines available</span>
+            </div>
+            <div class="form-group">
+                <label for="daughterboard_type">Daughterboard Type</label>
+                <input type="text" id="daughterboard_type" name="daughterboard_type">
+                <span class="help-text">e.g., QBoard I, QBoard II, Montana Puck</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Optical Capabilities -->
+    <div class="edit-form-section">
+        <h3>Optical Capabilities</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="optical_capabilities">Optical Capabilities</label>
+                <select id="optical_capabilities" name="optical_capabilities">
+                    <option value="none" selected>None</option>
+                    <option value="available">Available</option>
+                    <option value="with_work">With Some Work</option>
+                    <option value="under_construction">Under Construction</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Operational Characteristics -->
+    <div class="edit-form-section">
+        <h3>Operational Characteristics</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="cooldown_hours">Cooldown Time (hours) *</label>
+                <input type="number" id="cooldown_hours" name="cooldown_hours" min="0" required>
+                <span class="help-text">Cooldown time in hours</span>
+            </div>
+            <div class="form-group">
+                <label for="current_status">Current Status</label>
+                <select id="current_status" name="current_status">
+                    <option value="idle" selected>Idle</option>
+                    <option value="running">Running</option>
+                    <option value="cooldown">Cooldown</option>
+                    <option value="maintenance">Maintenance</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-group">
+                    <input type="checkbox" id="is_available" name="is_available" checked>
+                    Machine is Available
+                </label>
+                <span class="help-text">Check if machine is available for use</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn">Create Machine</button>
+        <a href="{% url 'admin_machines' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

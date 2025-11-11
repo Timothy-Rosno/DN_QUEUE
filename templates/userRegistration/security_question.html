@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Security Question - Scheduler App{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 2rem auto;">
+    <h1>Security Question</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">Answer your security question to reset your password.</p>
+
+    <div style="margin: 1.5rem 0; padding: 1rem; background-color: #ecf0f1; border-radius: 4px;">
+        <p><strong>Username:</strong> {{ username }}</p>
+    </div>
+
+    <form method="post" style="margin-top: 1.5rem;">
+        {% csrf_token %}
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Security Question</label>
+            <p style="font-size: 1.1rem; color: #2c3e50; margin-bottom: 1rem;">{{ security_question }}</p>
+
+            <label for="security_answer" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Your Answer</label>
+            <input type="text" name="security_answer" id="security_answer" required
+                   style="width: 100%; padding: 0.75rem; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 1rem;"
+                   autocomplete="off"
+                   autofocus>
+            <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">Answer is case-insensitive</small>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn">Verify Answer</button>
+            <a href="{% url 'forgot_password' %}" class="btn btn-secondary">Start Over</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

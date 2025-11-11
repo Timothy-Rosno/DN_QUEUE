@@ -1,0 +1,481 @@
+{% extends 'base.html' %}
+
+{% block title %}My Queue - Lab Equipment Queue{% endblock %}
+
+{% block content %}
+<style>
+    .collapsible-header {
+        cursor: pointer;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        user-select: none;
+        transition: background-color 0.2s;
+    }
+
+    .collapsible-header:hover {
+        background-color: #e9ecef;
+    }
+
+    .collapsible-header h2 {
+        margin: 0;
+        font-size: 1.3rem;
+    }
+
+    .collapsible-icon {
+        font-size: 1.2rem;
+        transition: transform 0.3s;
+    }
+
+    .collapsible-icon.open {
+        transform: rotate(180deg);
+    }
+
+    .collapsible-content {
+        display: none;
+        margin-bottom: 1.5rem;
+    }
+
+    .collapsible-content.open {
+        display: block;
+    }
+
+    .entry-card {
+        border: 1px solid #dee2e6;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border-radius: 4px;
+        background-color: #fff;
+    }
+
+    .entry-card-running {
+        border: 2px solid #f39c12;
+        background-color: #fff9e6;
+    }
+
+    .entry-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        gap: 1rem;
+    }
+
+    .entry-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .entry-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    .info-item {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .badge-count {
+        background-color: #e74c3c;
+        color: white;
+        padding: 0.15rem 0.5rem;
+        border-radius: 10px;
+        font-size: 0.75rem;
+    }
+</style>
+
+<div class="card">
+    <div id="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;">
+        <h1 style="margin: 0;">My Queue Entries</h1>
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <a href="{% url 'submit_queue' %}" class="btn">Submit New Request</a>
+        </div>
+    </div>
+
+    <!-- Consolidated Status Section -->
+    {% if ready_to_check_out_count > 0 or ready_to_check_in_count > 0 or on_deck_not_ready_count > 0 %}
+    <div style="border: 2px solid #3498db; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 6px; background-color: #ebf5fb;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+            <div style="flex: 1;">
+                <h3 style="margin: 0 0 1rem 0; color: #2c3e50;">Status Summary</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    {% if ready_to_check_out_count > 0 %}
+                    <div style="padding: 0.75rem; background-color: #eafaf1; border-left: 4px solid #27ae60; border-radius: 4px;">
+                        <div style="font-size: 0.85rem; color: #155724; font-weight: 600;">Ready to Check Out</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #27ae60;">{{ ready_to_check_out_count }}</div>
+                    </div>
+                    {% endif %}
+
+                    {% if ready_to_check_in_count > 0 %}
+                    <div style="padding: 0.75rem; background-color: #eafaf1; border-left: 4px solid #27ae60; border-radius: 4px;">
+                        <div style="font-size: 0.85rem; color: #155724; font-weight: 600;">Ready to Check In</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #27ae60;">{{ ready_to_check_in_count }}</div>
+                    </div>
+                    {% endif %}
+
+                    {% if on_deck_not_ready_count > 0 %}
+                    <div style="padding: 0.75rem; background-color: #fff3cd; border-left: 4px solid #f39c12; border-radius: 4px;">
+                        <div style="font-size: 0.85rem; color: #856404; font-weight: 600;">On Deck, Not Ready</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #f39c12;">{{ on_deck_not_ready_count }}</div>
+                        <div style="font-size: 0.75rem; color: #856404; margin-top: 0.25rem;">Machine is busy</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <a href="{% url 'check_in_check_out' %}" class="btn" style="background-color: #3498db; padding: 1rem 1.5rem; font-size: 1.1rem;">
+                    Go to Check-In/Check-Out Page →
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Running Entries (Collapsible) -->
+    <div class="collapsible-header" onclick="toggleSection('running-section')">
+        <h2 style="color: #f39c12; display: flex; align-items: center; gap: 0.5rem;">
+            Currently Running
+            <span style="font-size: 0.9rem; color: #7f8c8d;">({{ running_entries.count }})</span>
+        </h2>
+        <span class="collapsible-icon" id="running-section-icon">▼</span>
+    </div>
+
+    <div class="collapsible-content" id="running-section">
+        {% if running_entries %}
+            {% for entry in running_entries %}
+            <div class="entry-card entry-card-running">
+                <div class="entry-card-header">
+                    <div style="flex: 1;">
+                        <h3 class="entry-title">{{ entry.title }}</h3>
+                        <div class="entry-info">
+                            <div class="info-item">
+                                <span class="info-label">Machine:</span>
+                                <span>{{ entry.assigned_machine.name }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Started:</span>
+                                <span>{{ entry.started_at|date:"M d, g:i A" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Duration:</span>
+                                <span>{{ entry.estimated_duration_hours }} hours</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 0.75rem; padding: 0.75rem; background-color: #fff; border-radius: 4px; border-left: 3px solid #f39c12;">
+                            <p style="margin: 0; font-size: 0.9rem; color: #856404;">
+                                <strong>Go to the <a href="{% url 'check_in_check_out' %}" style="color: #e67e22;">Check In/Out page</a> when you're ready to complete your measurement.</strong>
+                            </p>
+                        </div>
+                    </div>
+                    <div>
+                        <a href="{% url 'cancel_queue' entry.pk %}" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Cancel</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="padding: 1rem; color: #7f8c8d; text-align: center; background-color: #f8f9fa; border-radius: 4px;">
+                No experiments currently running.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Queued Entries (Collapsible) -->
+    <div class="collapsible-header" onclick="toggleSection('queued-section')">
+        <h2 style="color: #3498db; display: flex; align-items: center; gap: 0.5rem;">
+            Queued Entries
+            <span style="font-size: 0.9rem; color: #7f8c8d;">({{ queued_entries.count }})</span>
+        </h2>
+        <span class="collapsible-icon" id="queued-section-icon">▼</span>
+    </div>
+
+    <div class="collapsible-content" id="queued-section">
+        {% if queued_entries %}
+            {% for machine_name, entries in queued_by_machine.items %}
+            <!-- Machine Group Container with Bounding Rectangle -->
+            <div style="border: 2px solid #3498db; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; background-color: #f8fcff;">
+                <!-- Machine Group Header -->
+                <div style="background-color: #e8f4f8; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; border-radius: 4px; border-left: 4px solid #3498db;">
+                    <strong style="color: #2c3e50; font-size: 1rem;">{{ machine_name }}</strong>
+                    <span style="color: #7f8c8d; font-size: 0.85rem; margin-left: 0.5rem;">({{ entries|length }} {{ entries|length|pluralize:"entry,entries" }})</span>
+                </div>
+
+                <!-- Entries for this machine -->
+                {% for entry in entries %}
+                <div class="entry-card" style="margin-bottom: 0.5rem;">
+                    <div class="entry-card-header">
+                        <div style="flex: 1;">
+                            <h3 class="entry-title">
+                                {{ entry.title }}
+                                {% if entry.queue_position == 1 %}
+                                <span style="background-color: #27ae60; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; margin-left: 0.5rem;">ON DECK</span>
+                                {% endif %}
+                            </h3>
+                            <div class="entry-info">
+                                <div class="info-item">
+                                    <span class="info-label">Position:</span>
+                                    <span>#{{ entry.queue_position }}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Duration:</span>
+                                    <span>{{ entry.estimated_duration_hours }} hours</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Min Temp:</span>
+                                    <span>{{ entry.required_min_temp }} K</span>
+                                </div>
+                                {% if entry.estimated_start_time %}
+                                <div class="info-item">
+                                    <span class="info-label">Est. Start:</span>
+                                    <span>{{ entry.estimated_start_time|date:"M d, g:i A" }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div>
+                            <a href="{% url 'cancel_queue' entry.pk %}" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Cancel</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="padding: 1rem; color: #7f8c8d; text-align: center; background-color: #f8f9fa; border-radius: 4px;">
+                No queued entries.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Recently Completed (Collapsible) -->
+    <div class="collapsible-header" onclick="toggleSection('completed-section')">
+        <h2 style="color: #95a5a6; display: flex; align-items: center; gap: 0.5rem;">
+            Recently Completed
+            <span style="font-size: 0.9rem; color: #7f8c8d;">(Last 10)</span>
+        </h2>
+        <span class="collapsible-icon" id="completed-section-icon">▼</span>
+    </div>
+
+    <div class="collapsible-content" id="completed-section">
+        {% if completed_entries %}
+            {% for entry in completed_entries %}
+            <div class="entry-card" style="opacity: 0.8; background-color: #ecf0f1;">
+                <div class="entry-card-header">
+                    <div style="flex: 1;">
+                        <h3 class="entry-title">{{ entry.title }}</h3>
+                        <div class="entry-info">
+                            <div class="info-item">
+                                <span class="info-label">Machine:</span>
+                                <span>{{ entry.assigned_machine.name }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Completed:</span>
+                                <span>{{ entry.completed_at|date:"M d, g:i A" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- <div>
+                        <a href="{% url 'save_to_archive' entry.id %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.9rem; background-color: #5dade2;">Save to Archive</a>
+                    </div> -->
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="padding: 1rem; color: #7f8c8d; text-align: center; background-color: #f8f9fa; border-radius: 4px;">
+                No completed entries yet.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Collapsible section toggle
+    function toggleSection(sectionId) {
+        const content = document.getElementById(sectionId);
+        const icon = document.getElementById(sectionId + '-icon');
+
+        if (content.classList.contains('open')) {
+            content.classList.remove('open');
+            icon.classList.remove('open');
+        } else {
+            content.classList.add('open');
+            icon.classList.add('open');
+        }
+    }
+
+    // ===============================
+    // WebSocket Real-Time Updates
+    // ===============================
+
+    let socket = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    const currentUserId = {{ request.user.id }};
+    let reloadTimeout = null;
+
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/queue-updates/`;
+
+        try {
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = function(e) {
+                console.log('WebSocket connection established for queue updates');
+                reconnectAttempts = 0;
+                updateConnectionStatus('connected');
+            };
+
+            socket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                console.log('Received WebSocket message:', data);
+
+                if (data.message_type === 'queue_update') {
+                    handleQueueUpdate(data);
+                }
+            };
+
+            socket.onclose = function(e) {
+                console.log('WebSocket connection closed');
+                updateConnectionStatus('disconnected');
+
+                // Attempt to reconnect with exponential backoff
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 16000);
+                    console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
+                    updateConnectionStatus('reconnecting');
+                    setTimeout(connectWebSocket, delay);
+                } else {
+                    console.log('Max reconnection attempts reached. Real-time updates disabled.');
+                    updateConnectionStatus('offline');
+                }
+            };
+
+            socket.onerror = function(e) {
+                console.error('WebSocket error:', e);
+            };
+        } catch (error) {
+            console.error('Failed to create WebSocket:', error);
+            updateConnectionStatus('offline');
+        }
+    }
+
+    // Update connection status indicator
+    function updateConnectionStatus(status) {
+        let indicator = document.getElementById('ws-status-indicator');
+        if (!indicator) {
+            // Create status indicator if it doesn't exist
+            indicator = document.createElement('div');
+            indicator.id = 'ws-status-indicator';
+            indicator.style.cssText = 'padding: 8px 12px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; gap: 6px;';
+
+            // Insert into the page header's right-side container
+            const pageHeader = document.getElementById('page-header');
+            if (pageHeader) {
+                const rightContainer = pageHeader.querySelector('div');
+                if (rightContainer) {
+                    rightContainer.appendChild(indicator);
+                }
+            } else {
+                document.body.appendChild(indicator);
+            }
+        }
+
+        const statusConfig = {
+            connected: { text: 'Live Updates Active', color: '#27ae60', dot: '🟢' },
+            reconnecting: { text: 'Reconnecting...', color: '#f39c12', dot: '🟡' },
+            disconnected: { text: 'Disconnected', color: '#e74c3c', dot: '🔴' },
+            offline: { text: 'Offline (Refresh for updates)', color: '#95a5a6', dot: '⚫' }
+        };
+
+        const config = statusConfig[status] || statusConfig.offline;
+        indicator.textContent = `${config.dot} ${config.text}`;
+        indicator.style.backgroundColor = config.color + '20';
+        indicator.style.color = config.color;
+        indicator.style.border = `1px solid ${config.color}`;
+    }
+
+    // Handle queue update events
+    function handleQueueUpdate(data) {
+        console.log('Queue update:', data);
+
+        // Check if this update affects the current user
+        if (data.user_id === currentUserId || !data.user_id) {
+            showUpdateNotification(data);
+            scheduleReload();
+        }
+    }
+
+    // Show update notification banner
+    function showUpdateNotification(data) {
+        // Remove existing banner
+        const existing = document.getElementById('update-banner');
+        if (existing) {
+            existing.remove();
+        }
+
+        // Create new banner
+        const banner = document.createElement('div');
+        banner.id = 'update-banner';
+        banner.style.cssText = 'position: fixed; top: 20px; right: 20px; background-color: #3498db; color: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 10000; display: flex; align-items: center; gap: 15px; max-width: 400px;';
+
+        const updateText = data.update_type || 'Queue updated';
+        banner.innerHTML = `
+            <div>
+                <strong>🔄 Queue Updated</strong>
+                <div style="font-size: 0.9rem; margin-top: 4px;">New changes detected</div>
+            </div>
+            <button onclick="location.reload()" style="background-color: white; color: #3498db; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap;">
+                Refresh Now
+            </button>
+        `;
+
+        document.body.appendChild(banner);
+
+        // Auto-remove banner after 10 seconds
+        setTimeout(() => {
+            if (banner.parentNode) {
+                banner.remove();
+            }
+        }, 10000);
+    }
+
+    // Schedule auto-reload after a few seconds
+    function scheduleReload() {
+        if (reloadTimeout) {
+            clearTimeout(reloadTimeout);
+        }
+        reloadTimeout = setTimeout(() => {
+            location.reload();
+        }, 5000); // Auto-reload after 5 seconds
+    }
+
+    // Initialize WebSocket connection
+    connectWebSocket();
+</script>
+{% endblock %}

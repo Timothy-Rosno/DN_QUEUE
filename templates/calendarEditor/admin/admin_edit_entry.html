@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Queue Entry - Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div id="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h1 style="margin: 0;">Edit Queue Entry</h1>
+    </div>
+
+    <!-- Entry Info -->
+    <div style="background-color: #ecf0f1; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem;">
+        <p style="margin: 0.25rem 0;"><strong>User:</strong> {{ queue_entry.user.username }}</p>
+        <p style="margin: 0.25rem 0;"><strong>Current Machine:</strong> {{ queue_entry.assigned_machine.name }}</p>
+        <p style="margin: 0.25rem 0;"><strong>Queue Position:</strong> #{{ queue_entry.queue_position }}</p>
+        <p style="margin: 0.25rem 0;"><strong>Status:</strong> {{ queue_entry.get_status_display }}</p>
+        <p style="margin: 0.25rem 0;"><strong>Submitted:</strong> {{ queue_entry.created_at|date:"M d, Y g:i A" }}</p>
+    </div>
+
+    {% if show_machine_warning %}
+    <!-- Machine Change Warning -->
+    <div style="background-color: #ffe6e6; border-left: 4px solid #e74c3c; padding: 1rem; margin-bottom: 1.5rem; border-radius: 4px;">
+        <h3 style="color: #e74c3c; margin-top: 0;">⚠️ Machine Reassignment Required</h3>
+        <p style="margin: 0.5rem 0;">The changes you made require reassigning this entry to a different machine:</p>
+        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+            <li><strong>Current Machine:</strong> {{ old_machine.name }}</li>
+            <li><strong>New Machine:</strong> {{ new_machine.name }} ({{ compatibility_score }}% compatible)</li>
+        </ul>
+        <p style="margin: 0.5rem 0;"><strong>The queue will be automatically reordered.</strong></p>
+        <p style="margin: 0.5rem 0; font-weight: bold;">Do you want to proceed with these changes?</p>
+
+        <form method="post" style="margin-top: 1rem; display: inline-block;">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <input type="hidden" name="confirmed" value="true">
+            <button type="submit" class="btn" style="background-color: #e74c3c; color: white;">Yes, Save Changes</button>
+            <a href="{% url 'admin_queue' %}" class="btn btn-secondary" style="margin-left: 0.5rem;">Cancel</a>
+        </form>
+    </div>
+    {% else %}
+
+    <!-- Edit Form -->
+    <form method="post" id="editForm">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div style="background-color: #ffe6e6; color: #e74c3c; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem;">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <!-- Title -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.title.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.title.label }}
+            </label>
+            {{ form.title }}
+            {% if form.title.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.title.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.title.help_text }}</small>
+            <small id="titleCounter" style="color: #7f8c8d; display: block; margin-top: 0.25rem;"></small>
+        </div>
+
+        <!-- Description -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.description.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.description.label }}
+            </label>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.description.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.description.help_text }}</small>
+            <small id="descCounter" style="color: #7f8c8d; display: block; margin-top: 0.25rem;"></small>
+        </div>
+
+        <!-- Min Temperature -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_min_temp.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_min_temp.label }}
+            </label>
+            {{ form.required_min_temp }}
+            {% if form.required_min_temp.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_min_temp.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_min_temp.help_text }}</small>
+        </div>
+
+        <!-- Max Temperature -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_max_temp.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_max_temp.label }}
+            </label>
+            {{ form.required_max_temp }}
+            {% if form.required_max_temp.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_max_temp.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_max_temp.help_text }}</small>
+        </div>
+
+        <!-- B-field X -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_b_field_x.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_b_field_x.label }}
+            </label>
+            {{ form.required_b_field_x }}
+            {% if form.required_b_field_x.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_b_field_x.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_b_field_x.help_text }}</small>
+        </div>
+
+        <!-- B-field Y -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_b_field_y.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_b_field_y.label }}
+            </label>
+            {{ form.required_b_field_y }}
+            {% if form.required_b_field_y.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_b_field_y.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_b_field_y.help_text }}</small>
+        </div>
+
+        <!-- B-field Z -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_b_field_z.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_b_field_z.label }}
+            </label>
+            {{ form.required_b_field_z }}
+            {% if form.required_b_field_z.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_b_field_z.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_b_field_z.help_text }}</small>
+        </div>
+
+        <!-- B-field Direction -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_b_field_direction.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_b_field_direction.label }}
+            </label>
+            {{ form.required_b_field_direction }}
+            {% if form.required_b_field_direction.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_b_field_direction.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_b_field_direction.help_text }}</small>
+        </div>
+
+        <!-- DC Lines -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_dc_lines.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_dc_lines.label }}
+            </label>
+            {{ form.required_dc_lines }}
+            {% if form.required_dc_lines.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_dc_lines.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_dc_lines.help_text }}</small>
+        </div>
+
+        <!-- RF Lines -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_rf_lines.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_rf_lines.label }}
+            </label>
+            {{ form.required_rf_lines }}
+            {% if form.required_rf_lines.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_rf_lines.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_rf_lines.help_text }}</small>
+        </div>
+
+        <!-- Daughterboard -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.required_daughterboard.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.required_daughterboard.label }}
+            </label>
+            {{ form.required_daughterboard }}
+            {% if form.required_daughterboard.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.required_daughterboard.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_daughterboard.help_text }}</small>
+        </div>
+
+        <!-- Optical Requirements -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                {{ form.requires_optical }}
+                <span style="margin-left: 0.5rem; font-weight: bold;">{{ form.requires_optical.label }}</span>
+            </label>
+            {% if form.requires_optical.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.requires_optical.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.requires_optical.help_text }}</small>
+        </div>
+
+        <!-- Estimated Duration -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.estimated_duration_hours.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.estimated_duration_hours.label }}
+            </label>
+            {{ form.estimated_duration_hours }}
+            {% if form.estimated_duration_hours.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.estimated_duration_hours.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.estimated_duration_hours.help_text }}</small>
+        </div>
+
+        <!-- Special Requirements -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.special_requirements.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.special_requirements.label }}
+            </label>
+            {{ form.special_requirements }}
+            {% if form.special_requirements.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.special_requirements.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.special_requirements.help_text }}</small>
+            <small id="specialCounter" style="color: #7f8c8d; display: block; margin-top: 0.25rem;"></small>
+        </div>
+
+        <!-- Rush Job -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                {{ form.is_rush_job }}
+                <span style="margin-left: 0.5rem; font-weight: bold;">{{ form.is_rush_job.label }}</span>
+            </label>
+            {% if form.is_rush_job.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.is_rush_job.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.is_rush_job.help_text }}</small>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid #bdc3c7;">
+            <button type="submit" class="btn">Save Changes</button>
+            <a href="{% url 'admin_queue' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
+        </div>
+    </form>
+    {% endif %}
+</div>
+
+<script>
+// Character counters
+document.addEventListener('DOMContentLoaded', function() {
+    const titleField = document.getElementById('{{ form.title.id_for_label }}');
+    const titleCounter = document.getElementById('titleCounter');
+    const descField = document.getElementById('{{ form.description.id_for_label }}');
+    const descCounter = document.getElementById('descCounter');
+    const specialField = document.getElementById('{{ form.special_requirements.id_for_label }}');
+    const specialCounter = document.getElementById('specialCounter');
+
+    function updateCounter(field, counter, maxLength) {
+        if (field && counter) {
+            const remaining = maxLength - field.value.length;
+            counter.textContent = `${remaining} characters remaining`;
+            counter.style.color = remaining < 20 ? '#e74c3c' : '#7f8c8d';
+        }
+    }
+
+    if (titleField) {
+        updateCounter(titleField, titleCounter, 75);
+        titleField.addEventListener('input', function() {
+            updateCounter(titleField, titleCounter, 75);
+        });
+    }
+
+    if (descField) {
+        updateCounter(descField, descCounter, 500);
+        descField.addEventListener('input', function() {
+            updateCounter(descField, descCounter, 500);
+        });
+    }
+
+    if (specialField) {
+        updateCounter(specialField, specialCounter, 500);
+        specialField.addEventListener('input', function() {
+            updateCounter(specialField, specialCounter, 500);
+        });
+    }
+});
+</script>
+{% endblock %}

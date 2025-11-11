@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Schedule Entry - Scheduler App{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Create New Schedule Entry</h1>
+    <p style="margin: 1rem 0;">Fill out the form below to create a new schedule entry.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <div style="margin-top: 1.5rem;">
+            <button type="submit" class="btn">Create Entry</button>
+            <a href="{% url 'schedule' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Tips for scheduling:</h3>
+    <ul style="margin-left: 2rem; margin-top: 1rem;">
+        <li>Make sure the end time is after the start time</li>
+        <li>Cannot schedule events in the past</li>
+        <li>Provide location details if applicable</li>
+        <li>Add any special requirements or notes</li>
+    </ul>
+</div>
+{% endblock %}

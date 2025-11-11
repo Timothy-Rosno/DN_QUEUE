@@ -1,0 +1,19 @@
+<!-- calendarEditor/templates/calendarEditor/welcome_page.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Welcome back, {{ user.username }}!</h1>
+
+    <p>
+        Last logged in: 
+        {% if user.last_login %}
+            {{ user.last_login|date:"M d, Y" }} ({{ user.last_login|time:"H:i" }})
+        {% else %}
+            This is your first login. 👀     ... Welcome!
+        {% endif %}
+    </p>
+
+    <!-- Add your other welcome page content here -->
+</div>
+{% endblock %}

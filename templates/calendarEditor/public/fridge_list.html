@@ -1,0 +1,396 @@
+{% extends 'base.html' %}
+
+{% block title %}Fridge Specifications{% endblock %}
+
+{% block content %}
+<style>
+    .machine-card {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+
+    .machine-header {
+        padding: 1rem;
+        cursor: pointer;
+        background-color: #f8f9fa;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background-color 0.2s;
+    }
+
+    .machine-header:hover {
+        background-color: #e9ecef;
+    }
+
+    .machine-header-left {
+        flex: 1;
+    }
+
+    .machine-header-right {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .machine-name {
+        margin: 0;
+        font-size: 1.3rem;
+        font-weight: 600;
+    }
+
+    .machine-quick-info {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 0.5rem;
+        color: #6c757d;
+        font-size: 0.9rem;
+        flex-wrap: wrap;
+    }
+
+    .machine-details {
+        padding: 1.5rem;
+        border-top: 1px solid #ddd;
+        background-color: #fff;
+        display: none;
+    }
+
+    .machine-details.open {
+        display: block;
+    }
+
+    .specs-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .spec-group {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 4px;
+    }
+
+    .spec-group h4 {
+        margin: 0 0 0.75rem 0;
+        font-size: 1rem;
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 0.5rem;
+    }
+
+    .spec-item {
+        margin: 0.5rem 0;
+        font-size: 0.9rem;
+    }
+
+    .spec-label {
+        font-weight: 600;
+        color: #6c757d;
+    }
+
+    .spec-value {
+        color: #212529;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .status-idle { background-color: #d1ecf1; color: #0c5460; }
+    .status-running { background-color: #d4edda; color: #155724; }
+    .status-cooldown { background-color: #fff3cd; color: #856404; }
+    .status-maintenance { background-color: #f8d7da; color: #721c24; }
+    .status-online { background-color: #d4edda; color: #155724; }
+    .status-offline { background-color: #f8d7da; color: #721c24; }
+    .status-connected-measuring { background-color: #5cb85c; color: white; }
+    .status-connected-idle { background-color: #5cb85c; color: white; }
+    .status-disconnected-measuring { background-color: #d9534f; color: white; }
+    .status-disconnected-idle { background-color: #d9534f; color: white; }
+    .status-disconnected-maintenance { background-color: #d9534f; color: white; }
+
+    .available-yes { color: #28a745; font-weight: 600; }
+    .available-no { color: #dc3545; font-weight: 600; }
+
+    .expand-icon {
+        font-size: 1.2rem;
+        transition: transform 0.3s;
+    }
+
+    .expand-icon.open {
+        transform: rotate(180deg);
+    }
+</style>
+
+<div class="card">
+    <h1>Fridge Specifications</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">Detailed specifications for all cryostats or whatever they are. Click on a machine to view full specifications.</p>
+    <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+        <button onclick="history.back()" class="btn btn-secondary">← Back</button>
+        <a href="{% url 'home' %}" class="btn btn-secondary">← Home Page</a>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2>Available Equipment ({{ machines.count }})</h2>
+    </div>
+
+    {% if machines %}
+        {% for machine in machines %}
+        <div class="machine-card" data-machine-id="{{ machine.id }}">
+            <div class="machine-header" onclick="toggleMachine({{ machine.id }})">
+                <div class="machine-header-left">
+                    <h3 class="machine-name">{{ machine.name }}</h3>
+                    <div class="machine-quick-info">
+                        <span>
+                            <span class="status-badge machine-status status-{{ machine.get_display_status|lower|cut:' ' }}">
+                                {{ machine.get_display_status }}
+                            </span>
+                        </span>
+                        <span>
+                            Temperature:
+                            <span class="machine-temp">
+                            {% if machine.get_live_temperature %}
+                                {{ machine.get_live_temperature|floatformat:2 }} K
+                            {% else %}
+                                <span style="color: #999;">N/A</span>
+                            {% endif %}
+                            </span>
+                        </span>
+                        <span>Queue: {{ machine.queue_count }} entries</span>
+                        {% if machine.location %}
+                        <span>{{ machine.location }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="machine-header-right">
+                    <span class="expand-icon" id="icon-{{ machine.id }}">▼</span>
+                </div>
+            </div>
+
+            <div class="machine-details" id="details-{{ machine.id }}">
+                <div class="specs-grid">
+                    <!-- Temperature Specifications -->
+                    <div class="spec-group">
+                        <h4>Temperature</h4>
+                        <div class="spec-item">
+                            <span class="spec-label">Min Temp:</span>
+                            <span class="spec-value">{{ machine.min_temp }} K</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Max Temp:</span>
+                            <span class="spec-value">{{ machine.max_temp }} K</span>
+                        </div>
+                    </div>
+
+                    <!-- Magnetic Field Specifications -->
+                    <div class="spec-group">
+                        <h4>Magnetic Field</h4>
+                        <div class="spec-item">
+                            <span class="spec-label">B-field X:</span>
+                            <span class="spec-value">{{ machine.b_field_x }} T</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">B-field Y:</span>
+                            <span class="spec-value">{{ machine.b_field_y }} T</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">B-field Z:</span>
+                            <span class="spec-value">{{ machine.b_field_z }} T</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Direction:</span>
+                            <span class="spec-value">{{ machine.get_b_field_direction_display }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Connection Specifications -->
+                    <div class="spec-group">
+                        <h4>Connections</h4>
+                        <div class="spec-item">
+                            <span class="spec-label">DC Lines:</span>
+                            <span class="spec-value">{{ machine.dc_lines }}</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">RF Lines:</span>
+                            <span class="spec-value">{{ machine.rf_lines }}</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Daughterboard:</span>
+                            <span class="spec-value">{{ machine.daughterboard_type|default:"None" }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Operational Characteristics -->
+                    <div class="spec-group">
+                        <h4>Operational</h4>
+                        <div class="spec-item">
+                            <span class="spec-label">Cooldown:</span>
+                            <span class="spec-value">{{ machine.cooldown_hours }} hours</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Optical:</span>
+                            <span class="spec-value">{{ machine.get_optical_capabilities_display }}</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Status:</span>
+                            <span class="spec-value machine-status" style="font-weight: bold; {% if machine.get_display_status == 'Online' %}color: #155724;{% elif machine.get_display_status == 'Offline - Maintenance' %}color: #721c24;{% else %}color: #856404;{% endif %}">
+                                {{ machine.get_display_status }}
+                            </span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Temperature:</span>
+                            <span class="spec-value machine-temp">
+                                {% if machine.get_live_temperature %}
+                                    {{ machine.get_live_temperature|floatformat:2 }} K
+                                {% else %}
+                                    <span style="color: #999;">N/A</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Current Usage -->
+                    <div class="spec-group">
+                        <h4>Current Usage</h4>
+                        <div class="spec-item">
+                            <span class="spec-label">Current User:</span>
+                            <span class="spec-value">{{ machine.current_user.username|default:"None" }}</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Est. Available:</span>
+                            <span class="spec-value">
+                                {% if machine.estimated_available_time %}
+                                    {{ machine.estimated_available_time|date:"M d, Y g:i A" }}
+                                {% else %}
+                                    Now
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Queue Count:</span>
+                            <span class="spec-value">{{ machine.queue_count }} entries</span>
+                        </div>
+                    </div>
+
+                    <!-- Location & Description -->
+                    <div class="spec-group">
+                        <h4>Details</h4>
+                        <div class="spec-item">
+                            <span class="spec-label">Location:</span>
+                            <span class="spec-value">{{ machine.location|default:"Not specified" }}</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Created:</span>
+                            <span class="spec-value">{{ machine.created_at|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Updated:</span>
+                            <span class="spec-value">{{ machine.updated_at|date:"M d, Y g:i A" }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if machine.description %}
+                <div style="background-color: #f8f9fa; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+                    <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #495057;">Description</h4>
+                    <p style="margin: 0; color: #212529;">{{ machine.description }}</p>
+                </div>
+                {% endif %}
+
+                {% if user.is_authenticated %}
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="{% url 'public_queue' %}?machine={{ machine.id }}" class="btn">View Queue for {{ machine.name }}</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #7f8c8d;">No machines found.</p>
+    {% endif %}
+</div>
+
+<div style="margin-top: 1rem; display: flex; gap: 1rem;">
+    <button onclick="history.back()" class="btn btn-secondary">← Back</button>
+    <a href="{% url 'home' %}" class="btn btn-secondary">← Home Page</a>
+</div>
+
+<script>
+function toggleMachine(machineId) {
+    const details = document.getElementById('details-' + machineId);
+    const icon = document.getElementById('icon-' + machineId);
+
+    if (details.classList.contains('open')) {
+        details.classList.remove('open');
+        icon.classList.remove('open');
+    } else {
+        details.classList.add('open');
+        icon.classList.add('open');
+    }
+}
+
+// Temperature polling - update temperatures every 15 seconds while user is on page
+let temperaturePollingInterval = null;
+
+async function updateMachineTemperatures() {
+    try {
+        const response = await fetch('{% url "machine_status_api" %}');
+        if (!response.ok) {
+            console.error('Failed to fetch machine temperatures');
+            return;
+        }
+
+        const data = await response.json();
+
+        // Update temperature displays for each machine
+        data.machines.forEach(machine => {
+            // Update all temperature displays for this machine
+            const tempElements = document.querySelectorAll(`[data-machine-id="${machine.id}"] .machine-temp`);
+            tempElements.forEach(elem => {
+                if (machine.temperature !== null) {
+                    elem.innerHTML = `${machine.temperature.toFixed(2)} K`;
+                } else {
+                    elem.innerHTML = '<span style="color: #999;">N/A</span>';
+                }
+            });
+
+            // Update status badges if they exist
+            const statusBadges = document.querySelectorAll(`[data-machine-id="${machine.id}"] .status-badge`);
+            statusBadges.forEach(badge => {
+                const statusClass = machine.is_online ? 'status-online' : 'status-offline';
+                badge.className = 'status-badge ' + statusClass;
+                badge.textContent = machine.is_online ? 'Online' : 'Offline';
+            });
+        });
+
+    } catch (error) {
+        console.error('Error updating machine temperatures:', error);
+    }
+}
+
+// Start polling when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Initial update
+    updateMachineTemperatures();
+
+    // Poll every 15 seconds
+    temperaturePollingInterval = setInterval(updateMachineTemperatures, 15000);
+});
+
+// Stop polling when user leaves page
+window.addEventListener('beforeunload', function() {
+    if (temperaturePollingInterval) {
+        clearInterval(temperaturePollingInterval);
+    }
+});
+</script>
+{% endblock %}

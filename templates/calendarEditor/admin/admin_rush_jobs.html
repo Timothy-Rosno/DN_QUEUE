@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rush Job Appeals - Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Rush Job Appeals</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">Review rush job requests from users.</p>
+    <div style="margin-top: 1rem;">
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Pending Rush Jobs ({{ rush_jobs_with_machines|length }})</h2>
+
+    {% if rush_jobs_with_machines %}
+        {% for item in rush_jobs_with_machines %}
+        {% with entry=item.entry matching_machines=item.matching_machines live_temp=item.live_temp display_status=item.display_status %}
+        <div data-machine-id="{{ entry.assigned_machine.id }}" style="border: 1px solid #e67e22; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #fff3cd;">
+            <div style="margin-bottom: 1rem;">
+                <h3 style="margin-top: 0; color: #856404;">Device: {{ entry.title }} -- {{ entry.description|truncatewords:20 }}</h3>
+                <p style="color: #856404; margin: 0.5rem 0;"><strong>User:</strong> {{ entry.user.username }} | <strong>Submitted:</strong> {{ entry.submitted_at|date:"M d, Y g:i A" }}</p>
+                <p style="color: #856404; margin: 0.5rem 0;">
+                    <strong>Machine:</strong> {{ entry.assigned_machine.name }} |
+                    <strong>Queue Position:</strong> {{ entry.queue_position }} |
+                    {% if display_status %}
+                        <strong>Status:</strong> <span class="machine-status status-badge status-{{ display_status|lower|cut:' ' }}" style="font-weight: bold; padding: 0.15rem 0.5rem; border-radius: 8px;">{{ display_status }}</span> |
+                    {% endif %}
+                    <strong>Temp:</strong> <span class="machine-temp">{% if live_temp %}{{ live_temp|floatformat:2 }} K{% else %}<span style="color: #999;">N/A</span>{% endif %}</span>
+                </p>
+            </div>
+
+            <!-- Machine Reassignment -->
+            <div style="background-color: white; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+                <strong style="display: block; margin-bottom: 0.5rem;">Reassign Machine ({{ matching_machines|length }} matching machines):</strong>
+                <form method="post" action="{% url 'reassign_machine' entry.id %}" style="display: flex; gap: 0.5rem; align-items: center;">
+                    {% csrf_token %}
+                    <select name="machine_id" style="flex: 1; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                        {% for machine in matching_machines %}
+                            <option value="{{ machine.id }}" {% if machine.id == entry.assigned_machine.id %}selected{% endif %}>
+                                {{ machine.name }} - Queue: {{ machine.get_queue_count }} - Wait: {{ machine.get_estimated_wait_time.days }}d {{ machine.get_estimated_wait_time.seconds|floatformat:0 }}s
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn">Reassign</button>
+                </form>
+            </div>
+
+            <div style="background-color: white; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+                <strong style="display: block; margin-bottom: 0.5rem;">Explanation for Hugh:</strong>
+                <p style="margin: 0; white-space: pre-wrap;">{{ entry.special_requirements|default:"No explanation provided." }}</p>
+            </div>
+
+            <div style="background-color: white; padding: 1rem; border-radius: 4px;">
+                <strong style="display: block; margin-bottom: 0.5rem;">Requirements:</strong>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem;">
+                    <div><strong>Min Temp:</strong> {{ entry.required_min_temp }} K</div>
+                    <div><strong>Max Temp:</strong> {{ entry.required_max_temp|default:"—" }} K</div>
+                    <div><strong>DC Lines:</strong> {{ entry.required_dc_lines }}</div>
+                    <div><strong>RF Lines:</strong> {{ entry.required_rf_lines }}</div>
+                    <div><strong>Duration:</strong> {{ entry.estimated_duration_hours }} hours</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                <form method="post" action="{% url 'approve_rush_job' entry.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">Approve & Queue Next</button>
+                </form>
+                <button type="button" class="btn btn-danger reject-rush-btn"
+                    data-entry-id="{{ entry.id }}"
+                    data-entry-title="{{ entry.title }}">
+                    Reject Appeal
+                </button>
+                <a href="{% url 'admin_edit_entry' entry.id %}" class="btn btn-secondary">Edit Entry</a>
+                <form method="get" action="mailto:{{ entry.user.email }}?subject=Rush Job Request - {{ entry.title }}" style="display: inline;">
+                    <button type="submit" class="btn btn-info" onclick="window.location.href='mailto:{{ entry.user.email }}?subject=Rush Job Request - {{ entry.title }}'; return false;">Email User</button>
+                </form>
+            </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+    {% else %}
+        <p style="color: #7f8c8d; margin-top: 1rem;">No pending rush job appeals.</p>
+    {% endif %}
+</div>
+
+<div style="margin-top: 1rem;">
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+</div>
+
+<!-- Thanos Snap Confirmation Modal -->
+<div id="thanosModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:2rem; border-radius:10px; max-width:400px; width:90%; text-align:center; position:relative;">
+        <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto;">
+        <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
+        <div style="display:flex; justify-content:space-around; gap:1rem;">
+            <button id="thanosYes" class="btn btn-danger">Yes, snap it immediately</button>
+            <button id="thanosNo" class="btn btn-secondary">No, spare its variables</button>
+        </div>
+        <span id="thanosClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('thanosModal');
+    const message = document.getElementById('thanosMessage');
+    const btnYes = document.getElementById('thanosYes');
+    const btnNo = document.getElementById('thanosNo');
+    const btnClose = document.getElementById('thanosClose');
+    let currentEntryId = null;
+    let currentEntryTitle = null;
+
+    // Open modal when reject button clicked
+    document.querySelectorAll('.reject-rush-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentEntryId = this.getAttribute('data-entry-id');
+            currentEntryTitle = this.getAttribute('data-entry-title');
+            message.textContent = `Are you sure you want to reject rush job appeal for "${currentEntryTitle}"?`;
+            modal.style.display = 'flex';
+        });
+    });
+
+    // Yes button: submit reject form
+    btnYes.addEventListener('click', function() {
+        if (currentEntryId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/schedule/admin-rush-jobs/reject/${currentEntryId}/`;
+
+            // Add CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken.value;
+                form.appendChild(csrfInput);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+
+    // No button: close modal
+    btnNo.addEventListener('click', function() {
+        modal.style.display = 'none';
+        currentEntryId = null;
+        currentEntryTitle = null;
+    });
+
+    // Close button: close modal
+    btnClose.addEventListener('click', function() {
+        modal.style.display = 'none';
+        currentEntryId = null;
+        currentEntryTitle = null;
+    });
+
+    // Click outside modal: close modal
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+            currentEntryId = null;
+            currentEntryTitle = null;
+        }
+    });
+});
+</script>
+
+{% endblock %}

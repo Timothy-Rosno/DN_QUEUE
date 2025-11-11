@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - Scheduler App{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Create Your Account</h1>
+    <p style="margin: 1rem 0;">Please fill out the form below to register.</p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">Account Information</h3>
+        {{ user_form.as_p }}
+
+        <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">Profile Information</h3>
+
+        <!-- Phone Number Field -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ profile_form.phone_number.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ profile_form.phone_number.label }}
+            </label>
+            {{ profile_form.phone_number }}
+            {% if profile_form.phone_number.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ profile_form.phone_number.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Department Field -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ profile_form.department.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ profile_form.department.label }}
+            </label>
+            {{ profile_form.department }}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+                <div id="departmentError" style="color: #e74c3c; font-size: 0.9rem; display: none; font-weight: bold;"></div>
+                <small style="color: #7f8c8d;"><span id="departmentCharCount"></span></small>
+            </div>
+            {% if profile_form.department.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ profile_form.department.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Notes Field -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ profile_form.notes.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ profile_form.notes.label }}
+            </label>
+            {{ profile_form.notes }}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+                <div id="notesError" style="color: #e74c3c; font-size: 0.9rem; display: none; font-weight: bold;"></div>
+                <small style="color: #7f8c8d;"><span id="notesCharCount"></span></small>
+            </div>
+            {% if profile_form.notes.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ profile_form.notes.errors }}</div>
+            {% endif %}
+        </div>
+
+        <h3 style="margin-top: 2rem; margin-bottom: 0.5rem;">Password Recovery</h3>
+        <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.95rem;">Set up a security question to recover your password if you forget it.</p>
+
+        <div style="margin-bottom: 1.5rem;">
+            {{ profile_form.security_question.label_tag }}
+            {{ profile_form.security_question }}
+            {% if profile_form.security_question.help_text %}
+                <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">{{ profile_form.security_question.help_text }}</small>
+            {% endif %}
+        </div>
+
+        <div id="custom-question-field" style="margin-bottom: 1.5rem; display: none;">
+            {{ profile_form.security_question_custom.label_tag }}
+            {{ profile_form.security_question_custom }}
+            {% if profile_form.security_question_custom.errors %}
+                <small style="color: #e74c3c; display: block; margin-top: 0.5rem;">{{ profile_form.security_question_custom.errors.0 }}</small>
+            {% endif %}
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            {{ profile_form.security_answer.label_tag }}
+            {{ profile_form.security_answer }}
+            {% if profile_form.security_answer.help_text %}
+                <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">{{ profile_form.security_answer.help_text }}</small>
+            {% endif %}
+        </div>
+
+        <script>
+        // Show/hide custom question field based on selection
+        document.addEventListener('DOMContentLoaded', function() {
+            const securityQuestionSelect = document.getElementById('id_security_question');
+            const customQuestionField = document.getElementById('custom-question-field');
+
+            function toggleCustomQuestion() {
+                if (securityQuestionSelect.value === 'custom') {
+                    customQuestionField.style.display = 'block';
+                } else {
+                    customQuestionField.style.display = 'none';
+                }
+            }
+
+            securityQuestionSelect.addEventListener('change', toggleCustomQuestion);
+            toggleCustomQuestion(); // Check initial state
+
+            // Character counter functionality for profile fields
+            setupCharacterCounter('{{ profile_form.department.id_for_label }}', 'departmentCharCount', 'departmentError', 100);
+            setupCharacterCounter('{{ profile_form.notes.id_for_label }}', 'notesCharCount', 'notesError', 500);
+        });
+
+        // Character counter setup function
+        function setupCharacterCounter(fieldId, counterId, errorId, maxLength) {
+            const field = document.getElementById(fieldId);
+            const counter = document.getElementById(counterId);
+            const errorDiv = document.getElementById(errorId);
+
+            if (!field || !counter || !errorDiv) return;
+
+            function updateCounter() {
+                let length = field.value.length;
+
+                // Enforce max length
+                if (length > maxLength) {
+                    field.value = field.value.slice(0, maxLength);
+                    length = maxLength;
+                }
+
+                const remaining = maxLength - length;
+
+                // Display counter only when near the limit (25 or fewer characters remaining)
+                if (remaining <= 25) {
+                    counter.textContent = remaining + " characters remaining";
+                    if (remaining <= 10) {
+                        counter.style.color = "#e74c3c"; // danger red
+                    } else {
+                        counter.style.color = "#f39c12"; // warning orange
+                    }
+                } else {
+                    counter.textContent = "";
+                    counter.style.color = "#7f8c8d"; // normal gray
+                }
+
+                // Clear any error messages (no minimum required for these fields)
+                errorDiv.style.display = "none";
+            }
+
+            // Initialize counter on page load
+            updateCounter();
+
+            // Update on input
+            field.addEventListener("input", updateCounter);
+            field.addEventListener("keyup", updateCounter);
+        }
+        </script>
+
+        <div style="margin-top: 1.5rem;">
+            <button type="submit" class="btn">Register</button>
+            <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
+        </div>
+    </form>
+
+    <p style="margin-top: 1.5rem;">
+        Already have an account? <a href="{% url 'login' %}">Login here</a>
+    </p>
+</div>
+{% endblock %}

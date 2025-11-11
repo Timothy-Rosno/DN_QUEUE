@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Scheduler App{% endblock %}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+        }
+        nav {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        nav .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        nav h1 {
+            font-size: 1.5rem;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        nav li {
+            display: flex;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s, background-color 0.3s;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            display: block;
+            white-space: nowrap;
+        }
+        nav a:hover {
+            color: #3498db;
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        /* Responsive navigation for small screens */
+        @media (max-width: 768px) {
+            nav .container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            nav h1 {
+                font-size: 1.25rem;
+            }
+            nav ul {
+                gap: 0.25rem;
+                justify-content: center;
+            }
+            nav a {
+                padding: 0.6rem 0.8rem;
+                font-size: 0.9rem;
+            }
+        }
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        .messages {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 400px;
+            width: 100%;
+        }
+        .message {
+            padding: 1rem 3rem 1rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+        .message.dismissing {
+            animation: slideOut 0.3s ease-out;
+        }
+        .message::before {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        .message.success::before {
+            content: '✓';
+            color: #28a745;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        .message.error::before {
+            content: '✕';
+            color: #dc3545;
+        }
+        .message.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+        .message.warning::before {
+            content: '⚠';
+            color: #ffc107;
+        }
+        .message.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+        .message.info::before {
+            content: 'ℹ';
+            color: #17a2b8;
+        }
+        .message-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: inherit;
+            opacity: 0.5;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            width: 24px;
+            height: 24px;
+        }
+        .message-close:hover {
+            opacity: 1;
+        }
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+        /* Button Base Styles */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            text-align: center;
+            transition: all 0.2s ease;
+            line-height: 1.5;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Button Variants */
+        .btn-primary {
+            background-color: #3498db;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        .btn-success {
+            background-color: #2ecc71;
+        }
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        .btn-warning {
+            background-color: #f39c12;
+        }
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+        .btn-info {
+            background-color: #3498db;
+        }
+        .btn-info:hover {
+            background-color: #2980b9;
+        }
+        .btn-secondary {
+            background-color: #95a5a6;
+        }
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        .btn-dark {
+            background-color: #34495e;
+        }
+        .btn-dark:hover {
+            background-color: #2c3e50;
+        }
+
+        /* Button Sizes */
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+        }
+        .btn-lg {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+        }
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+
+        /* Button States */
+        .btn:disabled,
+        .btn.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        form p {
+            margin-bottom: 1rem;
+        }
+        form label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        form input, form select, form textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        .errorlist {
+            list-style: none;
+            color: #e74c3c;
+            margin-top: 0.5rem;
+        }
+        .helptext {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-top: 0.25rem;
+        }
+
+        /* Notification Bell Styles */
+        .notification-bell {
+            position: relative;
+            display: inline-block;
+        }
+        .notification-bell-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+            position: relative;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .notification-bell-btn:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: white;
+        }
+        .notification-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        /* Auto-Logout Warning Modal */
+        .logout-warning-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+        .logout-warning-overlay.active {
+            display: flex;
+        }
+        .logout-warning-modal {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+        .logout-warning-modal h2 {
+            margin-top: 0;
+            color: #e67e22;
+            font-size: 1.5rem;
+        }
+        .logout-warning-modal p {
+            color: #555;
+            font-size: 1.1rem;
+            margin: 1.5rem 0;
+        }
+        .logout-warning-modal .timer {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #e74c3c;
+            margin: 1rem 0;
+        }
+        .logout-warning-modal .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        /* Character Counter Styles */
+        .char-counter-wrapper {
+            position: relative;
+        }
+        .char-counter {
+            font-size: 0.85rem;
+            text-align: right;
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+        .char-counter.hidden {
+            display: none;
+        }
+        .char-counter.warning {
+            color: #f39c12;
+        }
+        .char-counter.danger {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <h1>DILFNET</h1>
+            <ul>
+                <li><a href="{% url 'home' %}">Home</a></li>
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'submit_queue' %}">Submit Request</a></li>
+                    <li><a href="{% url 'public_queue' %}">Public Queue</a></li>
+                    <li><a href="{% url 'my_queue' %}">My Queue</a></li>
+                    <li style="position: relative;">
+                        <a href="{% url 'check_in_check_out' %}">Check-In/Check-Out</a>
+                        {% if check_in_out_count > 0 %}
+                        <span class="notification-badge">{{ check_in_out_count }}</span>
+                        {% endif %}
+                    </li>
+                    <li><a href="{% url 'archive_list' %}">Archive</a></li>
+                    <li><a href="{% url 'fridge_list' %}">Fridge Specs</a></li>
+                    <li><a href="{% url 'profile' %}">Profile</a></li>
+                    <li class="notification-bell">
+                        <a href="{% url 'notifications_page' %}" class="notification-bell-btn" id="notification-bell">
+                            🔔
+                            <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+                        </a>
+                    </li>
+                    {% if user.is_staff %}
+                        <li><a href="{% url 'admin_dashboard' %}" style="color: #f39c12; font-weight: bold;">Admin</a></li>
+                    {% endif %}
+                    <li><a href="{% url 'logout' %}">Logout ({{ user.username }})</a></li>
+                {% else %}
+                    <li><a href="{% url 'login' %}">Login</a></li>
+                    <li><a href="{% url 'register' %}">Register</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% if messages %}
+            <div class="messages" id="messages-container">
+                {% for message in messages %}
+                    <div class="message {{ message.tags }}" data-message-type="{{ message.tags }}">
+                        <span style="flex: 1;">
+                            {% if 'safe' in message.tags %}
+                                {{ message|safe }}
+                            {% else %}
+                                {{ message }}
+                            {% endif %}
+                        </span>
+                        <button class="message-close" onclick="dismissMessage(this)" aria-label="Dismiss">×</button>
+                    </div>
+                {% endfor %}
+            </div>
+            <script>
+                // Auto-dismiss success and info messages after 5 seconds
+                document.addEventListener('DOMContentLoaded', function() {
+                    const messages = document.querySelectorAll('.message');
+                    messages.forEach(function(msg) {
+                        const type = msg.dataset.messageType;
+                        if (type && (type.includes('success') || type.includes('info'))) {
+                            setTimeout(function() {
+                                dismissMessage(msg.querySelector('.message-close'));
+                            }, 5000);
+                        }
+                    });
+                });
+
+                function dismissMessage(btn) {
+                    const message = btn.closest('.message');
+                    message.classList.add('dismissing');
+                    setTimeout(function() {
+                        message.remove();
+                        // Remove container if no messages left
+                        const container = document.getElementById('messages-container');
+                        if (container && container.children.length === 0) {
+                            container.remove();
+                        }
+                    }, 300);
+                }
+            </script>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    {% if user.is_authenticated %}
+    <!-- Auto-Logout Warning Modal -->
+    <div class="logout-warning-overlay" id="logout-warning-overlay">
+        <div class="logout-warning-modal">
+            <h2>⚠️ Session Timeout Warning</h2>
+            <p>You will be logged out due to inactivity in:</p>
+            <div class="timer" id="logout-timer">2:00</div>
+            <p style="font-size: 0.95rem; color: #777;">Click below to stay logged in.</p>
+            <div class="btn-group">
+                <button class="btn btn-success" onclick="stayLoggedIn()">Stay Logged In</button>
+                <button class="btn btn-secondary" onclick="logoutNow()">Logout Now</button>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+
+    {% if user.is_authenticated %}
+    <script>
+        let notificationSocket = null;
+
+        // Update notification badge count
+        async function updateBadge() {
+            try {
+                const response = await fetch('/schedule/notifications/api/list/');
+                const data = await response.json();
+                const count = data.notifications.filter(n => !n.is_read).length;
+                const badge = document.getElementById('notification-count');
+
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error updating badge:', error);
+            }
+        }
+
+        // Get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Connect to WebSocket for real-time notifications
+        function connectNotificationWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/queue-updates/`;
+
+            try {
+                notificationSocket = new WebSocket(wsUrl);
+
+                notificationSocket.onopen = function(e) {
+                    console.log('Notification WebSocket connected');
+                };
+
+                notificationSocket.onmessage = function(e) {
+                    const data = JSON.parse(e.data);
+
+                    if (data.message_type === 'notification') {
+                        // Update badge count
+                        updateBadge();
+
+                        // Show browser notification if permission granted
+                        if (Notification.permission === 'granted') {
+                            new Notification(data.title, {
+                                body: data.message,
+                                icon: '/static/bell-icon.png' // You can add an icon later
+                            });
+                        }
+                    }
+                };
+
+                notificationSocket.onclose = function(e) {
+                    console.log('Notification WebSocket disconnected');
+                    // Attempt to reconnect after 3 seconds
+                    setTimeout(connectNotificationWebSocket, 3000);
+                };
+
+                notificationSocket.onerror = function(e) {
+                    console.error('Notification WebSocket error:', e);
+                };
+            } catch (error) {
+                console.error('Error connecting to notification WebSocket:', error);
+            }
+        }
+
+        // Request browser notification permission
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateBadge();
+            connectNotificationWebSocket();
+        });
+
+        // ===== AUTO-LOGOUT INACTIVITY TRACKING =====
+        let inactivityTimer;
+        let warningTimer;
+        let countdownTimer;
+        let logoutCountdown = 120; // 2 minutes in seconds
+        const INACTIVITY_LIMIT = 28 * 60 * 1000; // 28 minutes in milliseconds
+        const WARNING_DURATION = 2 * 60 * 1000; // 2 minutes in milliseconds
+
+        // Reset inactivity timer on user activity
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer);
+            clearTimeout(warningTimer);
+            clearInterval(countdownTimer);
+            hideLogoutWarning();
+
+            // Start inactivity timer - show warning after 28 minutes
+            inactivityTimer = setTimeout(showLogoutWarning, INACTIVITY_LIMIT);
+        }
+
+        // Show the logout warning modal
+        function showLogoutWarning() {
+            const overlay = document.getElementById('logout-warning-overlay');
+            overlay.classList.add('active');
+
+            // Reset countdown
+            logoutCountdown = 120;
+            updateTimerDisplay();
+
+            // Start countdown
+            countdownTimer = setInterval(function() {
+                logoutCountdown--;
+                updateTimerDisplay();
+
+                if (logoutCountdown <= 0) {
+                    clearInterval(countdownTimer);
+                    logoutDueToInactivity();
+                }
+            }, 1000);
+
+            // Auto-logout after 2 more minutes
+            warningTimer = setTimeout(logoutDueToInactivity, WARNING_DURATION);
+        }
+
+        // Hide the logout warning modal
+        function hideLogoutWarning() {
+            const overlay = document.getElementById('logout-warning-overlay');
+            overlay.classList.remove('active');
+            clearInterval(countdownTimer);
+        }
+
+        // Update the countdown timer display
+        function updateTimerDisplay() {
+            const minutes = Math.floor(logoutCountdown / 60);
+            const seconds = logoutCountdown % 60;
+            const display = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+            document.getElementById('logout-timer').textContent = display;
+        }
+
+        // User clicked "Stay Logged In"
+        function stayLoggedIn() {
+            // Make a keep-alive request to extend session
+            fetch('{% url "home" %}', {
+                method: 'GET',
+                credentials: 'same-origin'
+            }).then(function() {
+                hideLogoutWarning();
+                resetInactivityTimer();
+            }).catch(function(error) {
+                console.error('Error extending session:', error);
+                // Still reset the timer even if request fails
+                hideLogoutWarning();
+                resetInactivityTimer();
+            });
+        }
+
+        // User clicked "Logout Now"
+        function logoutNow() {
+            window.location.href = '{% url "logout" %}';
+        }
+
+        // Auto-logout due to inactivity
+        function logoutDueToInactivity() {
+            // Store a message to show after redirect
+            sessionStorage.setItem('logout_message', 'You were logged out due to inactivity.');
+            window.location.href = '{% url "logout" %}';
+        }
+
+        // Only enable auto-logout for non-admin users
+        {% if not user.is_staff %}
+        // Track user activity events
+        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        activityEvents.forEach(function(eventName) {
+            document.addEventListener(eventName, resetInactivityTimer, true);
+        });
+
+        // Initialize the inactivity timer
+        resetInactivityTimer();
+
+        // Check if there's a logout message to display
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutMessage = sessionStorage.getItem('logout_message');
+            if (logoutMessage) {
+                sessionStorage.removeItem('logout_message');
+                // The message will be shown via Django messages framework on the next page
+            }
+        });
+        {% else %}
+        // Admin users are exempt from auto-logout
+        console.log('Auto-logout disabled for admin users');
+        {% endif %}
+    </script>
+    {% endif %}
+
+    <!-- Character Counter JavaScript -->
+    <script>
+        // Initialize character counters for all inputs with char-counter-input class
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('.char-counter-input');
+
+            inputs.forEach(function(input) {
+                // Create counter element
+                const counter = document.createElement('div');
+                counter.className = 'char-counter hidden';
+
+                // Insert counter after the input
+                if (input.parentNode) {
+                    // If there's a helptext after the input, insert before it
+                    const helptext = input.parentNode.querySelector('.helptext');
+                    if (helptext) {
+                        input.parentNode.insertBefore(counter, helptext);
+                    } else {
+                        input.parentNode.appendChild(counter);
+                    }
+                }
+
+                // Update counter function
+                function updateCounter() {
+                    const shortFields = ['title', 'name'];
+
+                    const maxLength = shortFields.includes(input.name)
+                        ? 75
+                        : parseInt(input.getAttribute('maxlength')) || 500;
+                    const currentLength = input.value.length;
+                    const remaining = maxLength - currentLength;
+
+                    // Only show counter when 25 or fewer characters remain
+                    if (remaining <= 25) {
+                        counter.classList.remove('hidden');
+                        counter.textContent = remaining + ' characters remaining';
+
+                        // Color coding
+                        if (remaining <= 10) {
+                            counter.classList.remove('warning');
+                            counter.classList.add('danger');
+                        } else {
+                            counter.classList.remove('danger');
+                            counter.classList.add('warning');
+                        }
+                    } else {
+                        counter.classList.add('hidden');
+                        counter.classList.remove('warning', 'danger');
+                    }
+                }
+
+                // Attach event listeners
+                input.addEventListener('input', updateCounter);
+                input.addEventListener('keyup', updateCounter);
+
+                // Initial update
+                updateCounter();
+            });
+        });
+    </script>
+
+    <script>
+        // Update machine temperatures and status from cached values (NO page refresh)
+        function updateMachineStatus() {
+            fetch('/schedule/api/machine-status/')
+                .then(response => response.json())
+                .then(data => {
+                    data.machines.forEach(machine => {
+                        // Find all cards for this machine
+                        const cards = document.querySelectorAll(`[data-machine-id="${machine.id}"]`);
+
+                        cards.forEach(card => {
+                            // Update temperature text only
+                            const tempEl = card.querySelector('.machine-temp');
+                            if (tempEl) {
+                                if (machine.temperature !== null) {
+                                    tempEl.innerHTML = machine.temperature.toFixed(2) + ' K';
+                                } else {
+                                    tempEl.innerHTML = '<span style="color: #999;">N/A</span>';
+                                }
+                            }
+
+                            // Update status text and color only
+                            const statusEl = card.querySelector('.machine-status');
+                            if (statusEl) {
+                                statusEl.textContent = machine.status;
+                                // Remove only status color classes, keep structure classes like status-badge
+                                statusEl.classList.remove('status-online', 'status-offline', 'status-maintenance',
+                                    'status-online-measuring', 'status-online-idle',
+                                    'status-offline-measuring', 'status-offline-idle', 'status-offline-maintenance',
+                                    'status-connected-measuring', 'status-connected-idle',
+                                    'status-disconnected-measuring', 'status-disconnected-idle', 'status-disconnected-maintenance');
+                                // Ensure status-badge class is present (for styling)
+                                if (!statusEl.classList.contains('status-badge')) {
+                                    statusEl.classList.add('status-badge');
+                                }
+                                // Convert status to CSS class (e.g., "Connected - Measuring" -> "status-connected-measuring")
+                                // First replace spaces with dashes, then collapse multiple consecutive dashes into one
+                                const statusClass = 'status-' + machine.status.toLowerCase().replace(/\s+/g, '-').replace(/-+/g, '-');
+                                statusEl.classList.add(statusClass);
+                            }
+                        });
+                    });
+                })
+                .catch(error => console.error('Error updating machine status:', error));
+        }
+
+        // Update temperatures every 10 seconds (just the text values, NOT the page)
+        setInterval(updateMachineStatus, 10000);
+    </script>
+</body>
+</html>

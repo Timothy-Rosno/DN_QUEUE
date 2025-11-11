@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}My Schedule - Scheduler App{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h1>My Schedule</h1>
+        <a href="{% url 'create_schedule' %}" class="btn">Create New Entry</a>
+    </div>
+
+    <h2 style="margin-top: 2rem; color: #27ae60;">Upcoming Events</h2>
+    {% if upcoming_entries %}
+        <div style="margin-top: 1rem;">
+            {% for entry in upcoming_entries %}
+                <div style="border: 1px solid #ddd; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; background-color: #f9f9f9;">
+                    <h3>{{ entry.title }}</h3>
+                    <p><strong>When:</strong> {{ entry.start_datetime|date:"F d, Y g:i A" }} - {{ entry.end_datetime|date:"g:i A" }}</p>
+                    {% if entry.location %}
+                        <p><strong>Location:</strong> {{ entry.location }}</p>
+                    {% endif %}
+                    <p><strong>Attendees:</strong> {{ entry.attendees }}</p>
+                    <p><strong>Status:</strong> <span style="color: {% if entry.status == 'confirmed' %}#27ae60{% elif entry.status == 'pending' %}#f39c12{% else %}#e74c3c{% endif %};">{{ entry.get_status_display }}</span></p>
+                    {% if entry.description %}
+                        <p><strong>Description:</strong> {{ entry.description }}</p>
+                    {% endif %}
+                    {% if entry.special_requirements %}
+                        <p><strong>Special Requirements:</strong> {{ entry.special_requirements }}</p>
+                    {% endif %}
+
+                    <div style="margin-top: 1rem;">
+                        <a href="{% url 'edit_schedule' entry.pk %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Edit</a>
+                        <a href="{% url 'delete_schedule' entry.pk %}" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.9rem; margin-left: 0.5rem;">Delete</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="margin-top: 1rem; color: #7f8c8d;">No upcoming events scheduled.</p>
+    {% endif %}
+
+    <h2 style="margin-top: 2rem; color: #95a5a6;">Past Events (Last 10)</h2>
+    {% if past_entries %}
+        <div style="margin-top: 1rem;">
+            {% for entry in past_entries %}
+                <div style="border: 1px solid #ddd; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; background-color: #ecf0f1; opacity: 0.8;">
+                    <h3>{{ entry.title }}</h3>
+                    <p><strong>When:</strong> {{ entry.start_datetime|date:"F d, Y g:i A" }}</p>
+                    {% if entry.location %}
+                        <p><strong>Location:</strong> {{ entry.location }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="margin-top: 1rem; color: #7f8c8d;">No past events.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,347 @@
+{% extends 'base.html' %}
+
+{% block title %}Rush Job Management - Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div id="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;">
+        <h1 style="margin: 0;">Rush Job Queue Management</h1>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <div style="background-color: #e74c3c; color: white; padding: 0.5rem 1rem; border-radius: 4px; font-weight: bold;">
+                {{ total_rush_jobs }} Active Rush Job{{ total_rush_jobs|pluralize }}
+            </div>
+        </div>
+    </div>
+
+    {% if total_rush_jobs == 0 %}
+        <div style="padding: 2rem; text-align: center; background-color: #f8f9fa; border-radius: 4px;">
+            <p style="color: #7f8c8d; font-size: 1.1rem; margin: 0;">No rush job appeals at this time.</p>
+        </div>
+    {% else %}
+        <p style="margin-bottom: 2rem; color: #7f8c8d;">
+            Below are all rush job appeals grouped by assigned machine. Use the controls to reorder queue positions as needed.
+        </p>
+
+        {% for machine_data in machines_with_rush_jobs %}
+            <div style="border: 2px solid #e74c3c; padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; background-color: #fff5f5;">
+                <h2 style="color: #e74c3c; margin-top: 0;">{{ machine_data.machine.name }}</h2>
+                <p style="margin-bottom: 1rem; color: #7f8c8d;">
+                    {{ machine_data.rush_entries|length }} rush job{{ machine_data.rush_entries|length|pluralize }} •
+                    Total queue size: {{ machine_data.all_queued_entries|length }}
+                </p>
+
+                <h3 style="margin-top: 1.5rem; color: #c0392b;">Rush Job Appeals:</h3>
+                {% for entry in machine_data.rush_entries %}
+                <div style="border: 2px solid #e74c3c; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; background-color: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                                <span style="background-color: #e74c3c; color: white; padding: 0.25rem 0.75rem; border-radius: 4px; font-weight: bold; font-size: 0.9rem;">
+                                    RUSH
+                                </span>
+                                <h4 style="margin: 0;">{{ entry.title }}</h4>
+                            </div>
+                            <p style="margin: 0.25rem 0;"><strong>User:</strong> {{ entry.user.username }} ({{ entry.user.email }})</p>
+                            <p style="margin: 0.25rem 0;"><strong>Queue Position:</strong> #{{ entry.queue_position }}</p>
+                            <p style="margin: 0.25rem 0;"><strong>Submitted:</strong> {{ entry.rush_job_submitted_at|date:"M d, Y g:i A" }}</p>
+                            {% if entry.estimated_start_time %}
+                            <p style="margin: 0.25rem 0;"><strong>Estimated Start:</strong> {{ entry.estimated_start_time|date:"M d, Y g:i A" }}</p>
+                            {% endif %}
+
+                            <div style="background-color: #f8f9fa; padding: 0.75rem; border-radius: 4px; margin: 0.75rem 0;">
+                                <strong>Description:</strong>
+                                <p style="margin: 0.5rem 0 0 0;">{{ entry.description }}</p>
+                            </div>
+
+                            <div style="background-color: #f8f9fa; padding: 0.75rem; border-radius: 4px; margin: 0.75rem 0;">
+                                <strong>Requirements:</strong>
+                                <ul style="margin: 0.5rem 0 0 1.5rem;">
+                                    <li>Temperature: {{ entry.required_min_temp }} K{% if entry.required_max_temp %} - {{ entry.required_max_temp }} K{% endif %}</li>
+                                    {% if entry.required_b_field_x or entry.required_b_field_y or entry.required_b_field_z %}
+                                    <li>B-field: {{ entry.required_b_field_x }}/{{ entry.required_b_field_y }}/{{ entry.required_b_field_z }} T
+                                        {% if entry.required_b_field_direction %}({{ entry.get_required_b_field_direction_display }}){% endif %}
+                                    </li>
+                                    {% endif %}
+                                    <li>Connections: {{ entry.required_dc_lines }} DC / {{ entry.required_rf_lines }} RF lines</li>
+                                    {% if entry.required_daughterboard %}
+                                    <li>Daughterboard: {{ entry.required_daughterboard }}</li>
+                                    {% endif %}
+                                    {% if entry.requires_optical %}
+                                    <li>Optical capabilities required</li>
+                                    {% endif %}
+                                    <li>Duration: {{ entry.estimated_duration_hours }} hours</li>
+                                </ul>
+                            </div>
+
+                            {% if entry.special_requirements %}
+                            <div style="background-color: #fff9e6; padding: 0.75rem; border-radius: 4px; margin: 0.75rem 0;">
+                                <strong>Special Requirements:</strong>
+                                <p style="margin: 0.5rem 0 0 0;">{{ entry.special_requirements }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div style="margin-left: 1rem; display: flex; flex-direction: column; gap: 0.5rem; min-width: 150px;">
+                            <div style="background-color: #ecf0f1; padding: 0.75rem; border-radius: 4px; text-align: center;">
+                                <strong>Queue Controls</strong>
+                            </div>
+
+                            <a href="{% url 'admin_move_queue' entry.id 'up' %}"
+                               class="btn"
+                               style="background-color: #3498db; color: white; text-align: center; padding: 0.5rem;"
+                               {% if entry.queue_position == 1 %}onclick="return confirm('Already at position 1.');" style="opacity: 0.5; pointer-events: none;"{% endif %}>
+                                ↑ Move Up
+                            </a>
+
+                            <a href="{% url 'admin_move_queue' entry.id 'down' %}"
+                               class="btn"
+                               style="background-color: #3498db; color: white; text-align: center; padding: 0.5rem;">
+                                ↓ Move Down
+                            </a>
+
+                            <form method="post" action="{% url 'admin_set_position' entry.id %}" style="margin-top: 0.5rem;">
+                                {% csrf_token %}
+                                <label style="font-size: 0.85rem; font-weight: bold; display: block; margin-bottom: 0.25rem;">Set Position:</label>
+                                <div style="display: flex; gap: 0.25rem;">
+                                    <input type="number"
+                                           name="new_position"
+                                           min="1"
+                                           max="{{ machine_data.all_queued_entries|length }}"
+                                           value="{{ entry.queue_position }}"
+                                           style="width: 60px; padding: 0.25rem; border: 1px solid #ddd; border-radius: 4px;">
+                                    <button type="submit"
+                                            class="btn"
+                                            style="background-color: #27ae60; color: white; padding: 0.25rem 0.5rem; font-size: 0.85rem;">
+                                        Set
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <h3 style="margin-top: 2rem; color: #7f8c8d;">Full Queue for {{ machine_data.machine.name }}:</h3>
+                <div style="background-color: white; padding: 1rem; border-radius: 4px; border: 1px solid #ddd;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background-color: #ecf0f1;">
+                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #bdc3c7;">Pos</th>
+                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #bdc3c7;">Title</th>
+                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #bdc3c7;">User</th>
+                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #bdc3c7;">Duration</th>
+                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #bdc3c7;">Est. Start</th>
+                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #bdc3c7;">Rush</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for queue_entry in machine_data.all_queued_entries %}
+                            <tr style="{% if queue_entry.is_rush_job %}background-color: #fff5f5;{% endif %}">
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #ecf0f1;">{{ queue_entry.queue_position }}</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #ecf0f1;">{{ queue_entry.title }}</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #ecf0f1;">{{ queue_entry.user.username }}</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #ecf0f1;">{{ queue_entry.estimated_duration_hours }}h</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #ecf0f1;">
+                                    {% if queue_entry.estimated_start_time %}
+                                        {{ queue_entry.estimated_start_time|date:"M d, g:i A" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #ecf0f1;">
+                                    {% if queue_entry.is_rush_job %}
+                                        <span style="background-color: #e74c3c; color: white; padding: 0.1rem 0.5rem; border-radius: 3px; font-size: 0.8rem; font-weight: bold;">RUSH</span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+
+<script>
+    // ===============================
+    // WebSocket Real-Time Updates
+    // ===============================
+
+    let socket = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    const currentUserId = {{ request.user.id }};
+    let reloadTimeout = null;
+
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/queue-updates/`;
+
+        try {
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = function(e) {
+                console.log('WebSocket connection established for admin dashboard');
+                reconnectAttempts = 0;
+                updateConnectionStatus('connected');
+            };
+
+            socket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                console.log('Received WebSocket message:', data);
+
+                if (data.message_type === 'queue_update') {
+                    handleQueueUpdate(data);
+                }
+            };
+
+            socket.onclose = function(e) {
+                console.log('WebSocket connection closed');
+                updateConnectionStatus('disconnected');
+
+                // Attempt to reconnect with exponential backoff
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 16000);
+                    console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
+                    updateConnectionStatus('reconnecting');
+                    setTimeout(connectWebSocket, delay);
+                } else {
+                    console.log('Max reconnection attempts reached. Real-time updates disabled.');
+                    updateConnectionStatus('offline');
+                }
+            };
+
+            socket.onerror = function(e) {
+                console.error('WebSocket error:', e);
+            };
+        } catch (error) {
+            console.error('Failed to create WebSocket:', error);
+            updateConnectionStatus('offline');
+        }
+    }
+
+    // Update connection status indicator
+    function updateConnectionStatus(status) {
+        let indicator = document.getElementById('ws-status-indicator');
+        if (!indicator) {
+            // Create status indicator if it doesn't exist
+            indicator = document.createElement('div');
+            indicator.id = 'ws-status-indicator';
+            indicator.style.cssText = 'padding: 8px 12px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; gap: 6px;';
+
+            // Insert into the page header's right-side container
+            const pageHeader = document.getElementById('page-header');
+            if (pageHeader) {
+                const rightContainer = pageHeader.querySelector('div');
+                if (rightContainer) {
+                    rightContainer.appendChild(indicator);
+                }
+            } else {
+                document.body.appendChild(indicator);
+            }
+        }
+
+        const statusConfig = {
+            connected: { text: 'Live Updates Active', color: '#27ae60', dot: '🟢' },
+            reconnecting: { text: 'Reconnecting...', color: '#f39c12', dot: '🟡' },
+            disconnected: { text: 'Disconnected', color: '#e74c3c', dot: '🔴' },
+            offline: { text: 'Offline (Refresh for updates)', color: '#95a5a6', dot: '⚫' }
+        };
+
+        const config = statusConfig[status] || statusConfig.offline;
+        indicator.innerHTML = `<span>${config.dot}</span><span>${config.text}</span>`;
+        indicator.style.backgroundColor = config.color + '22';
+        indicator.style.border = `1px solid ${config.color}`;
+        indicator.style.color = config.color;
+    }
+
+    // Handle queue updates from WebSocket (with notification banner)
+    function handleQueueUpdate(data) {
+        const triggeringUserId = data.triggering_user_id;
+
+        // Don't reload if current admin triggered the update
+        // (they're being redirected to this page anyway)
+        if (triggeringUserId === currentUserId) {
+            console.log('Ignoring self-triggered update - redirect will handle refresh');
+            return;
+        }
+
+        // Show notification banner instead of auto-reload
+        showQueueUpdateNotification();
+    }
+
+    // Show notification banner for queue updates
+    function showQueueUpdateNotification() {
+        let banner = document.getElementById('queue-update-banner');
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'queue-update-banner';
+            banner.style.cssText = 'background-color: #e74c3c; color: white; padding: 8px 12px; border-radius: 4px; display: flex; align-items: center; gap: 8px;';
+
+            const message = document.createElement('span');
+            message.textContent = 'Queue updated';
+            banner.appendChild(message);
+
+            const refreshBtn = document.createElement('button');
+            refreshBtn.textContent = 'Refresh';
+            refreshBtn.style.cssText = 'background-color: white; color: #e74c3c; border: none; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 11px;';
+            refreshBtn.onclick = function() {
+                location.reload();
+            };
+            banner.appendChild(refreshBtn);
+
+            const dismissBtn = document.createElement('button');
+            dismissBtn.textContent = '✕';
+            dismissBtn.style.cssText = 'background: none; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0 4px;';
+            dismissBtn.onclick = function() {
+                banner.remove();
+            };
+            banner.appendChild(dismissBtn);
+
+            // Insert into the page header's right-side container
+            const pageHeader = document.getElementById('page-header');
+            if (pageHeader) {
+                const rightContainer = pageHeader.querySelector('div');
+                if (rightContainer) {
+                    rightContainer.appendChild(banner);
+                }
+            } else {
+                document.body.appendChild(banner);
+            }
+        }
+    }
+
+    // Initialize WebSocket connection
+    connectWebSocket();
+</script>
+
+<style>
+.btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background-color: #3498db;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn:hover {
+    background-color: #2980b9;
+}
+
+.btn-danger {
+    background-color: #e74c3c;
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+}
+</style>
+{% endblock %}

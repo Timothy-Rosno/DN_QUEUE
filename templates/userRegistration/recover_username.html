@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Recover Username - Scheduler App{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 2rem auto;">
+    <h1>Recover Username</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">Enter your email address to retrieve your username.</p>
+
+    {% if found_username %}
+        <div style="margin: 1.5rem 0; padding: 1rem; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; color: #155724;">
+            <p style="margin: 0;"><strong>Your username is:</strong></p>
+            <p style="font-size: 1.2rem; font-weight: bold; margin: 0.5rem 0 0 0;">{{ found_username }}</p>
+        </div>
+
+        <div style="margin-top: 1.5rem;">
+            <a href="{% url 'login' %}" class="btn">Go to Login</a>
+            <a href="{% url 'recover_username' %}" class="btn btn-secondary" style="margin-left: 1rem;">Search Again</a>
+        </div>
+    {% else %}
+        <form method="post" style="margin-top: 1.5rem;">
+            {% csrf_token %}
+
+            <div style="margin-bottom: 1.5rem;">
+                <label for="email" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Email Address</label>
+                <input type="email" name="email" id="email" required
+                       style="width: 100%; padding: 0.75rem; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 1rem;"
+                       autofocus>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button type="submit" class="btn">Find Username</button>
+                <a href="{% url 'login' %}" class="btn btn-secondary">Back to Login</a>
+            </div>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

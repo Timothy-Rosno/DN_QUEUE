@@ -1,0 +1,414 @@
+{% extends 'base.html' %}
+
+{% block title %}Queue Status{% endblock %}
+
+{% block content %}
+<style>
+    .status-overview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .status-overview-card {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 1rem;
+    }
+
+    .status-overview-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .status-overview-machine-name {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-idle { background-color: #d1ecf1; color: #0c5460; }
+    .status-running { background-color: #d4edda; color: #155724; }
+    .status-cooldown { background-color: #fff3cd; color: #856404; }
+    .status-maintenance { background-color: #f8d7da; color: #721c24; }
+    .status-online { background-color: #d4edda; color: #155724; }
+    .status-offline { background-color: #f8d7da; color: #721c24; }
+    .status-connected-measuring { background-color: #5cb85c; color: white; }
+    .status-connected-idle { background-color: #5cb85c; color: white; }
+    .status-disconnected-measuring { background-color: #d9534f; color: white; }
+    .status-disconnected-idle { background-color: #d9534f; color: white; }
+    .status-disconnected-maintenance { background-color: #d9534f; color: white; }
+
+    .filter-bar {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+        align-items: center;
+    }
+
+    .filter-bar select {
+        padding: 0.5rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        min-width: 180px;
+    }
+
+    .countdown-timer {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+    }
+
+    .collapsible-section {
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .collapsible-section:hover {
+        opacity: 0.8;
+    }
+</style>
+
+<div class="card">
+    <h1>Queue Status</h1>
+    <p style="margin: 1rem 0;">View current queue status and machine availability</p>
+    <div style="margin-top: 1rem;">
+        <a href="{% url 'home' %}" class="btn btn-secondary">← Back to Home</a>
+        {% if user.is_authenticated %}
+            <a href="{% url 'submit_queue' %}?next=public_queue" class="btn">Submit Queue Request</a>
+            <a href="{% url 'my_queue' %}" class="btn btn-secondary">View My Queue</a>
+        {% endif %}
+    </div>
+</div>
+
+
+
+<!-- Filters -->
+<!-- <div class="card">
+    <h2 style="margin-bottom: 1rem;">Filter Machines</h2>
+    <form method="get" id="filter-form">
+        <div class="filter-bar">
+            <div>
+                <label for="machine-filter" style="display: block; font-size: 0.9rem; margin-bottom: 0.25rem; font-weight: 600;">Machine:</label>
+                <select name="machine" id="machine-filter" onchange="applyFilters()">
+                    <option value="all" {% if machine_filter == 'all' %}selected{% endif %}>All Machines</option>
+                    {% for machine in all_machines %}
+                    <option value="{{ machine.id }}" {% if machine_filter|stringformat:"s" == machine.id|stringformat:"s" %}selected{% endif %}>
+                        {{ machine.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="status-filter" style="display: block; font-size: 0.9rem; margin-bottom: 0.25rem; font-weight: 600;">Status:</label>
+                <select name="status" id="status-filter" onchange="applyFilters()">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
+                    <option value="idle" {% if status_filter == 'idle' %}selected{% endif %}>Idle</option>
+                    <option value="running" {% if status_filter == 'running' %}selected{% endif %}>Running</option>
+                    <option value="cooldown" {% if status_filter == 'cooldown' %}selected{% endif %}>Cooldown</option>
+                    <option value="maintenance" {% if status_filter == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                </select>
+            </div>
+
+            <div style="display: flex; align-items: flex-end;">
+                <button type="button" onclick="clearFilters()" class="btn btn-secondary" style="padding: 0.5rem 1rem;">
+                    Clear Filters
+                </button>
+            </div>
+        </div>
+    </form>
+</div> -->
+
+<!-- Machine Queue Details -->
+{% if machine_queue_data %}
+{% for data in machine_queue_data %}
+<div class="card" style="margin-bottom: 1.5rem;" id="machine-{{ data.machine.id }}" data-machine-id="{{ data.machine.id }}">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="margin: 0;">{{ data.machine.name }}</h2>
+        <span class="machine-status status-badge status-{{ data.display_status|lower|cut:' ' }}" style="padding: 0.5rem 1rem; border-radius: 20px; font-weight: bold;">
+            {{ data.display_status }}
+        </span>
+    </div>
+
+    <!-- Machine Wait Time Overview -->
+    <div style="background-color: #ecf0f1; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem;">
+            <div>
+                <strong style="color: #7f8c8d; font-size: 0.9rem;">Temperature:</strong>
+                <div class="machine-temp" style="font-size: 1.2rem; font-weight: bold; margin-top: 0.25rem;">
+                    {% if data.live_temp %}
+                        {{ data.live_temp|floatformat:2 }} K
+                    {% else %}
+                        <span style="color: #7f8c8d;">N/A</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <strong style="color: #7f8c8d; font-size: 0.9rem;">Total Queue Wait Time:</strong>
+                <div class="countdown-timer queue-wait-timer"
+                    style="font-family: inherit; font-size: 1.2rem; font-weight: 600; margin-top: 0.25rem; color: #2c3e50;"
+                    data-wait-seconds="{{ data.wait_time.total_seconds|floatformat:0 }}">
+                    {% if data.wait_time.total_seconds == 0 %}
+                        <span style="color: #27ae60;">Available Now</span>
+                    {% else %}
+                        <span style="color: #2c3e50;">Calculating...</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <strong style="color: #7f8c8d; font-size: 0.9rem;">Estimated Available:</strong>
+                <div style="font-size: 1.2rem; font-weight: bold; margin-top: 0.25rem;">
+                    {% if data.wait_time.total_seconds == 0 %}
+                        <span style="color: #27ae60;">Now</span>
+                    {% elif data.estimated_available_time %}
+                        {{ data.estimated_available_time|date:"M d, g:i A" }}
+                    {% else %}
+                        <span style="color: #7f8c8d;">—</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <strong style="color: #7f8c8d; font-size: 0.9rem;">Queue Size:</strong>
+                <div style="font-size: 1.2rem; font-weight: bold; margin-top: 0.25rem;">
+                    {{ data.queue_count|default:0 }} {{ data.queue_count|pluralize:"entry,entries" }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Running Entry -->
+    {% if data.running_entry %}
+    <div style="background-color: #fff3cd; border: 2px solid #f39c12; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="flex: 1;">
+                <strong style="color: #856404;">Currently Running:</strong>
+                <div style="margin-top: 0.25rem;">
+                    <strong>{{ data.running_entry.title }}</strong> ({{ data.running_entry.user.username }})
+                </div>
+                <div style="color: #856404; font-size: 0.9rem; margin-top: 0.25rem;">
+                    Started: {{ data.running_entry.started_at|date:"M d, g:i A" }}
+                </div>
+                <div style="color: #856404; font-size: 0.9rem; margin-top: 0.25rem;">
+                    <strong>Time Remaining:</strong>
+                    <span class="countdown-timer"
+                          style="font-family: inherit; font-weight: normal;"
+                          data-end-time="{{ data.running_entry.started_at|date:'c' }}"
+                          data-duration="{{ data.running_entry.estimated_duration_hours }}">
+                        Calculating...
+                    </span>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div style="color: #856404; font-size: 0.85rem;">Estimated Duration</div>
+                <div style="font-size: 1.3rem; font-weight: bold; color: #e67e22;">
+                    {{ data.running_entry.estimated_duration_hours }} hours
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Queue Entries -->
+    <div>
+        <h3 style="margin-bottom: 0.5rem;">Queue ({{ data.queue_count }} total)</h3>
+        {% if data.queue_entries %}
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #ecf0f1;">
+                        <th style="padding: 0.5rem; text-align: left; width: 60px;">Pos</th>
+                        <th style="padding: 0.5rem; text-align: left;">Experiment</th>
+                        <th style="padding: 0.5rem; text-align: left;">User</th>
+                        <th style="padding: 0.5rem; text-align: left;">Min Temp (K)</th>
+                        <th style="padding: 0.5rem; text-align: left;">Duration (hrs)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in data.queue_entries %}
+                    <tr style="border-bottom: 1px solid #ddd; {% if user.is_authenticated and entry.user == user %}background-color: #e8f4f8;{% endif %}">
+                        <td style="padding: 0.5rem; font-weight: bold;">
+                            {% if entry.queue_position == 1 %}
+                                {{ entry.queue_position }}
+                            {% else %}
+                                {{ entry.queue_position }}
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.5rem;">
+                            {{ entry.title }}
+                            {% if user.is_authenticated and entry.user == user %}
+                                <span style="background-color: #3498db; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">YOUR ENTRY</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.5rem;">{{ entry.user.username }}</td>
+                        <td style="padding: 0.5rem;">{{ entry.required_min_temp }}</td>
+                        <td style="padding: 0.5rem;">{{ entry.estimated_duration_hours }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="color: #7f8c8d;">No entries in queue - machine is available!</p>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="card">
+    <p style="color: #7f8c8d; text-align: center;">No machines match the selected filters.</p>
+</div>
+{% endif %}
+
+<script>
+    // Store scroll position before filter change
+    let scrollPosition = 0;
+
+    function applyFilters() {
+        scrollPosition = window.scrollY;
+        sessionStorage.setItem('scrollPosition', scrollPosition);
+        document.getElementById('filter-form').submit();
+    }
+
+    function clearFilters() {
+        document.getElementById('machine-filter').value = 'all';
+        document.getElementById('status-filter').value = 'all';
+        applyFilters();
+    }
+
+    // Restore scroll position after page load
+    window.addEventListener('load', function() {
+        const savedPosition = sessionStorage.getItem('scrollPosition');
+        if (savedPosition) {
+            window.scrollTo(0, parseInt(savedPosition));
+            sessionStorage.removeItem('scrollPosition');
+        }
+    });
+
+    // Collapsible section toggle
+    function toggleSection(sectionId) {
+        const section = document.getElementById(sectionId);
+        const icon = document.getElementById(sectionId + '-icon');
+        if (section.style.display === 'none') {
+            section.style.display = 'block';
+            icon.textContent = '▼';
+        } else {
+            section.style.display = 'none';
+            icon.textContent = '►';
+        }
+    }
+
+    // Live countdown timer functionality
+    function updateCountdowns() {
+        // Update running job countdowns
+        document.querySelectorAll('.countdown-timer[data-end-time]').forEach(function(timer) {
+            const startTime = new Date(timer.dataset.endTime);
+            const durationHours = parseFloat(timer.dataset.duration);
+            const endTime = new Date(startTime.getTime() + (durationHours * 60 * 60 * 1000));
+            const now = new Date();
+            const remaining = endTime - now;
+
+            if (remaining <= 0) {
+                timer.textContent = 'Completed';
+                timer.style.color = '#27ae60';
+            } else {
+                const hours = Math.floor(remaining / (1000 * 60 * 60));
+                const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+                timer.textContent = `${hours}h ${minutes}m ${seconds}s remaining`;
+            }
+        });
+
+        // Update queue wait time displays
+        document.querySelectorAll('.queue-wait-timer[data-wait-seconds]').forEach(function(timer) {
+            const totalSeconds = parseInt(timer.dataset.waitSeconds);
+            if (totalSeconds > 0) {
+                const days = Math.floor(totalSeconds / 86400);
+                const hours = Math.floor((totalSeconds % 86400) / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+                let displayText = '';
+                if (days > 0) {
+                    displayText = `${days}d ${hours}h`;
+                } else if (hours > 0) {
+                    displayText = `${hours}h ${minutes}m`;
+                } else {
+                    displayText = `${minutes}m`;
+                }
+                timer.textContent = displayText;
+            }
+        });
+    }
+
+    // Update countdowns every second
+    setInterval(updateCountdowns, 1000);
+    updateCountdowns(); // Initial update
+
+    // WebSocket connection for real-time updates
+    let socket = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/queue-updates/`;
+
+        try {
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = function(e) {
+                console.log('WebSocket connection established');
+                reconnectAttempts = 0;
+            };
+
+            socket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                console.log('Received queue update:', data);
+
+                // Reload page on any queue update to show latest status
+                if (data.message_type === 'queue_update') {
+                    location.reload();
+                }
+            };
+
+            socket.onclose = function(e) {
+                console.log('WebSocket connection closed');
+
+                // Attempt to reconnect with exponential backoff
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 16000);
+                    console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
+                    setTimeout(connectWebSocket, delay);
+                }
+            };
+
+            socket.onerror = function(e) {
+                console.error('WebSocket error:', e);
+            };
+        } catch (error) {
+            console.error('Failed to create WebSocket:', error);
+        }
+    }
+
+    // Initialize WebSocket connection
+    connectWebSocket();
+
+    // Fallback: Auto-refresh every 60 seconds if WebSocket fails
+    setInterval(function() {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+            location.reload();
+        }
+    }, 60000);
+</script>
+{% endblock %}

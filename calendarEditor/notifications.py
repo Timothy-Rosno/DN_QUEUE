@@ -1,0 +1,757 @@
+"""
+Notification system helpers for creating and managing user notifications.
+"""
+from django.contrib.auth.models import User
+from django.db.models import Q
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from django.conf import settings
+import requests
+from .models import Notification, NotificationPreference, QueueEntry, QueuePreset, Machine
+
+
+def lookup_slack_member_id(user):
+    """
+    Automatically look up a user's Slack member ID using Slack API.
+    Tries in order: Django user ID → email → display name
+
+    Args:
+        user: Django User object
+
+    Returns:
+        str: Slack member ID (e.g., 'U01234ABCD') or None if not found
+    """
+    if not settings.SLACK_ENABLED:
+        return None
+
+    try:
+        # Get all users from Slack
+        response = requests.get(
+            'https://slack.com/api/users.list',
+            headers={
+                'Authorization': f'Bearer {settings.SLACK_BOT_TOKEN}',
+            },
+            timeout=10
+        )
+
+        result = response.json()
+        if not result.get('ok'):
+            print(f"Slack API error in users.list: {result.get('error', 'Unknown error')}")
+            return None
+
+        slack_users = result.get('members', [])
+
+        # Strategy 1: Try to match by email
+        if user.email:
+            for slack_user in slack_users:
+                if not slack_user.get('deleted') and not slack_user.get('is_bot'):
+                    profile = slack_user.get('profile', {})
+                    if profile.get('email', '').lower() == user.email.lower():
+                        member_id = slack_user.get('id')
+                        print(f"Found Slack member ID for {user.username} by email: {member_id}")
+                        return member_id
+
+        # Strategy 2: Try to match by display name or real name
+        user_full_name = f"{user.first_name} {user.last_name}".strip().lower()
+        if user_full_name:
+            for slack_user in slack_users:
+                if not slack_user.get('deleted') and not slack_user.get('is_bot'):
+                    profile = slack_user.get('profile', {})
+                    slack_real_name = profile.get('real_name', '').lower()
+                    slack_display_name = profile.get('display_name', '').lower()
+
+                    if user_full_name == slack_real_name or user_full_name == slack_display_name:
+                        member_id = slack_user.get('id')
+                        print(f"Found Slack member ID for {user.username} by name: {member_id}")
+                        return member_id
+
+        # Strategy 3: Try to match by username
+        if user.username:
+            for slack_user in slack_users:
+                if not slack_user.get('deleted') and not slack_user.get('is_bot'):
+                    slack_name = slack_user.get('name', '').lower()
+                    profile = slack_user.get('profile', {})
+                    slack_display_name = profile.get('display_name', '').lower()
+
+                    if user.username.lower() == slack_name or user.username.lower() == slack_display_name:
+                        member_id = slack_user.get('id')
+                        print(f"Found Slack member ID for {user.username} by username: {member_id}")
+                        return member_id
+
+        print(f"Could not find Slack member ID for {user.username}")
+        return None
+
+    except Exception as e:
+        print(f"Error looking up Slack member ID for {user.username}: {e}")
+        return None
+
+
+def send_slack_dm(user, title, message, notification=None):
+    """
+    Send a Slack direct message to a user with a secure login link.
+    Automatically looks up and caches Slack member ID if not set.
+
+    Args:
+        user: Django User object
+        title: Notification title
+        message: Notification message
+        notification: Optional Notification object (for generating secure login link)
+
+    Returns:
+        bool: True if sent successfully, False otherwise
+    """
+    if not settings.SLACK_ENABLED:
+        return False
+
+    try:
+        # Check if user has profile
+        if not hasattr(user, 'profile'):
+            return False
+
+        slack_member_id = user.profile.slack_member_id
+
+        # If no member ID set, try to look it up automatically
+        if not slack_member_id:
+            slack_member_id = lookup_slack_member_id(user)
+            if slack_member_id:
+                # Cache the found member ID
+                user.profile.slack_member_id = slack_member_id
+                user.profile.save()
+                print(f"Cached Slack member ID for {user.username}: {slack_member_id}")
+            else:
+                # Couldn't find member ID
+                return False
+
+        # Format message for Slack
+        slack_text = f"*{title}*\n{message}"
+
+        # Add secure login link if notification is provided
+        if notification:
+            from .models import OneTimeLoginToken
+            from django.urls import reverse
+
+            # Get the action URL for this notification
+            action_url = notification.get_notification_url()
+
+            # Create a secure one-time login token
+            login_token = OneTimeLoginToken.create_for_notification(
+                user=user,
+                notification=notification,
+                redirect_url=action_url
+            )
+
+            # Build the full URL with token
+            token_path = reverse('token_login', kwargs={'token': login_token.token})
+            full_url = f"{settings.BASE_URL}{token_path}"
+
+            # Append link to message
+            slack_text += f"\n\n<{full_url}|View Details>"
+
+        # Send message via Slack API
+        response = requests.post(
+            'https://slack.com/api/chat.postMessage',
+            headers={
+                'Authorization': f'Bearer {settings.SLACK_BOT_TOKEN}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'channel': slack_member_id,  # DM using member ID
+                'text': slack_text,
+                'unfurl_links': False,
+                'unfurl_media': False
+            },
+            timeout=5
+        )
+
+        result = response.json()
+        if not result.get('ok'):
+            print(f"Slack API error: {result.get('error', 'Unknown error')}")
+            return False
+
+        return True
+
+    except Exception as e:
+        print(f"Failed to send Slack DM to {user.username}: {e}")
+        return False
+
+
+def create_notification(recipient, notification_type, title, message, **kwargs):
+    """
+    Create a notification for a user and send via WebSocket and Slack.
+
+    Args:
+        recipient: User object who will receive the notification
+        notification_type: Type of notification (from Notification.NOTIFICATION_TYPES)
+        title: Short title for the notification
+        message: Detailed message
+        **kwargs: Optional related objects (related_preset, related_queue_entry, related_machine, triggering_user)
+
+    Returns:
+        Notification object
+    """
+    notification = Notification.objects.create(
+        recipient=recipient,
+        notification_type=notification_type,
+        title=title,
+        message=message,
+        related_preset=kwargs.get('related_preset'),
+        related_queue_entry=kwargs.get('related_queue_entry'),
+        related_machine=kwargs.get('related_machine'),
+        triggering_user=kwargs.get('triggering_user'),
+    )
+
+    # Send via WebSocket
+    try:
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'user_{recipient.id}_notifications',
+            {
+                'type': 'notification',
+                'notification_id': notification.id,
+                'notification_type': notification_type,
+                'title': title,
+                'message': message,
+                'created_at': notification.created_at.isoformat(),
+            }
+        )
+    except Exception as e:
+        print(f"Failed to send notification via WebSocket: {e}")
+
+    # Send via Slack if enabled and user has Slack ID
+    if settings.SLACK_ENABLED:
+        send_slack_dm(recipient, title, message, notification)
+
+    return notification
+
+
+def notify_preset_created(preset, triggering_user):
+    """Notify users about a newly created public preset."""
+    if not preset.is_public:
+        return
+
+    # Get all users except the creator
+    if preset.creator:
+        users = User.objects.exclude(id=preset.creator.id).filter(is_active=True)
+    else:
+        users = User.objects.filter(is_active=True)
+
+    for user in users:
+        prefs = NotificationPreference.get_or_create_for_user(user)
+        if prefs.notify_public_preset_created and prefs.in_app_notifications:
+            create_notification(
+                recipient=user,
+                notification_type='preset_created',
+                title='New Public Preset Created',
+                message=f'{triggering_user.username} created public preset "{preset.display_name}"',
+                related_preset=preset,
+                triggering_user=triggering_user,
+            )
+
+
+def notify_preset_edited(preset, triggering_user):
+    """Notify users about preset edits."""
+    notified_users = set()  # Track who we've notified to avoid duplicates
+
+    if preset.is_public:
+        # First, notify users following this specific preset
+        followers = preset.followers.exclude(user=triggering_user).filter(user__is_active=True)
+        for prefs in followers:
+            user = prefs.user
+            if prefs.notify_followed_preset_edited and prefs.in_app_notifications:
+                create_notification(
+                    recipient=user,
+                    notification_type='preset_edited',
+                    title='Followed Preset Updated',
+                    message=f'{triggering_user.username} edited public preset "{preset.display_name}" that you follow',
+                    related_preset=preset,
+                    triggering_user=triggering_user,
+                )
+                notified_users.add(user.id)
+
+        # Then, notify all other users with public preset edit notifications enabled
+        # (excluding followers to avoid duplicate notifications)
+        users = User.objects.exclude(id=triggering_user.id).filter(is_active=True).exclude(id__in=notified_users)
+        for user in users:
+            prefs = NotificationPreference.get_or_create_for_user(user)
+            if prefs.notify_public_preset_edited and prefs.in_app_notifications:
+                create_notification(
+                    recipient=user,
+                    notification_type='preset_edited',
+                    title='Public Preset Updated',
+                    message=f'{triggering_user.username} edited public preset "{preset.display_name}"',
+                    related_preset=preset,
+                    triggering_user=triggering_user,
+                )
+    else:
+        # Private preset - notify the owner if someone else edited it
+        if preset.creator and preset.creator != triggering_user:
+            prefs = NotificationPreference.get_or_create_for_user(preset.creator)
+            if prefs.notify_private_preset_edited and prefs.in_app_notifications:
+                create_notification(
+                    recipient=preset.creator,
+                    notification_type='preset_edited',
+                    title='Your Private Preset Was Edited',
+                    message=f'{triggering_user.username} edited your private preset "{preset.display_name}"',
+                    related_preset=preset,
+                    triggering_user=triggering_user,
+                )
+
+
+def notify_preset_deleted(preset_data, triggering_user):
+    """
+    Notify users about preset deletion.
+
+    Args:
+        preset_data: Dict with preset info (since preset is deleted, we can't use the object)
+                    Should contain: 'display_name', 'is_public', 'creator_id', 'follower_ids' (optional)
+        triggering_user: User who deleted the preset
+    """
+    if preset_data.get('is_public'):
+        notified_users = set()  # Track who we've notified to avoid duplicates
+
+        # First, notify users who were following this preset
+        follower_ids = preset_data.get('follower_ids', [])
+        if follower_ids:
+            followers = User.objects.filter(id__in=follower_ids, is_active=True).exclude(id=triggering_user.id)
+            for user in followers:
+                prefs = NotificationPreference.get_or_create_for_user(user)
+                if prefs.notify_followed_preset_deleted and prefs.in_app_notifications:
+                    create_notification(
+                        recipient=user,
+                        notification_type='preset_deleted',
+                        title='Followed Preset Deleted',
+                        message=f'{triggering_user.username} deleted public preset "{preset_data["display_name"]}" that you were following',
+                        triggering_user=triggering_user,
+                    )
+                    notified_users.add(user.id)
+
+        # Then, notify all other users with public preset deletion notifications enabled
+        # (excluding followers to avoid duplicate notifications)
+        users = User.objects.exclude(id=triggering_user.id).filter(is_active=True).exclude(id__in=notified_users)
+        for user in users:
+            prefs = NotificationPreference.get_or_create_for_user(user)
+            if prefs.notify_public_preset_deleted and prefs.in_app_notifications:
+                create_notification(
+                    recipient=user,
+                    notification_type='preset_deleted',
+                    title='Public Preset Deleted',
+                    message=f'{triggering_user.username} deleted public preset "{preset_data["display_name"]}"',
+                    triggering_user=triggering_user,
+                )
+    else:
+        # Private preset - notify the owner if someone else deleted it
+        creator_id = preset_data.get('creator_id')
+        if creator_id and creator_id != triggering_user.id:
+            try:
+                creator = User.objects.get(id=creator_id)
+                prefs = NotificationPreference.get_or_create_for_user(creator)
+                if prefs.notify_private_preset_edited and prefs.in_app_notifications:
+                    create_notification(
+                        recipient=creator,
+                        notification_type='preset_deleted',
+                        title='Your Private Preset Was Deleted',
+                        message=f'{triggering_user.username} deleted your private preset "{preset_data["display_name"]}"',
+                        triggering_user=triggering_user,
+                    )
+            except User.DoesNotExist:
+                pass
+
+
+def notify_on_deck(queue_entry):
+    """
+    Notify a user that they're now ON DECK (position #1 in queue).
+    This is a high-priority notification.
+    """
+    user = queue_entry.user
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    if prefs.notify_on_deck and prefs.in_app_notifications:
+        create_notification(
+            recipient=user,
+            notification_type='on_deck',
+            title=f'ON DECK - You\'re Next!',
+            message=f'Your request "{queue_entry.title}" is now #1 in line for {queue_entry.assigned_machine.name}. Get ready!',
+            related_queue_entry=queue_entry,
+            related_machine=queue_entry.assigned_machine,
+        )
+
+
+def notify_bumped_from_on_deck(queue_entry, reason='priority request'):
+    """
+    Notify a user that they were bumped from ON DECK position (position #1).
+    This is always sent regardless of user preferences since it's critical info.
+
+    Args:
+        queue_entry: The QueueEntry that was bumped from position #1
+        reason: Reason for being bumped (e.g., 'priority request', 'rush job', 'admin action')
+    """
+    user = queue_entry.user
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    if prefs.in_app_notifications:
+        create_notification(
+            recipient=user,
+            notification_type='queue_moved',
+            title=f'Queue Position Changed',
+            message=f'Your request "{queue_entry.title}" was moved from position #1 due to a {reason} taking precedence on {queue_entry.assigned_machine.name}. We apologize for the inconvenience. You are now at position #{queue_entry.queue_position}.',
+            related_queue_entry=queue_entry,
+            related_machine=queue_entry.assigned_machine,
+        )
+
+
+def notify_ready_for_check_in(queue_entry):
+    """
+    Notify user when the machine becomes available and they can check in.
+
+    This is the primary "Time for Check-In" notification sent when:
+    - User is at position #1 (ON DECK)
+    - Machine status changes to 'idle' (becomes available)
+    - Previous job completes or is cancelled
+
+    This is a REQUIRED notification (replaces the old job_started confirmation).
+    """
+    user = queue_entry.user
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    if prefs.notify_ready_for_check_in and prefs.in_app_notifications:
+        create_notification(
+            recipient=user,
+            notification_type='ready_for_check_in',
+            title='Ready for Check-In!',
+            message=f'The machine {queue_entry.assigned_machine.name} is now available. You can check in to start your measurement "{queue_entry.title}"!',
+            related_queue_entry=queue_entry,
+            related_machine=queue_entry.assigned_machine,
+        )
+
+
+def notify_queue_position_change(queue_entry, old_position, new_position):
+    """Notify user when their queue position changes."""
+    user = queue_entry.user
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    if prefs.notify_queue_position_change and prefs.in_app_notifications:
+        direction = "up" if new_position < old_position else "down"
+        create_notification(
+            recipient=user,
+            notification_type='queue_moved',
+            title=f'Queue Position Changed',
+            message=f'Your request "{queue_entry.title}" moved {direction} from position #{old_position} to #{new_position} on {queue_entry.assigned_machine.name}',
+            related_queue_entry=queue_entry,
+            related_machine=queue_entry.assigned_machine,
+        )
+
+
+def notify_machine_queue_addition(queue_entry, triggering_user):
+    """Notify users waiting in the same machine queue about a new addition."""
+    machine = queue_entry.assigned_machine
+
+    # Get all users with queued entries on this machine (excluding the new entry's user)
+    affected_users = User.objects.filter(
+        queue_entries__assigned_machine=machine,
+        queue_entries__status='queued'
+    ).exclude(id=queue_entry.user.id).distinct()
+
+    for user in affected_users:
+        prefs = NotificationPreference.get_or_create_for_user(user)
+        if prefs.notify_machine_queue_changes and prefs.in_app_notifications:
+            create_notification(
+                recipient=user,
+                notification_type='queue_added',
+                title='New Entry Added to Queue',
+                message=f'{triggering_user.username} added "{queue_entry.title}" to {machine.name} queue',
+                related_queue_entry=queue_entry,
+                related_machine=machine,
+                triggering_user=triggering_user,
+            )
+
+
+def notify_checkout_reminder(queue_entry):
+    """
+    Notify user when their estimated measurement time has elapsed and they should check out.
+
+    This notification is sent when:
+    - Timeout expires (called by Celery scheduled task)
+    - Machine status changes to 'idle' unexpectedly while job is running
+
+    This notification is NOT sent when:
+    - User manually checks out via the button
+
+    This is a REQUIRED notification (user preference notify_checkout_reminder).
+    """
+    user = queue_entry.user
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    if prefs.notify_checkout_reminder and prefs.in_app_notifications:
+        create_notification(
+            recipient=user,
+            notification_type='checkout_reminder',
+            title='Time for Check-Out!',
+            message=f'Your estimated measurement time has elapsed for "{queue_entry.title}" on {queue_entry.assigned_machine.name}. Please check out if you\'re finished!',
+            related_queue_entry=queue_entry,
+            related_machine=queue_entry.assigned_machine,
+        )
+
+
+def notify_machine_status_changed(queue_entry, admin_user):
+    """
+    Notify user when admin changes machine status to idle while they have a running measurement.
+
+    This is sent when the machine becomes idle (due to admin action) and the user
+    needs to check out their measurement.
+
+    Args:
+        queue_entry: The QueueEntry that is running
+        admin_user: The admin User who changed the machine status
+    """
+    user = queue_entry.user
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    if prefs.notify_machine_status_change and prefs.in_app_notifications:
+        create_notification(
+            recipient=user,
+            notification_type='machine_status_changed',
+            title='Time to Check Out',
+            message=f'Administrator {admin_user.username} changed the machine status to idle. Please check out from "{queue_entry.title}" on {queue_entry.assigned_machine.name}.',
+            related_queue_entry=queue_entry,
+            related_machine=queue_entry.assigned_machine,
+            triggering_user=admin_user,
+        )
+
+
+def notify_admin_check_in(queue_entry, admin_user):
+    """
+    Notify user when an admin checks them in.
+
+    This notification informs the user that their measurement was started by an administrator.
+
+    Args:
+        queue_entry: The QueueEntry that was checked in
+        admin_user: The admin User who performed the check-in
+    """
+    user = queue_entry.user
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    if prefs.notify_admin_check_in and prefs.in_app_notifications:
+        create_notification(
+            recipient=user,
+            notification_type='admin_check_in',
+            title='Admin Check-In',
+            message=f'Administrator {admin_user.username} checked you in to start "{queue_entry.title}" on {queue_entry.assigned_machine.name}.',
+            related_queue_entry=queue_entry,
+            related_machine=queue_entry.assigned_machine,
+            triggering_user=admin_user,
+        )
+
+
+def notify_admin_checkout(queue_entry, admin_user):
+    """
+    Notify user when an admin checks them out.
+
+    This notification informs the user that their measurement was ended by an administrator.
+
+    Args:
+        queue_entry: The QueueEntry that was checked out
+        admin_user: The admin User who performed the checkout
+    """
+    user = queue_entry.user
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    if prefs.notify_admin_checkout and prefs.in_app_notifications:
+        create_notification(
+            recipient=user,
+            notification_type='admin_checkout',
+            title='Admin Check-Out',
+            message=f'Administrator {admin_user.username} checked you out from "{queue_entry.title}" on {queue_entry.assigned_machine.name}.',
+            related_queue_entry=queue_entry,
+            related_machine=queue_entry.assigned_machine,
+            triggering_user=admin_user,
+        )
+
+
+def notify_admin_edit_entry(queue_entry, admin_user, changes_summary):
+    """
+    Notify user when an admin edits their queue entry.
+
+    This notification informs the user that their queue entry was modified by an administrator.
+
+    Args:
+        queue_entry: The QueueEntry that was edited
+        admin_user: The admin User who performed the edit
+        changes_summary: String describing what was changed (e.g., "title, machine assignment")
+    """
+    user = queue_entry.user
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    if prefs.notify_admin_edit_entry and prefs.in_app_notifications:
+        create_notification(
+            recipient=user,
+            notification_type='admin_edit_entry',
+            title='Admin Edited Your Entry',
+            message=f'Administrator {admin_user.username} edited your queue entry "{queue_entry.title}". Changes: {changes_summary}',
+            related_queue_entry=queue_entry,
+            related_machine=queue_entry.assigned_machine,
+            triggering_user=admin_user,
+        )
+
+
+def check_and_notify_on_deck_status(machine):
+    """
+    Check if there's a queue entry at position #1 for this machine and notify the user.
+
+    Notification logic:
+    - If machine is idle: Send "Ready for Check-In" notification
+    - If machine is not idle (running, cooldown, maintenance): Send "On Deck" notification
+
+    This is called after queue reordering or when an entry completes.
+    """
+    try:
+        # Get the entry at position #1
+        on_deck_entry = QueueEntry.objects.filter(
+            assigned_machine=machine,
+            status='queued',
+            queue_position=1
+        ).first()
+
+        if on_deck_entry:
+            # Check machine status to determine which notification to send
+            if machine.current_status == 'idle':
+                # Machine is available - user can check in immediately
+                notify_ready_for_check_in(on_deck_entry)
+            else:
+                # Machine is busy - user is on deck but must wait
+                notify_on_deck(on_deck_entry)
+    except Exception as e:
+        print(f"Error checking ON DECK status: {e}")
+
+
+def get_unread_count(user):
+    """Get count of unread notifications for a user."""
+    return Notification.objects.filter(recipient=user, is_read=False).count()
+
+
+def mark_notification_read(notification_id, user):
+    """Mark a notification as read."""
+    try:
+        notification = Notification.objects.get(id=notification_id, recipient=user)
+        notification.is_read = True
+        notification.save()
+        return True
+    except Notification.DoesNotExist:
+        return False
+
+
+def mark_all_read(user):
+    """Mark all notifications as read for a user."""
+    Notification.objects.filter(recipient=user, is_read=False).update(is_read=True)
+
+
+def notify_admins_new_user(new_user):
+    """
+    Notify all admin/staff users when a new user signs up.
+
+    Args:
+        new_user: The User object that was just created
+    """
+    # Get all staff/admin users
+    admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
+
+    for admin in admin_users:
+        prefs = NotificationPreference.get_or_create_for_user(admin)
+        if prefs.notify_admin_new_user and prefs.in_app_notifications:
+            create_notification(
+                recipient=admin,
+                notification_type='admin_new_user',
+                title='New User Signup',
+                message=f'New user "{new_user.username}" has signed up and is pending approval.',
+                triggering_user=new_user,
+            )
+
+
+def notify_admins_rush_job(queue_entry):
+    """
+    Notify all admin/staff users when a rush job is submitted.
+
+    Args:
+        queue_entry: The QueueEntry that was marked as rush job
+    """
+    # Get all staff/admin users
+    admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
+
+    for admin in admin_users:
+        prefs = NotificationPreference.get_or_create_for_user(admin)
+        if prefs.notify_admin_rush_job and prefs.in_app_notifications:
+            create_notification(
+                recipient=admin,
+                notification_type='admin_rush_job',
+                title='Rush Job Submitted',
+                message=f'{queue_entry.user.username} submitted a rush job request for "{queue_entry.title}" on {queue_entry.assigned_machine.name}. Review needed.',
+                related_queue_entry=queue_entry,
+                related_machine=queue_entry.assigned_machine,
+                triggering_user=queue_entry.user,
+            )
+
+
+def notify_admins_rush_job_deleted(queue_entry_title, machine_name, deleting_user):
+    """
+    Notify all admin/staff users when a rush job is deleted/cancelled by a user.
+
+    Args:
+        queue_entry_title: Title of the deleted rush job
+        machine_name: Name of the machine the job was for
+        deleting_user: User who deleted the rush job
+    """
+    # Get all staff/admin users
+    admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
+
+    for admin in admin_users:
+        prefs = NotificationPreference.get_or_create_for_user(admin)
+        if prefs.notify_admin_rush_job and prefs.in_app_notifications:
+            create_notification(
+                recipient=admin,
+                notification_type='admin_rush_job',
+                title='Rush Job Cancelled',
+                message=f'{deleting_user.username} cancelled their rush job request: "{queue_entry_title}" for {machine_name}.',
+                triggering_user=deleting_user,
+            )
+
+
+def auto_clear_notifications(notification_type=None, related_queue_entry=None,
+                             related_preset=None, triggering_user=None, recipient=None):
+    """
+    Auto-mark notifications as read when the corresponding task is completed.
+
+    Args:
+        notification_type: Type of notification to clear (optional)
+        related_queue_entry: QueueEntry to filter by (optional)
+        related_preset: QueuePreset to filter by (optional)
+        triggering_user: User who triggered the notification (optional)
+        recipient: Specific recipient to clear notifications for (optional)
+
+    Returns:
+        Number of notifications marked as read
+    """
+    from .models import Notification
+
+    # Start with unread notifications
+    notifications = Notification.objects.filter(is_read=False)
+
+    # Apply filters
+    if notification_type:
+        notifications = notifications.filter(notification_type=notification_type)
+
+    if related_queue_entry:
+        notifications = notifications.filter(related_queue_entry=related_queue_entry)
+
+    if related_preset:
+        notifications = notifications.filter(related_preset=related_preset)
+
+    if triggering_user:
+        notifications = notifications.filter(triggering_user=triggering_user)
+
+    if recipient:
+        notifications = notifications.filter(recipient=recipient)
+
+    # Mark all matching notifications as read
+    count = notifications.update(is_read=True)
+
+    return count

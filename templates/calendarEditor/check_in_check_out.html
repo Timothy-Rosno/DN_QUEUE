@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Check-In / Check-Out{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Check-In / Check-Out</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">Manage your active measurements</p>
+    <div style="margin-top: 1rem;">
+        <a href="{% url 'my_queue' %}" class="btn btn-secondary">← Back to My Queue</a>
+    </div>
+</div>
+
+{# ================= Ready to Check Out ================= #}
+{% if ready_to_check_out %}
+<div class="card">
+    <h2 style="color: #27ae60;">Ready to Check Out</h2>
+    {% for entry in ready_to_check_out %}
+    <div style="border: 2px solid #27ae60; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #eafaf1;">
+        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div style="flex: 1;">
+                <h3>{{ entry.title }}</h3>
+                <p><strong>Machine:</strong> {{ entry.assigned_machine.name }}</p>
+                <p><strong>Started:</strong> {{ entry.started_at|date:"M d, Y g:i A" }}</p>
+                <p><strong>Estimated Duration:</strong> {{ entry.estimated_duration_hours }} hours</p>
+                {% if entry.description %}
+                <p><strong>Description:</strong> {{ entry.description|truncatewords:30 }}</p>
+                {% endif %}
+            </div>
+            <div>
+                <form method="post" action="{% url 'check_out_job' entry.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-lg">Check Out</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{# ================= Currently Running ================= #}
+{% if currently_running %}
+<div class="card">
+    <h2 style="color: #9b59b6;">Currently Running</h2>
+    {% for entry in currently_running %}
+    <div style="border: 2px solid #9b59b6; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #f4ecf7;">
+        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div style="flex: 1;">
+                <h3>{{ entry.title }}</h3>
+                <p><strong>Machine:</strong> {{ entry.assigned_machine.name }}</p>
+                <p><strong>Started:</strong> {{ entry.started_at|date:"M d, Y g:i A" }}</p>
+                <p><strong>Estimated Duration:</strong> {{ entry.estimated_duration_hours }} hours</p>
+                {% if entry.description %}
+                <p><strong>Description:</strong> {{ entry.description|truncatewords:30 }}</p>
+                {% endif %}
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
+                <form method="post" action="{% url 'check_out_job' entry.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-lg">Check Out</button>
+                </form>
+                <p style="color: #7f8c8d; font-size: 0.9rem; margin: 0;">
+                    Still running… check out if ready
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+
+{# ================= Ready to Check In ================= #}
+{% if ready_to_check_in %}
+<div class="card">
+    <h2 style="color: #27ae60;">Ready to Check In</h2>
+    {% for entry in ready_to_check_in %}
+    <div style="border: 2px solid #27ae60; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #eafaf1;">
+        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div style="flex: 1;">
+                <h3>{{ entry.title }}</h3>
+                <p><strong>Machine:</strong> {{ entry.assigned_machine.name }}</p>
+                <p><strong>Estimated Duration:</strong> {{ entry.estimated_duration_hours }} hours</p>
+                {% if entry.description %}
+                <p><strong>Description:</strong> {{ entry.description|truncatewords:30 }}</p>
+                {% endif %}
+            </div>
+            <div>
+                <form method="post" action="{% url 'check_in_job' entry.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-lg">Check In Now</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{# ================= On Deck / Waiting for Machine ================= #}
+{% if waiting_entries %}
+<div class="card">
+    <h2 style="color: #f39c12;">⏳ On Deck / Waiting for Machine</h2>
+    {% for entry in waiting_entries %}
+    <div style="border: 2px solid #f39c12; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #fcf3e4;">
+        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div style="flex: 1;">
+                <h3>{{ entry.title }}</h3>
+                <p><strong>Machine:</strong> {{ entry.assigned_machine.name }}</p>
+                <p><strong>Machine Status:</strong>
+                    <span style="color: {% if entry.assigned_machine.current_status == 'cooldown' %}#f39c12{% else %}#e74c3c{% endif %}; font-weight: bold;">
+                        {{ entry.assigned_machine.get_current_status_display }}
+                    </span>
+                </p>
+                <p><strong>Estimated Duration:</strong> {{ entry.estimated_duration_hours }} hours</p>
+                {% if entry.description %}
+                <p><strong>Description:</strong> {{ entry.description|truncatewords:30 }}</p>
+                {% endif %}
+            </div>
+            <div>
+                {% if entry.assigned_machine.current_status == 'cooldown' %}
+                <p style="color: #f39c12; font-weight: bold;">Machine cooling down...</p>
+                <p style="color: #7f8c8d; font-size: 0.9rem;">Check back soon</p>
+                {% else %}
+                <p style="color: #7f8c8d; font-weight: bold;">Waiting for machine...</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{# ================= No Active Entries ================= #}
+{% if not ready_to_check_out and not currently_running and not ready_to_check_in and not waiting_entries %}
+<div class="card">
+    <p style="color: #7f8c8d; text-align: center; padding: 2rem;">
+        You have no active measurements or entries ready for check-in.
+    </p>
+    <div style="text-align: center; margin-top: 1rem;">
+        <a href="{% url 'submit_queue' %}" class="btn">Submit New Request</a>
+    </div>
+</div>
+{% endif %}
+
+<div style="margin-top: 1rem;">
+    <a href="{% url 'my_queue' %}" class="btn btn-secondary">← Back to My Queue</a>
+</div>
+{% endblock %}

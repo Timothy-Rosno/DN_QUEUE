@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Scheduler App{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Login</h1>
+    <p style="margin: 1rem 0;">Please enter your credentials to login.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <div style="margin-top: 1.5rem;">
+            <button type="submit" class="btn">Login</button>
+            <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
+        </div>
+    </form>
+
+    <p style="margin-top: 1.5rem;">
+        <a href="{% url 'forgot_password' %}">Forgot your password?</a> |
+        <a href="{% url 'recover_username' %}">Forgot your username?</a>
+    </p>
+
+    <p style="margin-top: 0.5rem;">
+        Don't have an account? <a href="{% url 'register' %}">Register here</a>
+    </p>
+</div>
+{% endblock %}

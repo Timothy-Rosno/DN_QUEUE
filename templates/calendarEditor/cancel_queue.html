@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Cancel Queue Entry - Lab Equipment Queue{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Cancel Queue Entry</h1>
+    <p style="margin: 1rem 0; color: #e74c3c;">Are you sure you want to cancel this queue entry?</p>
+
+    <div style="margin: 1.5rem 0; padding: 1rem; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px;">
+        <h3>{{ queue_entry.title }}</h3>
+        <p><strong>Machine:</strong> {{ queue_entry.assigned_machine.name }}</p>
+        <p><strong>Queue Position:</strong> #{{ queue_entry.queue_position }}</p>
+        <p><strong>Requirements:</strong> Min Temp {{ queue_entry.required_min_temp }} K</p>
+        <p><strong>Estimated Duration:</strong> {{ queue_entry.estimated_duration_hours }} hours</p>
+        {% if queue_entry.estimated_start_time %}
+        <p><strong>Estimated Start:</strong> {{ queue_entry.estimated_start_time|date:"F d, Y g:i A" }}</p>
+        {% endif %}
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div style="margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-danger">Yes, Cancel Entry</button>
+            <a href="{% url 'my_queue' %}" class="btn btn-secondary" style="margin-left: 1rem;">No, Go Back</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
