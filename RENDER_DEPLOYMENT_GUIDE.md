@@ -58,6 +58,8 @@ Next request to app → Middleware checks: Is reminder_due_at <= now? → Send r
 - Auto-stops when user leaves page
 - No server resources used when no one is viewing
 
+⚠️ **IMPORTANT**: Live temperature monitoring will **NOT work** in cloud deployment because machines have local network IPs. See `NETWORK_LIMITATIONS.md` for details and workarounds.
+
 ---
 
 ## Deployment to Render.com
@@ -98,14 +100,20 @@ DEBUG=False
 ALLOWED_HOSTS=your-app-name.onrender.com
 SLACK_BOT_TOKEN=<your-slack-bot-token>
 BASE_URL=https://your-app-name.onrender.com
+
+# Superuser credentials (automatically created during deployment)
+DJANGO_SUPERUSER_USERNAME=admin
+DJANGO_SUPERUSER_EMAIL=admin@example.com
+DJANGO_SUPERUSER_PASSWORD=ChangeThisPassword123
 ```
 
-### Step 5: Run Migrations & Create Superuser
-In Render dashboard → **Shell**:
-```bash
-python manage.py migrate
-python manage.py createsuperuser
-```
+### Step 5: Automatic Setup
+The build process automatically:
+- ✅ Runs migrations
+- ✅ Loads initial data (machines, users, etc.) from `initial_data.json`
+- ✅ Creates superuser from environment variables above
+
+**No manual shell commands needed!** (Shell is a paid feature on Render)
 
 ### Step 6: Access Your Site
 Your app will be live at: `https://your-app-name.onrender.com`
@@ -133,10 +141,11 @@ Your app will be live at: `https://your-app-name.onrender.com`
 - NOT exactly on the hour
 - Acceptable for most use cases
 
-⚠️ **Temperature updates require user on page**
-- Only updates when someone is viewing fridge list
-- Stops updating when page is closed
-- Resumes when page reopened
+⚠️ **Temperature monitoring won't work in cloud deployment**
+- Lab machines have local network IPs (192.168.x.x) that Render cannot reach
+- Temperature readings will show as "Unknown" or stale
+- All scheduling features still work normally
+- See `NETWORK_LIMITATIONS.md` for workarounds if you need live temps
 
 ---
 
