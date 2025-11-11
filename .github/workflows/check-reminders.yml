@@ -20,7 +20,7 @@ jobs:
           echo "Checking for pending reminders..."
           
           # Call the reminder check API endpoint
-          response=$(curl -s -w "\n%{http_code}" https://yourapp.onrender.com/api/check-reminders/)
+          response=$(curl -s -w "\n%{http_code}" https://qhog.onrender.com/api/check-reminders/)
           
           # Extract status code (last line)
           http_code=$(echo "$response" | tail -n 1)
