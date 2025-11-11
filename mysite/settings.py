@@ -117,22 +117,10 @@ CHANNEL_LAYERS = {
 # Otherwise use SQLite for local development
 database_url = os.environ.get('DATABASE_URL')
 
-# Check if we're on Render (RENDER env var is set automatically)
-is_render = os.environ.get('RENDER') == 'true'
-
-if database_url and not is_render:
-    # External PostgreSQL/MySQL (if DATABASE_URL is set manually)
+if database_url:
+    # Production: Use PostgreSQL via DATABASE_URL
     DATABASES = {
         "default": dj_database_url.parse(database_url, conn_max_age=600)
-    }
-elif is_render:
-    # Render: Use SQLite on persistent disk (/opt/render/project/data)
-    # This avoids PostgreSQL costs while maintaining persistence
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": "/opt/render/project/data/db.sqlite3",
-        }
     }
 else:
     # Local development: SQLite in project directory
