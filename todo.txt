@@ -1,7 +1,10 @@
 [✔] ~~~ DONE ~~~
 [ ] ~~~ TODO ~~~
 
-
+  If they say yes, transferring is literally:
+  git clone https://github.com/Timothy-Rosno/DN_QUEUE.git
+  pip install -r requirements.txt
+  python manage.py runserver 0.0.0.0:8000
 
 
 [ ] [STACKER]   See how PC affects optics (as opposed to jjust PDMS) -- traversal especially.

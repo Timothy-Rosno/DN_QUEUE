@@ -8,77 +8,74 @@
     <p style="color: #7f8c8d; margin-top: 0.5rem;">Welcome, {{ user.username }}. Manage users, machines, and queue entries.</p>
 </div>
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
     <!-- User Stats -->
-    <div class="card" style="border-left: 4px solid #e74c3c;">
+    <div class="card" style="border-left: 4px solid #e74c3c; text-align: center;">
         <h3 style="margin-top: 0; color: #e74c3c;">Pending Users</h3>
         <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ pending_users }}</p>
-        <a href="{% url 'admin_users' %}?status=pending" class="btn">Review Pending Users</a>
+        <a href="{% url 'admin_users' %}?status=pending" class="btn" style="margin-top: 0.5rem;"> Review Pending</a>
     </div>
 
     <!-- Total Users -->
-    <div class="card" style="border-left: 4px solid #3498db;">
+    <div class="card" style="border-left: 4px solid #3498db; text-align: center;">
         <h3 style="margin-top: 0; color: #3498db;">Total Users</h3>
         <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ total_users }}</p>
-        <a href="{% url 'admin_users' %}" class="btn">Manage Users</a>
+        <a href="{% url 'admin_users' %}" class="btn" style="margin-top: 0.5rem;">Manage Users</a>
     </div>
 
     <!-- Machines -->
-    <div class="card" style="border-left: 4px solid #2ecc71;">
+    <div class="card" style="border-left: 4px solid #2ecc71; text-align: center;">
         <h3 style="margin-top: 0; color: #2ecc71;">Machines</h3>
-        <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ active_machines }}/{{ total_machines }}</p>
-        <small style="color: #7f8c8d;">Active / Total</small><br>
+        <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0; position: relative;">
+            <span id="machines-count">{{ active_machines }}/{{ total_machines }}</span>
+        </p>
+        <div id="machines-tooltip" style="display: none; position: absolute; background: #2c3e50; color: white; padding: 0.5rem; border-radius: 4px; font-size: 0.9rem; white-space: nowrap; z-index: 1000; pointer-events: none;"></div>
         <a href="{% url 'admin_machines' %}" class="btn" style="margin-top: 0.5rem;">Manage Machines</a>
     </div>
 
     <!-- Queue Entries -->
-    <div class="card" style="border-left: 4px solid #f39c12;">
+    <div class="card" style="border-left: 4px solid #f39c12; text-align: center;">
         <h3 style="margin-top: 0; color: #f39c12;">Queue Entries</h3>
         <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ queued_entries }}</p>
-        <small style="color: #7f8c8d;">Queued</small><br>
         <a href="{% url 'admin_queue' %}" class="btn" style="margin-top: 0.5rem;">Manage Queue</a>
     </div>
-</div>
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
     <!-- Running Entries -->
-    <div class="card" style="border-left: 4px solid #9b59b6;">
+    <div class="card" style="border-left: 4px solid #9b59b6; text-align: center;">
         <h3 style="margin-top: 0; color: #9b59b6;">Running Experiments</h3>
         <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ running_entries }}</p>
-        <a href="{% url 'admin_queue' %}?status=running" class="btn">View Running</a>
+        <a href="{% url 'admin_queue' %}?status=running" class="btn" style="margin-top: 0.5rem;">Review Running</a>
     </div>
 
     <!-- Rush Jobs -->
-    <div class="card" style="border-left: 4px solid #e67e22;">
+    <div class="card" style="border-left: 4px solid #e67e22; text-align: center;">
         <h3 style="margin-top: 0; color: #e67e22;">Rush Job Appeals</h3>
         <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ rush_jobs }}</p>
-        <a href="{% url 'admin_rush_jobs' %}" class="btn">Review Rush Jobs</a>
+        <a href="{% url 'admin_rush_jobs' %}" class="btn" style="margin-top: 0.5rem;">Review Rush Jobs</a>
     </div>
 
     <!-- Presets -->
-    <div class="card" style="border-left: 4px solid #1abc9c;">
+    <div class="card" style="border-left: 4px solid #1abc9c; text-align: center;">
         <h3 style="margin-top: 0; color: #1abc9c;">Total Presets</h3>
         <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ total_presets }}</p>
-        <a href="{% url 'admin_presets' %}" class="btn">Manage Presets</a>
+        <a href="{% url 'admin_presets' %}" class="btn" style="margin-top: 0.5rem;">Manage Presets</a>
     </div>
 
     <!-- Database Storage -->
-    <div class="card" id="storage-widget" style="border-left: 4px solid #95a5a6;">
+    <div class="card" id="storage-widget" style="border-left: 4px solid #95a5a6; text-align: center;">
         <h3 style="margin-top: 0; color: #95a5a6;">Database Storage</h3>
-        <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;" id="storage-usage">
+        <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0; position: relative;" id="storage-usage">
             <span style="font-size: 1rem; color: #7f8c8d;">Loading...</span>
         </p>
-        <div id="storage-bar" style="background: #ecf0f1; height: 10px; border-radius: 5px; overflow: hidden; margin: 1rem 0;">
-            <div id="storage-progress" style="width: 0%; height: 100%; background: #95a5a6; transition: width 0.3s;"></div>
-        </div>
-        <a href="{% url 'admin_archive_management' %}" class="btn">Manage Storage</a>
+        <div id="storage-tooltip" style="display: none; position: absolute; background: #2c3e50; color: white; padding: 0.5rem; border-radius: 4px; font-size: 0.9rem; white-space: nowrap; z-index: 1000; pointer-events: none;"></div>
+        <a href="{% url 'admin_archive_management' %}" class="btn" style="margin-top: 0.5rem;">Manage Storage</a>
     </div>
 
     <!-- Django Admin Link -->
-    <div class="card" style="border-left: 4px solid #34495e;">
+    <div class="card" style="border-left: 4px solid #34495e; text-align: center;">
         <h3 style="margin-top: 0; color: #34495e;">Django Admin</h3>
         <p style="color: #7f8c8d; margin: 1rem 0;">Access the default Django admin interface for advanced management.</p>
-        <a href="/admin/" class="btn">Go to Django Admin</a>
+        <a href="/admin/" class="btn">Open Admin</a>
     </div>
 </div>
 
@@ -89,32 +86,70 @@ fetch('{% url "admin_storage_stats" %}')
     .then(data => {
         const usageText = document.getElementById('storage-usage');
         const widget = document.getElementById('storage-widget');
-        const progress = document.getElementById('storage-progress');
-
-        usageText.innerHTML = data.used_percentage + '%';
-        progress.style.width = data.used_percentage + '%';
+        const tooltip = document.getElementById('storage-tooltip');
 
         // Color based on status
-        let color = '#95a5a6';  // default gray
+        let color = '#000000';  // black for below 80%
+        let borderColor = '#95a5a6';  // default gray border
+
         if (data.status === 'critical') {
-            color = '#e74c3c';  // red
-            widget.innerHTML += '<div style="background: #fee; border-left: 4px solid #e74c3c; padding: 0.5rem; margin-top: 0.5rem; font-size: 0.85rem;"><strong style="color: #e74c3c;">CRITICAL</strong> - Clear archive soon!</div>';
+            color = '#e74c3c';  // red (95%+)
+            borderColor = '#e74c3c';
         } else if (data.status === 'warning') {
-            color = '#f39c12';  // orange
-            widget.querySelector('h3').style.color = color;
-            progress.style.background = color;
-            widget.style.borderLeftColor = color;
-        } else if (data.status === 'ok') {
-            color = '#2ecc71';  // green
+            color = '#f39c12';  // orange (80%+)
+            borderColor = '#f39c12';
         }
 
-        widget.querySelector('h3').style.color = color;
-        progress.style.background = color;
-        widget.style.borderLeftColor = color;
+        usageText.innerHTML = '<span id="storage-percentage" style="color: ' + color + ';">' + data.used_percentage + '%</span>';
+        widget.querySelector('h3').style.color = borderColor;
+        widget.style.borderLeftColor = borderColor;
+
+        // Custom tooltip with 0.1s delay
+        const percentage = document.getElementById('storage-percentage');
+        let tooltipTimeout;
+
+        percentage.addEventListener('mouseenter', function(e) {
+            tooltipTimeout = setTimeout(function() {
+                tooltip.textContent = data.current_size_mb + ' MB / ' + data.max_size_mb + ' MB';
+                tooltip.style.display = 'block';
+
+                const rect = percentage.getBoundingClientRect();
+                tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+                tooltip.style.top = (rect.bottom + 5) + 'px';
+            }, 100);
+        });
+
+        percentage.addEventListener('mouseleave', function() {
+            clearTimeout(tooltipTimeout);
+            tooltip.style.display = 'none';
+        });
     })
     .catch(error => {
         console.error('Error loading storage stats:', error);
         document.getElementById('storage-usage').innerHTML = '<span style="font-size: 1rem; color: #e74c3c;">Error</span>';
     });
+
+// Machines tooltip
+const machinesCount = document.getElementById('machines-count');
+const machinesTooltip = document.getElementById('machines-tooltip');
+let machinesTimeout;
+
+if (machinesCount && machinesTooltip) {
+    machinesCount.addEventListener('mouseenter', function(e) {
+        machinesTimeout = setTimeout(function() {
+            machinesTooltip.textContent = 'Active / Total Cryostats';
+            machinesTooltip.style.display = 'block';
+
+            const rect = machinesCount.getBoundingClientRect();
+            machinesTooltip.style.left = (rect.left + rect.width / 2 - machinesTooltip.offsetWidth / 2) + 'px';
+            machinesTooltip.style.top = (rect.bottom + 5) + 'px';
+        }, 100);
+    });
+
+    machinesCount.addEventListener('mouseleave', function() {
+        clearTimeout(machinesTimeout);
+        machinesTooltip.style.display = 'none';
+    });
+}
 </script>
 {% endblock %}
