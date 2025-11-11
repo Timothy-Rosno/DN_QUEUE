@@ -35,7 +35,7 @@
 
 <div style="background: #e8f5e9; border-left: 4px solid #2ecc71; padding: 1rem; margin: 1rem 0; border-radius: 5px;">
     <p style="margin: 0; color: #27ae60;">
-        💡 <strong>Tip:</strong> You can export your own measurements using the "Export My Measurements" button below.
+        <strong>Tip:</strong> You can export your own measurements using the "Export My Measurements" button below.
         {% if not user.is_staff %}
         Contact administrators to request the full archive backup.
         {% endif %}
@@ -123,7 +123,7 @@
 
             <!-- Export My Measurements Button -->
             <div style="display: flex; align-items: end;">
-                <a href="{% url 'export_my_measurements' %}" class="btn btn-primary">📥 Export My Measurements</a>
+                <a href="{% url 'export_my_measurements' %}" class="btn btn-primary">Export My Measurements</a>
             </div>
 
             <!-- New Archive Entry Button (Staff Only) -->

@@ -52,12 +52,12 @@
 
     {% if storage_stats.status == 'critical' %}
     <div style="background: #fee; border-left: 4px solid #e74c3c; padding: 1rem; margin-top: 1rem;">
-        <strong style="color: #e74c3c;">⚠️ CRITICAL:</strong> Database is at {{ storage_stats.used_percentage }}% capacity.
+        <strong style="color: #e74c3c;">CRITICAL:</strong> Database is at {{ storage_stats.used_percentage }}% capacity.
         Please export and clear old archived measurements immediately.
     </div>
     {% elif storage_stats.status == 'warning' %}
     <div style="background: #fef9e7; border-left: 4px solid #f39c12; padding: 1rem; margin-top: 1rem;">
-        <strong style="color: #f39c12;">⚠️ WARNING:</strong> Database is at {{ storage_stats.used_percentage }}% capacity.
+        <strong style="color: #f39c12;">WARNING:</strong> Database is at {{ storage_stats.used_percentage }}% capacity.
         Consider exporting and clearing old archived measurements soon.
     </div>
     {% endif %}
@@ -86,30 +86,30 @@
 
     <div style="display: flex; gap: 1rem; margin-top: 1rem;">
         <a href="{% url 'admin_export_archive' %}?format=json" class="btn" style="background: #3498db;">
-            📄 Export as JSON ({{ archive_count }} records)
+            Export as JSON ({{ archive_count }} records)
         </a>
         <a href="{% url 'admin_export_archive' %}?format=csv" class="btn" style="background: #27ae60;">
-            📊 Export as CSV ({{ archive_count }} records)
+            Export as CSV ({{ archive_count }} records)
         </a>
     </div>
 
     <p style="color: #7f8c8d; margin-top: 1rem; font-size: 0.9rem;">
-        💡 JSON format preserves all data and can be re-imported. CSV format is easier to view in spreadsheets.
+        JSON format preserves all data and can be re-imported. CSV format is easier to view in spreadsheets.
     </p>
 </div>
 
 <!-- Clear Archive -->
 <div class="card" style="border-left: 4px solid #e74c3c;">
-    <h2 style="margin-top: 0; color: #e74c3c;">⚠️ Clear Archive (Danger Zone)</h2>
+    <h2 style="margin-top: 0; color: #e74c3c;">Clear Archive (Danger Zone)</h2>
     <p style="color: #7f8c8d;">Permanently delete all archived measurements to free up database space.</p>
 
     {% if archive_count == 0 %}
     <div style="background: #e8f5e9; border-left: 4px solid #2ecc71; padding: 1rem; margin: 1rem 0;">
-        <strong style="color: #2ecc71;">✅ Archive is empty.</strong> No measurements to clear.
+        <strong style="color: #2ecc71;">Archive is empty.</strong> No measurements to clear.
     </div>
     {% else %}
     <div style="background: #fee; border: 2px solid #e74c3c; padding: 1.5rem; border-radius: 5px; margin-top: 1rem;">
-        <h3 style="margin-top: 0; color: #e74c3c;">⚠️ DANGER: This action cannot be undone!</h3>
+        <h3 style="margin-top: 0; color: #e74c3c;">DANGER: This action cannot be undone!</h3>
 
         <ul style="color: #7f8c8d;">
             <li>This will permanently delete <strong>{{ archive_count }} archived measurements</strong></li>
@@ -135,7 +135,7 @@
 
             <div style="margin-top: 1rem;">
                 <button type="submit" class="btn" style="background: #e74c3c;">
-                    🗑️ Delete All {{ archive_count }} Archived Measurements
+                    Delete All {{ archive_count }} Archived Measurements
                 </button>
                 <a href="{% url 'admin_dashboard' %}" class="btn" style="background: #95a5a6; margin-left: 0.5rem;">
                     Cancel

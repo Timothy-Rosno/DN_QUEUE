@@ -98,7 +98,7 @@ fetch('{% url "admin_storage_stats" %}')
         let color = '#95a5a6';  // default gray
         if (data.status === 'critical') {
             color = '#e74c3c';  // red
-            widget.innerHTML += '<div style="background: #fee; border-left: 4px solid #e74c3c; padding: 0.5rem; margin-top: 0.5rem; font-size: 0.85rem;"><strong style="color: #e74c3c;">⚠️ CRITICAL</strong> - Clear archive soon!</div>';
+            widget.innerHTML += '<div style="background: #fee; border-left: 4px solid #e74c3c; padding: 0.5rem; margin-top: 0.5rem; font-size: 0.85rem;"><strong style="color: #e74c3c;">CRITICAL</strong> - Clear archive soon!</div>';
         } else if (data.status === 'warning') {
             color = '#f39c12';  // orange
             widget.querySelector('h3').style.color = color;
