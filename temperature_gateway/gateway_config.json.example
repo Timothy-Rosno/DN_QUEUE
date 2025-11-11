@@ -1,0 +1,39 @@
+{
+  "api_url": "https://qhog.onrender.com/schedule/api/update-machine-temperatures/",
+  "api_key": "YOUR-API-KEY-HERE",
+  "update_interval": 15,
+  "machines": [
+    {
+      "id": 1,
+      "name": "Hidalgo",
+      "ip": "192.168.1.10",
+      "api_type": "port5001"
+    },
+    {
+      "id": 2,
+      "name": "Griffin",
+      "ip": "192.168.1.11",
+      "api_type": "port5001"
+    },
+    {
+      "id": 3,
+      "name": "OptiCool",
+      "ip": "192.168.1.20",
+      "api_type": "quantum_design",
+      "api_port": 47101
+    },
+    {
+      "id": 4,
+      "name": "CryoCore",
+      "ip": "192.168.1.21",
+      "api_type": "quantum_design",
+      "api_port": 47101
+    },
+    {
+      "id": 5,
+      "name": "Legacy Machine",
+      "ip": "",
+      "api_type": "none"
+    }
+  ]
+}

@@ -90,6 +90,9 @@ urlpatterns = [
     # Reminder check API (for GitHub Actions cron)
     path('api/check-reminders/', views.api_check_reminders, name='api_check_reminders'),
 
+    # Temperature update API (for temperature gateway script on university network)
+    path('api/update-machine-temperatures/', views.update_machine_temperatures, name='update_machine_temperatures'),
+
     # One-time token login (for Slack notifications)
     path('token-login/<str:token>/', views.token_login, name='token_login'),
 

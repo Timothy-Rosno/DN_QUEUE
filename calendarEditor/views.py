@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.urls import reverse
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.db.models import F, Q
@@ -2125,3 +2126,96 @@ def api_check_reminders(request):
             'error': str(e),
             'timestamp': timezone.now().isoformat(),
         }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def update_machine_temperatures(request):
+    """
+    API endpoint for temperature gateway to update machine temperatures.
+    
+    This endpoint accepts temperature readings from a script running on the
+    university network that can access the lab machines' local IPs.
+    
+    Authentication: Requires X-API-Key header matching TEMPERATURE_GATEWAY_API_KEY
+    
+    POST /api/update-machine-temperatures/
+    Body:
+    {
+        "machines": [
+            {"id": 1, "temperature": 4.2, "online": true},
+            {"id": 2, "temperature": null, "online": false},
+            ...
+        ]
+    }
+    
+    Returns:
+    {
+        "success": true,
+        "updated": 5,
+        "errors": []
+    }
+    """
+    import json
+    from django.utils import timezone
+    
+    # Check API key authentication
+    api_key = request.headers.get('X-API-Key')
+    expected_key = settings.TEMPERATURE_GATEWAY_API_KEY
+    
+    if not expected_key:
+        return JsonResponse({
+            'success': False,
+            'error': 'Temperature gateway API key not configured on server'
+        }, status=500)
+    
+    if api_key != expected_key:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid API key'
+        }, status=401)
+    
+    # Parse request body
+    try:
+        data = json.loads(request.body)
+        machines_data = data.get('machines', [])
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON in request body'
+        }, status=400)
+    
+    # Update each machine
+    updated_count = 0
+    errors = []
+    
+    for machine_data in machines_data:
+        try:
+            machine_id = machine_data.get('id')
+            temperature = machine_data.get('temperature')
+            online = machine_data.get('online', True)
+            
+            # Get the machine
+            try:
+                machine = Machine.objects.get(id=machine_id)
+            except Machine.DoesNotExist:
+                errors.append(f"Machine {machine_id} not found")
+                continue
+            
+            # Update fields
+            machine.cached_temperature = temperature
+            machine.cached_online = online
+            machine.last_temp_update = timezone.now()
+            machine.save(update_fields=['cached_temperature', 'cached_online', 'last_temp_update'])
+            
+            updated_count += 1
+            
+        except Exception as e:
+            errors.append(f"Error updating machine {machine_data.get('id', 'unknown')}: {str(e)}")
+    
+    return JsonResponse({
+        'success': True,
+        'updated': updated_count,
+        'errors': errors,
+        'timestamp': timezone.now().isoformat(),
+    })

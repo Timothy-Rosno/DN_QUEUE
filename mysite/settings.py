@@ -212,5 +212,10 @@ DEFAULT_FROM_EMAIL = 'scheduler@example.com'
 SLACK_BOT_TOKEN = os.environ.get('SLACK_BOT_TOKEN', '')
 SLACK_ENABLED = bool(SLACK_BOT_TOKEN)  # Only enable if token is set
 
+# Temperature Gateway API Configuration
+# IMPORTANT: Set TEMPERATURE_GATEWAY_API_KEY for the temperature gateway script
+# Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+TEMPERATURE_GATEWAY_API_KEY = os.environ.get('TEMPERATURE_GATEWAY_API_KEY', '')
+
 # Base URL for notification links
 BASE_URL = os.environ.get('BASE_URL', 'http://127.0.0.1:8000')
