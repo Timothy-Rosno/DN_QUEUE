@@ -129,9 +129,9 @@ class Machine(models.Model):
         """
         if not self.ip_address or self.api_type == 'none':
             self.cached_temperature = None
-            self.cached_online = True  # No API means we assume it's available
-            self.last_temp_update = timezone.now()
-            self.save(update_fields=['cached_temperature', 'cached_online', 'last_temp_update'])
+            self.cached_online = False  # No API means we can't verify status
+            # Don't update last_temp_update - leave it as None/stale
+            self.save(update_fields=['cached_temperature', 'cached_online'])
             return
 
         import requests
@@ -181,7 +181,7 @@ class Machine(models.Model):
         Health check: Returns False if data is stale (older than 60 seconds).
         """
         if not self.ip_address or self.api_type == 'none':
-            return True
+            return False  # No API means we can't verify it's online
 
         # Check if data is stale (gateway hasn't updated in 60 seconds)
         if self.last_temp_update:
