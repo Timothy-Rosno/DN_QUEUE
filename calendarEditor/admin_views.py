@@ -1308,9 +1308,9 @@ def admin_render_usage(request):
 
 
 @staff_member_required
-def admin_archive_management(request):
+def admin_database_management(request):
     """
-    Archive management page for staff.
+    Database management page for staff.
     Shows storage stats and options to export/clear archive.
     """
     from .storage_utils import get_storage_stats, get_storage_breakdown, format_size_mb
@@ -1320,6 +1320,9 @@ def admin_archive_management(request):
 
     # Get storage breakdown
     breakdown_data = get_storage_breakdown()
+
+    # Calculate overhead (actual DB size - estimated application data)
+    overhead_mb = max(0, storage_stats['current_size_mb'] - breakdown_data['total_estimated_mb'])
 
     # Get archive count
     archive_count = ArchivedMeasurement.objects.count()
@@ -1332,12 +1335,17 @@ def admin_archive_management(request):
         'storage_stats': storage_stats,
         'storage_breakdown': breakdown_data['breakdown'],
         'total_estimated_mb': breakdown_data['total_estimated_mb'],
+        'overhead_mb': round(overhead_mb, 2),
         'archive_count': archive_count,
         'estimated_archive_size_mb': round(estimated_archive_size_mb, 2),
         'format_size_mb': format_size_mb,
     }
 
     return render(request, 'calendarEditor/admin/archive_management.html', context)
+
+
+# Keep old name as alias for backwards compatibility (can be removed later)
+admin_archive_management = admin_database_management
 
 
 @staff_member_required

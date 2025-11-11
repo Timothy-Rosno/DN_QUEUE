@@ -47,13 +47,16 @@ urlpatterns = [
     path('admin-rush-jobs-review/', admin_views.admin_rush_jobs, name='admin_rush_jobs'),
     path('admin-presets/', admin_views.admin_presets, name='admin_presets'),
 
-    # Storage & Archive Management
+    # Storage & Database Management
     path('admin/storage-stats/', admin_views.admin_storage_stats, name='admin_storage_stats'),
     path('admin/render-usage-stats/', admin_views.admin_render_usage_stats, name='admin_render_usage_stats'),
     path('admin/render-usage/', admin_views.admin_render_usage, name='admin_render_usage'),
-    path('admin/archive-management/', admin_views.admin_archive_management, name='admin_archive_management'),
+    path('admin/database-management/', admin_views.admin_database_management, name='admin_database_management'),
     path('admin/export-archive/', admin_views.admin_export_archive, name='admin_export_archive'),
     path('admin/clear-archive/', admin_views.admin_clear_archive, name='admin_clear_archive'),
+
+    # Backwards compatibility aliases
+    path('admin/archive-management/', admin_views.admin_archive_management, name='admin_archive_management'),
 
     # Queue Management Actions
     path('admin-queue/queue-next/<int:entry_id>/', admin_views.queue_next, name='queue_next'),

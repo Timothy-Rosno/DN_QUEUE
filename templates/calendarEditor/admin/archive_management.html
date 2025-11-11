@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 
-{% block title %}Archive Management - Lab Equipment Queue{% endblock %}
+{% block title %}Database Management - Lab Equipment Queue{% endblock %}
 
 {% block content %}
 <div class="card">
-    <h1>Archive Management</h1>
+    <h1>Database Management</h1>
     <p style="color: #7f8c8d; margin-top: 0.5rem;">Manage database storage and archived measurements.</p>
 </div>
 
@@ -88,9 +88,21 @@
                 </tr>
                 {% endfor %}
                 <tr style="border-top: 2px solid #34495e; font-weight: bold; background: #f8f9fa;">
-                    <td style="text-align: left;">Total Estimated</td>
+                    <td style="text-align: left;">Total Application Data</td>
                     <td style="text-align: center;">—</td>
                     <td style="text-align: center;">{{ total_estimated_mb }} MB</td>
+                    <td style="text-align: center;">100%</td>
+                </tr>
+                <tr style="background: #fff3cd;">
+                    <td style="text-align: left;">Database Overhead</td>
+                    <td style="text-align: center;">—</td>
+                    <td style="text-align: center;">{{ overhead_mb }} MB</td>
+                    <td style="text-align: center;">—</td>
+                </tr>
+                <tr style="border-top: 2px solid #34495e; font-weight: bold; background: #e8f5e9;">
+                    <td style="text-align: left;">Actual Database Size</td>
+                    <td style="text-align: center;">—</td>
+                    <td style="text-align: center;">{{ storage_stats.current_size_mb }} MB</td>
                     <td style="text-align: center;">—</td>
                 </tr>
             </tbody>
@@ -98,10 +110,18 @@
     </div>
 
     <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 1rem; margin-top: 1rem;">
-        <p style="margin: 0; color: #1976d2;">
-            <strong>Note:</strong> Sizes are estimates based on row counts and average row sizes.
-            Actual database size may vary due to indexes, PostgreSQL overhead, and other factors.
+        <p style="margin: 0 0 0.5rem 0; color: #1976d2;">
+            <strong>About Database Overhead:</strong>
         </p>
+        <p style="margin: 0; color: #1976d2; font-size: 0.95rem;">
+            The difference between application data ({{ total_estimated_mb }} MB) and actual database size ({{ storage_stats.current_size_mb }} MB)
+            is <strong>{{ overhead_mb }} MB</strong> of PostgreSQL overhead, which includes:
+        </p>
+        <ul style="margin: 0.5rem 0 0 1.5rem; color: #1976d2; font-size: 0.95rem;">
+            <li><strong>Indexes</strong> - Primary keys, foreign keys, and custom indexes (typically 30-50% of total size)</li>
+            <li><strong>Django system tables</strong> - Migrations, sessions, permissions, content types, admin logs</li>
+            <li><strong>PostgreSQL overhead</strong> - TOAST storage, free space maps, visibility maps, dead tuples</li>
+        </ul>
     </div>
 </div>
 
