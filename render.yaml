@@ -35,6 +35,7 @@ services:
     name: scheduler-redis
     plan: free
     maxmemoryPolicy: noeviction
+    ipAllowList: []  # Allow connections from any Render service
 
 databases:
   - name: scheduler-db
