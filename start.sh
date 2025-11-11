@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 set -o errexit
 
-# Ensure the data directory exists (mounted by Render)
+# Create data directory if it doesn't exist
+# Note: On Render with persistent disk, this will be the mount point
+# On first deploy without disk, we'll create it locally (not persistent)
 if [ ! -d "/opt/render/project/data" ]; then
-    echo "ERROR: Persistent disk not mounted at /opt/render/project/data"
-    exit 1
+    echo "Creating data directory at /opt/render/project/data"
+    mkdir -p /opt/render/project/data
+    echo "⚠️  WARNING: Persistent disk not detected. Database will not persist across deployments."
+    echo "⚠️  Add a persistent disk in Render dashboard: Settings → Disks → Add Disk"
 fi
 
 # Run migrations (disk is now available)
