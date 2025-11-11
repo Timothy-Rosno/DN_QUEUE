@@ -165,16 +165,30 @@ class Machine(models.Model):
         """
         Get cached temperature reading.
         Returns temperature in Kelvin, or None if unavailable.
+        Health check: Returns None if data is stale (older than 60 seconds).
         """
+        # Check if data is stale
+        if self.last_temp_update:
+            time_since_update = timezone.now() - self.last_temp_update
+            if time_since_update > timedelta(seconds=60):
+                return None  # Data is stale
         return self.cached_temperature
 
     def is_online(self):
         """
         Get cached online status.
         Returns True if machine is online, False otherwise.
+        Health check: Returns False if data is stale (older than 60 seconds).
         """
         if not self.ip_address or self.api_type == 'none':
             return True
+
+        # Check if data is stale (gateway hasn't updated in 60 seconds)
+        if self.last_temp_update:
+            time_since_update = timezone.now() - self.last_temp_update
+            if time_since_update > timedelta(seconds=60):
+                return False  # Gateway is not running or machine disconnected
+
         return self.cached_online
 
     def get_display_status(self):
