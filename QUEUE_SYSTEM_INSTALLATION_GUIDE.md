@@ -569,8 +569,8 @@ If you want Slack notifications for queue events, follow these steps.
 ### 9.5 Get Bot Token
 
 1. After installation, you'll see **"Bot User OAuth Token"**
-2. It looks like: `xoxb-1234567890123-1234567890123-xxxxxxxxxxxxxxxxxxxxxxxx`
-3. Click **"Copy"** button
+2. It will start with `xoxb-` followed by numbers and letters (e.g., `xoxb-[NUMBERS]-[NUMBERS]-[RANDOM-STRING]`)
+3. Click **"Copy"** button to copy the full token
 4. Save this token securely
 
 ### 9.6 Add Token to Render Environment Variables
@@ -959,7 +959,7 @@ Complete list of all environment variables with descriptions:
 | `DJANGO_SUPERUSER_USERNAME` | Yes | Admin username created on first deploy | `admin` |
 | `DJANGO_SUPERUSER_EMAIL` | Yes | Admin email address | `admin@example.com` |
 | `DJANGO_SUPERUSER_PASSWORD` | Yes | Admin password | `SecurePassword123!` |
-| `SLACK_BOT_TOKEN` | No | Slack bot OAuth token for notifications | `xoxb-1234...` |
+| `SLACK_BOT_TOKEN` | No | Slack bot OAuth token for notifications | `xoxb-[YOUR-TOKEN-HERE]` |
 | `TEMPERATURE_GATEWAY_API_KEY` | No | API key for temperature update endpoint | `random-secure-key-here` |
 | `MAX_DATABASE_SIZE_MB` | No | Maximum database size before warnings (default: 500) | `500` |
 
