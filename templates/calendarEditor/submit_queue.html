@@ -845,36 +845,10 @@
             }
         }
 
-        // Update connection status indicator
+        // Update connection status indicator - DISABLED (status not shown to users)
         function updateConnectionStatus(status) {
-            let indicator = document.getElementById('ws-status-indicator');
-            if (!indicator) {
-                // Create status indicator if it doesn't exist
-                indicator = document.createElement('div');
-                indicator.id = 'ws-status-indicator';
-                indicator.style.cssText = 'padding: 8px 12px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; gap: 6px;';
-
-                // Insert into the page header flex container
-                const pageHeader = document.getElementById('page-header');
-                if (pageHeader) {
-                    pageHeader.appendChild(indicator);
-                } else {
-                    document.body.appendChild(indicator);
-                }
-            }
-
-            const statusConfig = {
-                connected: { text: 'Live Updates Active', color: '#27ae60', dot: '🟢' },
-                reconnecting: { text: 'Reconnecting...', color: '#f39c12', dot: '🟡' },
-                disconnected: { text: 'Disconnected', color: '#e74c3c', dot: '🔴' },
-                offline: { text: 'Offline (Refresh for updates)', color: '#95a5a6', dot: '⚫' }
-            };
-
-            const config = statusConfig[status] || statusConfig.offline;
-            indicator.innerHTML = `<span>${config.dot}</span><span>${config.text}</span>`;
-            indicator.style.backgroundColor = config.color + '22';
-            indicator.style.border = `1px solid ${config.color}`;
-            indicator.style.color = config.color;
+            // No-op: WebSocket still works in background, but status indicator is hidden
+            // This matches behavior of other pages (home, public queue) which also hide the indicator
         }
 
         // Handle preset updates from WebSocket
