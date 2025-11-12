@@ -32,7 +32,12 @@ class CustomLoginView(LoginView):
         """Determine redirect URL based on user type or session 'next' parameter."""
         user = self.request.user
 
-        # Check if there's a redirect URL from a notification link
+        # First priority: Check Django's standard redirect_url handling (from GET/POST 'next' parameter)
+        redirect_url = self.get_redirect_url()
+        if redirect_url:
+            return redirect_url
+
+        # Second priority: Check if there's a redirect URL from session (notification link)
         next_url = self.request.session.get('next')
         if next_url:
             # Clean up session

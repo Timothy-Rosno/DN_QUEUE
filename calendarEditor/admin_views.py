@@ -1620,19 +1620,12 @@ def admin_clear_archive(request):
                 notification_type='admin_action',
                 title='Archive Cleared',
                 message=(
-                    f"📢 The archived measurements database has been cleared by {admin_name} "
+                    f"The archived measurements database has been cleared by {admin_name} "
                     f"to free up space. {count} measurements were removed. "
                     f"Contact administrators if you need access to old archived data."
                 )
             )
 
-        # Send Slack notification if enabled
-        if settings.SLACK_ENABLED:
-            notifications.send_slack_notification(
-                message=f"🗑️ Archive Cleared: {count} measurements deleted by {admin_name}",
-                channel_type='admin'
-            )
-        
         if is_ajax:
             return JsonResponse({
                 'success': True,

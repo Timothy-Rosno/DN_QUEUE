@@ -127,7 +127,7 @@
             </div>
 
             <!-- New Archive Entry Button (Staff Only) -->
-            {% if user.is_staff %}
+            {% if user.is_staff and archives %}
             <div style="display: flex; align-items: end;">
                 <a href="{% url 'archive_create' %}" class="btn btn-success">New Archive Entry</a>
             </div>
@@ -141,7 +141,7 @@
     {% if user.is_staff and archives %}
     <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
         <button type="button" onclick="toggleSelectAll()" class="btn btn-secondary">Select All</button>
-        <button type="button" onclick="bulkDelete()" class="btn btn-danger">Delete Selected</button>
+        <button type="button" id="deleteSelectedBtn" onclick="bulkDelete()" class="btn btn-danger" disabled style="opacity: 0.5; cursor: not-allowed;">Delete Selected</button>
         <span id="selectedCount" style="color: #7f8c8d; font-size: 0.9rem;"></span>
     </div>
     {% endif %}
@@ -217,9 +217,6 @@
     {% else %}
     <p style="text-align: center; padding: 2rem; background: white; border-radius: 8px;">
         No archived measurements found for the selected filters.
-        {% if not selected_year and not selected_month %}
-        <br><a href="{% url 'archive_create' %}">Create your first archive entry</a>
-        {% endif %}
     </p>
     {% endif %}
 </div>
@@ -257,8 +254,23 @@ function toggleSelectAll() {
 function updateSelectedCount() {
     const checkboxes = document.querySelectorAll('.archive-checkbox:checked');
     const countElement = document.getElementById('selectedCount');
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+
     if (countElement) {
         countElement.textContent = checkboxes.length > 0 ? `${checkboxes.length} selected` : '';
+    }
+
+    // Enable/disable delete button based on selection
+    if (deleteBtn) {
+        if (checkboxes.length > 0) {
+            deleteBtn.disabled = false;
+            deleteBtn.style.opacity = '1';
+            deleteBtn.style.cursor = 'pointer';
+        } else {
+            deleteBtn.disabled = true;
+            deleteBtn.style.opacity = '0.5';
+            deleteBtn.style.cursor = 'not-allowed';
+        }
     }
 }
 
@@ -269,10 +281,17 @@ function bulkDelete() {
         return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${checkboxes.length} archive ${checkboxes.length === 1 ? 'entry' : 'entries'}? This cannot be undone.`)) {
-        return;
-    }
+    // Open Thanos modal
+    const modal = document.getElementById('thanosModal');
+    const message = document.getElementById('thanosMessage');
+    const count = checkboxes.length;
 
+    message.textContent = `Are you sure you want to delete ${count} archive ${count === 1 ? 'entry' : 'entries'}?`;
+    modal.style.display = 'flex';
+}
+
+function submitBulkDelete() {
+    const checkboxes = document.querySelectorAll('.archive-checkbox:checked');
     const archiveIds = Array.from(checkboxes).map(cb => cb.value);
     const form = document.createElement('form');
     form.method = 'POST';
@@ -298,6 +317,52 @@ function bulkDelete() {
     document.body.appendChild(form);
     form.submit();
 }
+</script>
+
+<!-- Thanos Delete Confirmation Modal -->
+{% load static %}
+<div id="thanosModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:2rem; border-radius:10px; max-width:400px; width:90%; text-align:center; position:relative;">
+        <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto;">
+        <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
+        <div style="display:flex; justify-content:space-around; gap:1rem;">
+            <button id="thanosYes" class="btn btn-danger">Yes, snap them away</button>
+            <button id="thanosNo" class="btn btn-secondary">No, spare the archives</button>
+        </div>
+        <span id="thanosClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
+    </div>
+</div>
+
+<script>
+// Thanos modal handlers
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('thanosModal');
+    const message = document.getElementById('thanosMessage');
+    const btnYes = document.getElementById('thanosYes');
+    const btnNo = document.getElementById('thanosNo');
+    const btnClose = document.getElementById('thanosClose');
+
+    // Close modal
+    function closeModal() {
+        modal.style.display = 'none';
+    }
+
+    btnNo.addEventListener('click', closeModal);
+    btnClose.addEventListener('click', closeModal);
+
+    // Close on background click
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    // Yes button: Submit delete
+    btnYes.addEventListener('click', function() {
+        closeModal();
+        submitBulkDelete();
+    });
+});
 </script>
 
 {% endblock %}
