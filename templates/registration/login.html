@@ -11,6 +11,16 @@
         {% csrf_token %}
         {{ form.as_p }}
 
+        <div style="margin-top: 1rem; margin-bottom: 1rem;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" name="remember_me" id="remember_me" style="margin-right: 0.5rem;">
+                <span>Keep me signed in (don't use on shared devices)</span>
+            </label>
+            <p style="font-size: 0.85rem; color: #666; margin: 0.5rem 0 0 1.75rem;">
+                Checked: Stay signed in for 1 year. Unchecked: Stay signed in for 7 days.
+            </p>
+        </div>
+
         <div style="margin-top: 1.5rem;">
             <button type="submit" class="btn">Login</button>
             <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>

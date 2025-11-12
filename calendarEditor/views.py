@@ -2001,17 +2001,18 @@ def bulk_delete_archives(request):
 
 def token_login(request, token):
     """
-    Handle secure navigation from Slack notifications.
+    Handle secure navigation from Slack notifications with smart re-authentication.
 
     Security model:
-    - If user is already logged in as the correct user → Redirect to page
-    - If user is logged in as DIFFERENT user → Error, must logout first
-    - If user is not logged in → Show login page, redirect after login
+    - If user is already logged in as the CORRECT user → Direct redirect to page
+    - If user is logged in as DIFFERENT user → Auto-logout and prompt re-auth
+    - If user is not logged in → Show login page with hint about which user to use
     - Token is reusable (not consumed on use)
     - Token expires after 24 hours for security
     """
     from .models import OneTimeLoginToken
     from django.contrib import messages
+    from django.contrib.auth import logout
 
     try:
         # Get the token
@@ -2025,24 +2026,32 @@ def token_login(request, token):
         intended_user = login_token.user
         redirect_url = login_token.redirect_url
 
-        # Case 1: User is already logged in
-        if request.user.is_authenticated:
-            # Check if logged in as the correct user
-            if request.user.id == intended_user.id:
-                # Correct user! Redirect to the page
-                return redirect(redirect_url)
-            else:
-                # Wrong user is logged in
-                messages.error(
-                    request,
-                    f'This link is for {intended_user.username}, but you are logged in as {request.user.username}. '
-                    f'Please log out and try again.'
-                )
-                return redirect('login')
+        # Case 1: Already logged in as CORRECT user
+        if request.user.is_authenticated and request.user.id == intended_user.id:
+            # Perfect match! Direct redirect to intended page
+            return redirect(redirect_url)
 
-        # Case 2: User is not logged in
-        # Store the redirect URL in session for after login
+        # Case 2: Logged in as DIFFERENT user - auto-logout and prompt re-auth
+        if request.user.is_authenticated and request.user.id != intended_user.id:
+            wrong_user = request.user.username
+            # Logout the current (wrong) user
+            logout(request)
+
+            # Store redirect URL and intended user hint in session
+            request.session['next'] = redirect_url
+            request.session['token_auth_hint'] = intended_user.username
+
+            messages.warning(
+                request,
+                f'You were logged in as {wrong_user}. This link is for {intended_user.username}. '
+                f'Please log in as {intended_user.username} to continue.'
+            )
+            return redirect(f"{reverse('login')}?next={redirect_url}")
+
+        # Case 3: Not logged in - show login with hint
+        # Store the redirect URL and user hint in session for after login
         request.session['next'] = redirect_url
+        request.session['token_auth_hint'] = intended_user.username
 
         messages.info(
             request,

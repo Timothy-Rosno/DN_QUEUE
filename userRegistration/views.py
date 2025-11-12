@@ -20,9 +20,20 @@ class CustomLoginView(LoginView):
     """
 
     def form_valid(self, form):
-        """Handle successful login."""
+        """Handle successful login with optional 'Remember Me' functionality."""
+        # Check if user selected "Remember Me" checkbox
+        remember_me = self.request.POST.get('remember_me', False)
+
         # Call parent form_valid to log the user in
         response = super().form_valid(form)
+
+        # Set session expiry based on "Remember Me" preference
+        if remember_me:
+            # Long session: 1 year (for personal devices)
+            self.request.session.set_expiry(31536000)  # 365 days in seconds
+        else:
+            # Shorter session: 7 days (safer for potentially shared devices)
+            self.request.session.set_expiry(604800)  # 7 days in seconds
 
         # Tokens are reusable, so no need to mark as used
         # The get_success_url will handle redirection

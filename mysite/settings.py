@@ -212,9 +212,10 @@ LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "home"
 
 # Session configuration
-SESSION_COOKIE_AGE = 1800  # 30 minutes in seconds
+# Default session age: 1 year (can be overridden by "Remember Me" checkbox in login)
+SESSION_COOKIE_AGE = 31536000  # 1 year in seconds (365 days)
 SESSION_SAVE_EVERY_REQUEST = True  # Reset timeout on every request
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Persist sessions across browser restarts
 
 # Email configuration
 # For development: emails are printed to console
