@@ -54,6 +54,7 @@ urlpatterns = [
     path('admin/database-management/', admin_views.admin_database_management, name='admin_database_management'),
     path('admin/export-archive/', admin_views.admin_export_archive, name='admin_export_archive'),
     path('admin/export-full-database/', admin_views.admin_export_full_database, name='admin_export_full_database'),
+    path('admin/import-database/', admin_views.admin_import_database, name='admin_import_database'),
     path('admin/clear-archive-with-backup/', admin_views.admin_clear_archive_with_backup, name='admin_clear_archive_with_backup'),
     path('admin/clear-archive/', admin_views.admin_clear_archive, name='admin_clear_archive'),
 

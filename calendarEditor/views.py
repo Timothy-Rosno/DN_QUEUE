@@ -1958,9 +1958,12 @@ def delete_archive(request, archive_id):
 def bulk_delete_archives(request):
     """Bulk delete archive entries (admin only)."""
     if request.method == 'POST':
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         archive_ids = request.POST.getlist('archive_ids')
 
         if not archive_ids:
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': 'No archive entries selected for deletion.'})
             messages.error(request, 'No archive entries selected for deletion.')
             return redirect('archive_list')
 
@@ -1969,6 +1972,8 @@ def bulk_delete_archives(request):
         count = archives.count()
 
         if count == 0:
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': 'No valid archive entries found to delete.'})
             messages.error(request, 'No valid archive entries found to delete.')
             return redirect('archive_list')
 
@@ -1984,7 +1989,12 @@ def bulk_delete_archives(request):
         # Delete the archive entries
         archives.delete()
 
-        messages.success(request, f'Successfully deleted {count} archive {"entry" if count == 1 else "entries"}.')
+        success_msg = f'Successfully deleted {count} archive {"entry" if count == 1 else "entries"}.'
+
+        if is_ajax:
+            return JsonResponse({'success': True, 'count': count, 'message': success_msg})
+
+        messages.success(request, success_msg)
 
     return redirect('archive_list')
 

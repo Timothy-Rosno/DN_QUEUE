@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
 from userRegistration.models import UserProfile
-from .models import Machine, QueueEntry, QueuePreset, ArchivedMeasurement, Notification
+from .models import Machine, QueueEntry, QueuePreset, ArchivedMeasurement, Notification, NotificationPreference
 from .notifications import auto_clear_notifications
 from .views import reorder_queue
 from . import notifications
@@ -1645,5 +1645,201 @@ def admin_clear_archive(request):
                 'error': f'Error clearing archive: {str(e)}'
             })
         messages.error(request, f'Error clearing archive: {str(e)}')
+
+    return redirect('admin_database_management')
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def admin_import_database(request):
+    """
+    Import and restore database from backup file.
+    Supports both Replace mode (clear then restore) and Merge mode (skip existing).
+    Staff-only access.
+    """
+    from django.core import serializers
+    from django.db import transaction
+    from django.http import JsonResponse
+    import json
+
+    # Check if this is AJAX request
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    # Validate file upload
+    if 'backup_file' not in request.FILES:
+        error_msg = 'No backup file provided.'
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+        return redirect('admin_database_management')
+
+    backup_file = request.FILES['backup_file']
+    import_mode = request.POST.get('import_mode', 'merge')  # 'merge' or 'replace'
+
+    # Validate file size (max 50MB)
+    max_size = 50 * 1024 * 1024  # 50MB
+    if backup_file.size > max_size:
+        error_msg = f'File too large. Maximum size is 50MB.'
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+        return redirect('admin_database_management')
+
+    # Validate file type
+    if not backup_file.name.endswith('.json'):
+        error_msg = 'Invalid file type. Only .json files are accepted.'
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+        return redirect('admin_database_management')
+
+    try:
+        # Read and parse JSON
+        file_content = backup_file.read().decode('utf-8')
+        backup_data = json.loads(file_content)
+
+        # Validate backup structure
+        if 'export_type' not in backup_data or backup_data['export_type'] != 'full_database_backup':
+            error_msg = 'Invalid backup file format. Expected full database backup.'
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': error_msg})
+            messages.error(request, error_msg)
+            return redirect('admin_database_management')
+
+        if 'models' not in backup_data:
+            error_msg = 'Invalid backup file structure. Missing models data.'
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': error_msg})
+            messages.error(request, error_msg)
+            return redirect('admin_database_management')
+
+        # Models to restore (in dependency order)
+        models_order = [
+            'auth.User',
+            'userRegistration.UserProfile',
+            'calendarEditor.Machine',
+            'calendarEditor.QueuePreset',
+            'calendarEditor.QueueEntry',
+            'calendarEditor.ArchivedMeasurement',
+            'calendarEditor.NotificationPreference',
+            'calendarEditor.Notification',
+        ]
+
+        restored_counts = {}
+        skipped_counts = {}
+
+        with transaction.atomic():
+            # REPLACE MODE: Clear all data first
+            if import_mode == 'replace':
+                # Clear data in reverse order (to respect foreign keys)
+                for model_name in reversed(models_order):
+                    if model_name in backup_data['models']:
+                        model_label = model_name.split('.')
+                        app_label, model_class_name = model_label[0], model_label[1]
+
+                        # Get model class
+                        from django.apps import apps
+                        try:
+                            model_class = apps.get_model(app_label, model_class_name)
+                            # Don't delete superusers to prevent lockout
+                            if model_name == 'auth.User':
+                                model_class.objects.filter(is_superuser=False).delete()
+                            else:
+                                model_class.objects.all().delete()
+                        except Exception as e:
+                            print(f"Warning: Could not clear {model_name}: {e}")
+
+            # Restore models in correct order
+            for model_name in models_order:
+                if model_name not in backup_data['models']:
+                    continue
+
+                model_data = backup_data['models'][model_name]
+
+                # Skip if error in backup
+                if isinstance(model_data, dict) and 'error' in model_data:
+                    continue
+
+                restored_count = 0
+                skipped_count = 0
+
+                try:
+                    # Deserialize and restore objects
+                    for obj_data in model_data:
+                        try:
+                            # In merge mode, check if object exists
+                            if import_mode == 'merge':
+                                obj_pk = obj_data.get('pk')
+                                model_label = model_name.split('.')
+                                app_label, model_class_name = model_label[0], model_label[1]
+
+                                from django.apps import apps
+                                model_class = apps.get_model(app_label, model_class_name)
+
+                                # Skip if object already exists
+                                if model_class.objects.filter(pk=obj_pk).exists():
+                                    skipped_count += 1
+                                    continue
+
+                            # Deserialize single object
+                            for deserialized_obj in serializers.deserialize('json', json.dumps([obj_data])):
+                                deserialized_obj.save()
+                                restored_count += 1
+
+                        except Exception as e:
+                            # Log error but continue with other objects
+                            print(f"Error restoring object from {model_name}: {e}")
+                            skipped_count += 1
+                            continue
+
+                    restored_counts[model_name] = restored_count
+                    if skipped_count > 0:
+                        skipped_counts[model_name] = skipped_count
+
+                except Exception as e:
+                    error_msg = f'Error restoring {model_name}: {str(e)}'
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'error': error_msg})
+                    messages.error(request, error_msg)
+                    return redirect('admin_database_management')
+
+        # Prepare success message
+        total_restored = sum(restored_counts.values())
+        total_skipped = sum(skipped_counts.values())
+
+        success_msg = f'Database restore completed. '
+        if import_mode == 'replace':
+            success_msg += f'Restored {total_restored} records in replace mode.'
+        else:
+            success_msg += f'Restored {total_restored} records, skipped {total_skipped} existing records.'
+
+        # Send notification to user
+        notifications.create_notification(
+            recipient=request.user,
+            notification_type='admin_action',
+            title='Database Restored',
+            message=f'Database backup was restored by {request.user.username}. Mode: {import_mode}. {success_msg}'
+        )
+
+        if is_ajax:
+            return JsonResponse({
+                'success': True,
+                'message': success_msg,
+                'restored': restored_counts,
+                'skipped': skipped_counts
+            })
+
+        messages.success(request, success_msg)
+
+    except json.JSONDecodeError:
+        error_msg = 'Invalid JSON file format.'
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+    except Exception as e:
+        error_msg = f'Error importing database: {str(e)}'
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
 
     return redirect('admin_database_management')

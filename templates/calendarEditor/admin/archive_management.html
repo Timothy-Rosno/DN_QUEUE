@@ -177,6 +177,41 @@
     </p>
 </div>
 
+<!-- Import/Restore Database -->
+<div class="card" style="border-left: 4px solid #e67e22;">
+    <h2 style="margin-top: 0; color: #e67e22;">Import/Restore Database</h2>
+    <p style="color: #7f8c8d;">Upload a backup file to restore database state.</p>
+
+    <form id="importForm" style="margin-top: 1rem;">
+        {% csrf_token %}
+        <div style="margin-bottom: 1rem;">
+            <label for="backupFile" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                Select Backup File (.json):
+            </label>
+            <input type="file" id="backupFile" name="backup_file" accept=".json" style="padding: 0.5rem; border: 2px solid #e67e22; border-radius: 5px;">
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label for="importMode" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                Import Mode:
+            </label>
+            <select id="importMode" name="import_mode" style="padding: 0.5rem; border: 2px solid #e67e22; border-radius: 5px; width: 100%; max-width: 400px;">
+                <option value="merge">Merge - Keep existing data, add new records (safer)</option>
+                <option value="replace">Replace - Clear database and restore (WARNING: destructive)</option>
+            </select>
+        </div>
+
+        <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.9rem;">
+            <strong>Merge mode:</strong> Existing records are preserved, only missing records are added.<br>
+            <strong>Replace mode:</strong> All data is cleared before restoring (except superusers).
+        </p>
+
+        <button type="button" id="openImportModal" class="btn" style="background: #e67e22;">
+            Import Database Backup
+        </button>
+    </form>
+</div>
+
 <!-- Clear Archive -->
 <div class="card" style="border-left: 4px solid #e74c3c;">
     <h2 style="margin-top: 0; color: #e74c3c;">Clear Archive (Danger Zone)</h2>
@@ -348,5 +383,139 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Import Database Modal Handlers
+document.addEventListener('DOMContentLoaded', function() {
+    const openImportBtn = document.getElementById('openImportModal');
+    const importModal = document.getElementById('importThanosModal');
+    const importConfirmInput = document.getElementById('importConfirmation');
+    const importErrorDiv = document.getElementById('importError');
+    const importYesBtn = document.getElementById('importYes');
+    const importNoBtn = document.getElementById('importNo');
+    const importCloseBtn = document.getElementById('importClose');
+    const backupFileInput = document.getElementById('backupFile');
+    const importModeSelect = document.getElementById('importMode');
+    const importMessage = document.getElementById('importMessage');
+
+    if (!openImportBtn) return; // Element not found
+
+    // Open import modal
+    openImportBtn.addEventListener('click', function() {
+        // Validate file selection
+        if (!backupFileInput.files || backupFileInput.files.length === 0) {
+            alert('Please select a backup file first.');
+            return;
+        }
+
+        const fileName = backupFileInput.files[0].name;
+        const importMode = importModeSelect.value;
+        const modeName = importMode === 'replace' ? 'REPLACE mode (DESTRUCTIVE)' : 'MERGE mode (safe)';
+
+        importMessage.innerHTML = `Are you sure you want to restore database from:<br><strong>${fileName}</strong><br>Mode: <strong>${modeName}</strong>`;
+        importConfirmInput.value = '';
+        importErrorDiv.style.display = 'none';
+        importModal.style.display = 'flex';
+        importConfirmInput.focus();
+    });
+
+    // Close modal
+    function closeImportModal() {
+        importModal.style.display = 'none';
+        importConfirmInput.value = '';
+        importErrorDiv.style.display = 'none';
+    }
+
+    importNoBtn.addEventListener('click', closeImportModal);
+    importCloseBtn.addEventListener('click', closeImportModal);
+
+    // Close on background click
+    importModal.addEventListener('click', function(e) {
+        if (e.target === importModal) {
+            closeImportModal();
+        }
+    });
+
+    // Yes button: Confirm and import
+    importYesBtn.addEventListener('click', function() {
+        const confirmation = importConfirmInput.value.trim();
+
+        if (confirmation !== 'CONFIRM RESTORE') {
+            importErrorDiv.textContent = 'Incorrect confirmation text. Please type exactly "CONFIRM RESTORE".';
+            importErrorDiv.style.display = 'block';
+            return;
+        }
+
+        // Disable button to prevent double-click
+        importYesBtn.disabled = true;
+        importYesBtn.textContent = 'Importing...';
+
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('backup_file', backupFileInput.files[0]);
+        formData.append('import_mode', importModeSelect.value);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        // Submit import request via AJAX
+        fetch('{% url "admin_import_database" %}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeImportModal();
+                alert(`Success: ${data.message}`);
+                window.location.reload();
+            } else {
+                importErrorDiv.textContent = data.error || 'Unknown error occurred';
+                importErrorDiv.style.display = 'block';
+                importYesBtn.disabled = false;
+                importYesBtn.textContent = 'Yes, restore database';
+            }
+        })
+        .catch(error => {
+            importErrorDiv.textContent = 'Network error: ' + error.message;
+            importErrorDiv.style.display = 'block';
+            importYesBtn.disabled = false;
+            importYesBtn.textContent = 'Yes, restore database';
+        });
+    });
+
+    // Allow Enter key to confirm
+    importConfirmInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            importYesBtn.click();
+        }
+    });
+});
 </script>
+
+<!-- Import/Restore Thanos Confirmation Modal -->
+<div id="importThanosModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:2rem; border-radius:10px; max-width:500px; width:90%; text-align:center; position:relative;">
+        <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto;">
+        <p id="importMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1.1rem; color: #e67e22;"></p>
+
+        <label for="importConfirmation" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+            Type <code style="background: #ecf0f1; padding: 2px 6px; border-radius: 3px;">CONFIRM RESTORE</code>:
+        </label>
+        <input
+            type="text"
+            id="importConfirmation"
+            style="width: 100%; max-width: 300px; padding: 0.5rem; border: 2px solid #e67e22; border-radius: 5px; font-family: monospace; margin-bottom: 1rem;"
+            placeholder="CONFIRM RESTORE"
+        >
+        <div id="importError" style="color: #e74c3c; font-size: 0.9rem; margin-bottom: 1rem; display: none;"></div>
+
+        <div style="display:flex; justify-content:space-around; gap:1rem;">
+            <button id="importYes" class="btn" style="background: #e67e22;">Yes, restore database</button>
+            <button id="importNo" class="btn" style="background: #95a5a6;">No, cancel</button>
+        </div>
+        <span id="importClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
+    </div>
+</div>
+
 {% endblock %}

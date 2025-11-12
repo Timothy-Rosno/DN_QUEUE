@@ -293,29 +293,84 @@ function bulkDelete() {
 function submitBulkDelete() {
     const checkboxes = document.querySelectorAll('.archive-checkbox:checked');
     const archiveIds = Array.from(checkboxes).map(cb => cb.value);
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '{% url "bulk_delete_archives" %}';
-
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-    if (csrfToken) {
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrfmiddlewaretoken';
-        csrfInput.value = csrfToken.value;
-        form.appendChild(csrfInput);
-    }
 
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', csrfToken.value);
     archiveIds.forEach(id => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'archive_ids';
-        input.value = id;
-        form.appendChild(input);
+        formData.append('archive_ids', id);
     });
 
-    document.body.appendChild(form);
-    form.submit();
+    // Send AJAX request
+    fetch('{% url "bulk_delete_archives" %}', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success banner
+            showBanner(data.message, 'success');
+            // Reload page after short delay to show updated list
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showBanner(data.error || 'An error occurred', 'error');
+        }
+    })
+    .catch(error => {
+        showBanner('Network error: ' + error.message, 'error');
+    });
+}
+
+function showBanner(message, type) {
+    // Remove existing banner if any
+    const existingBanner = document.getElementById('messageBanner');
+    if (existingBanner) {
+        existingBanner.remove();
+    }
+
+    // Create new banner
+    const banner = document.createElement('div');
+    banner.id = 'messageBanner';
+    banner.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 1rem 2rem;
+        border-radius: 5px;
+        font-weight: bold;
+        z-index: 9999;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        animation: slideDown 0.3s ease-out;
+        ${type === 'success' ? 'background: #2ecc71; color: white;' : 'background: #e74c3c; color: white;'}
+    `;
+    banner.textContent = message;
+
+    // Add animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideDown {
+            from { top: -100px; opacity: 0; }
+            to { top: 20px; opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+
+    document.body.appendChild(banner);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        banner.style.animation = 'slideUp 0.3s ease-out';
+        banner.style.top = '-100px';
+        setTimeout(() => banner.remove(), 300);
+    }, 3000);
 }
 </script>
 
