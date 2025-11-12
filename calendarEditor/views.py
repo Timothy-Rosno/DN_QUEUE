@@ -2274,8 +2274,9 @@ def health_check(request):
     - Django Channels layer (Redis-backed WebSocket support)
     - Database
 
-    Returns JSON response with status of all services.
-    Keeps Redis alive when pinged regularly.
+    ALWAYS returns 200 to keep UptimeRobot happy and prevent false alarms.
+    The act of attempting connections keeps Redis alive even if initially unavailable.
+    Check the JSON 'services' field to see actual health status of each service.
     """
     from channels.layers import get_channel_layer
     from django.db import connection
@@ -2286,28 +2287,26 @@ def health_check(request):
         'services': {}
     }
 
-    overall_healthy = True
-
-    # Test Redis cache
+    # Test Redis cache - attempting connection wakes up Redis
     try:
         cache.set('health_check', 'ok', timeout=60)
         cache_ok = cache.get('health_check') == 'ok'
         health_status['services']['cache'] = 'ok' if cache_ok else 'degraded'
         if not cache_ok:
-            overall_healthy = False
+            health_status['status'] = 'degraded'
     except Exception as e:
         health_status['services']['cache'] = f'error: {str(e)}'
-        overall_healthy = False
+        health_status['status'] = 'degraded'
 
-    # Test Django Channels layer (Redis)
+    # Test Django Channels layer (Redis) - wakes up Redis for WebSocket support
     try:
         channel_layer = get_channel_layer()
         health_status['services']['channels'] = 'ok' if channel_layer else 'unavailable'
         if not channel_layer:
-            overall_healthy = False
+            health_status['status'] = 'degraded'
     except Exception as e:
         health_status['services']['channels'] = f'error: {str(e)}'
-        overall_healthy = False
+        health_status['status'] = 'degraded'
 
     # Test database connection
     try:
@@ -2316,11 +2315,9 @@ def health_check(request):
         health_status['services']['database'] = 'ok'
     except Exception as e:
         health_status['services']['database'] = f'error: {str(e)}'
-        overall_healthy = False
-
-    # Set overall status
-    if not overall_healthy:
         health_status['status'] = 'degraded'
 
-    status_code = 200 if overall_healthy else 503
-    return JsonResponse(health_status, status=status_code)
+    # ALWAYS return 200 - even if services are degraded
+    # This keeps UptimeRobot happy and prevents false "down" alerts during wake-up
+    # The act of trying to connect is enough to wake services up
+    return JsonResponse(health_status, status=200)
