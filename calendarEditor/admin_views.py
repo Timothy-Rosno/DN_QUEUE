@@ -1523,50 +1523,109 @@ def api_export_database_backup(request):
 
 
 @staff_member_required
+def admin_clear_archive_with_backup(request):
+    """
+    Automatically download backup before clearing archive.
+    Triggers download in browser, then redirects to actual delete page.
+    """
+    import json
+    from django.http import HttpResponse
+    from datetime import datetime
+
+    # Get all archived measurements
+    measurements = ArchivedMeasurement.objects.select_related('user', 'machine').all().order_by('-measurement_date')
+
+    # Export as JSON
+    data = []
+    for m in measurements:
+        data.append({
+            'id': m.id,
+            'user': m.user.username,
+            'user_id': m.user.id,
+            'machine': m.machine.name,
+            'machine_id': m.machine.id,
+            'measurement_date': m.measurement_date.isoformat(),
+            'title': m.title,
+            'notes': m.notes,
+            'archived_at': m.archived_at.isoformat(),
+        })
+
+    # Create response with backup file
+    response = HttpResponse(
+        json.dumps(data, indent=2),
+        content_type='application/json'
+    )
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    response['Content-Disposition'] = f'attachment; filename="archive_backup_before_delete_{timestamp}.json"'
+
+    return response
+
+
+@staff_member_required
 @require_http_methods(["POST"])
 def admin_clear_archive(request):
     """
     Clear all archived measurements.
-    Requires confirmation and sends notifications to all users.
+    Requires exact confirmation text and sends notifications to all users.
     Staff/superuser only.
     """
     from django.contrib.auth.models import User
-    
+    from django.http import JsonResponse
+
+    # Check if this is AJAX request (for Thanos modal)
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
     # Check confirmation
     confirmation = request.POST.get('confirmation', '').strip()
     if confirmation != 'CONFIRM DELETE':
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'error': 'Incorrect confirmation text. Please type exactly "CONFIRM DELETE".'
+            })
+
+        # Create notification for incorrect confirmation
+        notifications.create_notification(
+            recipient=request.user,
+            notification_type='admin_action',
+            title='Archive Delete Failed',
+            message=f'Incorrect confirmation text entered. Expected "CONFIRM DELETE", got "{confirmation}". Archive was not deleted.'
+        )
         messages.error(request, 'Incorrect confirmation text. Archive not deleted.')
-        return redirect('admin_archive_management')
-    
+        return redirect('admin_database_management')
+
     # Get count before deletion
     count = ArchivedMeasurement.objects.count()
-    
+
     if count == 0:
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'error': 'Archive is already empty.'
+            })
         messages.info(request, 'Archive is already empty.')
-        return redirect('admin_archive_management')
-    
+        return redirect('admin_database_management')
+
     # Delete all archived measurements
     try:
         ArchivedMeasurement.objects.all().delete()
-        
+
         # Send notification to all active users
         active_users = User.objects.filter(is_active=True)
         admin_name = request.user.get_full_name() or request.user.username
-        
-        notification_message = (
-            f"📢 The archived measurements database has been cleared by {admin_name} "
-            f"to free up space. {count} measurements were removed. "
-            f"Contact administrators if you need access to old archived data."
-        )
-        
+
         for user in active_users:
             notifications.create_notification(
-                user=user,
-                message=notification_message,
+                recipient=user,
                 notification_type='admin_action',
-                priority='medium'
+                title='Archive Cleared',
+                message=(
+                    f"📢 The archived measurements database has been cleared by {admin_name} "
+                    f"to free up space. {count} measurements were removed. "
+                    f"Contact administrators if you need access to old archived data."
+                )
             )
-        
+
         # Send Slack notification if enabled
         if settings.SLACK_ENABLED:
             notifications.send_slack_notification(
@@ -1574,12 +1633,24 @@ def admin_clear_archive(request):
                 channel_type='admin'
             )
         
+        if is_ajax:
+            return JsonResponse({
+                'success': True,
+                'count': count,
+                'message': f'Successfully deleted {count} archived measurements. All users have been notified.'
+            })
+
         messages.success(
             request,
             f'Successfully deleted {count} archived measurements. All users have been notified.'
         )
-        
+
     except Exception as e:
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'error': f'Error clearing archive: {str(e)}'
+            })
         messages.error(request, f'Error clearing archive: {str(e)}')
-    
-    return redirect('admin_archive_management')
+
+    return redirect('admin_database_management')

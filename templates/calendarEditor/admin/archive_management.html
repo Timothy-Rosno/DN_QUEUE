@@ -188,41 +188,56 @@
     </div>
     {% else %}
     <div style="background: #fee; border: 2px solid #e74c3c; padding: 1.5rem; border-radius: 5px; margin-top: 1rem;">
-        <h3 style="margin-top: 0; color: #e74c3c;">DANGER: This action cannot be undone!</h3>
+        <h3 style="margin-top: 0; color: #e74c3c;">WARNING: This action cannot be undone!</h3>
 
         <ul style="color: #7f8c8d;">
             <li>This will permanently delete <strong>{{ archive_count }} archived measurements</strong></li>
-            <li>An automatic backup will NOT be downloaded - export manually first!</li>
+            <li><strong>Automatic backup will be downloaded</strong> before deletion</li>
             <li>All users will be notified that the archive was cleared</li>
             <li>Users should contact you for old data if needed</li>
         </ul>
 
-        <form method="POST" action="{% url 'admin_clear_archive' %}" onsubmit="return confirmDelete();" style="margin-top: 1rem;">
-            {% csrf_token %}
-
-            <label for="confirmation" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
-                Type <code style="background: #ecf0f1; padding: 2px 6px; border-radius: 3px;">CONFIRM DELETE</code> to proceed:
-            </label>
-            <input
-                type="text"
-                id="confirmation"
-                name="confirmation"
-                required
-                style="width: 100%; max-width: 400px; padding: 0.5rem; border: 2px solid #e74c3c; border-radius: 5px; font-family: monospace;"
-                placeholder="CONFIRM DELETE"
-            >
-
-            <div style="margin-top: 1rem;">
-                <button type="submit" class="btn" style="background: #e74c3c;">
-                    Delete All {{ archive_count }} Archived Measurements
-                </button>
-                <a href="{% url 'admin_dashboard' %}" class="btn" style="background: #95a5a6; margin-left: 0.5rem;">
-                    Cancel
-                </a>
-            </div>
-        </form>
+        <div style="margin-top: 1rem;">
+            <button id="openThanosModal" class="btn" style="background: #e74c3c;">
+                Delete All {{ archive_count }} Archived Measurements
+            </button>
+            <a href="{% url 'admin_dashboard' %}" class="btn" style="background: #95a5a6; margin-left: 0.5rem;">
+                Cancel
+            </a>
+        </div>
     </div>
     {% endif %}
+</div>
+
+<!-- Thanos Delete Confirmation Modal -->
+{% load static %}
+<div id="thanosModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:2rem; border-radius:10px; max-width:500px; width:90%; text-align:center; position:relative;">
+        <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto;">
+        <p style="font-weight:bold; margin-bottom:1rem; font-size:1.1rem; color: #e74c3c;">
+            Are you absolutely sure you want to delete {{ archive_count }} archived measurements?
+        </p>
+        <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.9rem;">
+            A backup will be downloaded automatically before deletion.
+        </p>
+
+        <label for="thanosConfirmation" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+            Type <code style="background: #ecf0f1; padding: 2px 6px; border-radius: 3px;">CONFIRM DELETE</code>:
+        </label>
+        <input
+            type="text"
+            id="thanosConfirmation"
+            style="width: 100%; max-width: 300px; padding: 0.5rem; border: 2px solid #e74c3c; border-radius: 5px; font-family: monospace; margin-bottom: 1rem;"
+            placeholder="CONFIRM DELETE"
+        >
+        <div id="thanosError" style="color: #e74c3c; font-size: 0.9rem; margin-bottom: 1rem; display: none;"></div>
+
+        <div style="display:flex; justify-content:space-around; gap:1rem;">
+            <button id="thanosYes" class="btn" style="background: #e74c3c;">Yes, snap it away</button>
+            <button id="thanosNo" class="btn" style="background: #95a5a6;">No, spare the archive</button>
+        </div>
+        <span id="thanosClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
+    </div>
 </div>
 
 <div class="card">
@@ -232,18 +247,106 @@
 </div>
 
 <script>
-function confirmDelete() {
-    const confirmation = document.getElementById('confirmation').value;
-    if (confirmation !== 'CONFIRM DELETE') {
-        alert('Please type exactly "CONFIRM DELETE" to proceed.');
-        return false;
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('thanosModal');
+    const openBtn = document.getElementById('openThanosModal');
+    const confirmInput = document.getElementById('thanosConfirmation');
+    const errorDiv = document.getElementById('thanosError');
+    const btnYes = document.getElementById('thanosYes');
+    const btnNo = document.getElementById('thanosNo');
+    const btnClose = document.getElementById('thanosClose');
+
+    if (!openBtn) return; // Archive is empty, no button
+
+    // Open Thanos modal
+    openBtn.addEventListener('click', function() {
+        modal.style.display = 'flex';
+        confirmInput.value = '';
+        errorDiv.style.display = 'none';
+        confirmInput.focus();
+    });
+
+    // Close modal
+    function closeModal() {
+        modal.style.display = 'none';
+        confirmInput.value = '';
+        errorDiv.style.display = 'none';
     }
 
-    return confirm(
-        'This will permanently delete {{ archive_count }} archived measurements.\n\n' +
-        'All users will be notified.\n\n' +
-        'Are you absolutely sure you want to continue?'
-    );
-}
+    btnNo.addEventListener('click', closeModal);
+    btnClose.addEventListener('click', closeModal);
+
+    // Close on background click
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    // Yes button: Download backup, then delete
+    btnYes.addEventListener('click', function() {
+        const confirmation = confirmInput.value.trim();
+
+        if (confirmation !== 'CONFIRM DELETE') {
+            errorDiv.textContent = 'Incorrect confirmation text. Please type exactly "CONFIRM DELETE".';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        // Disable button to prevent double-click
+        btnYes.disabled = true;
+        btnYes.textContent = 'Downloading backup...';
+
+        // Step 1: Download backup automatically
+        const backupUrl = '{% url "admin_clear_archive_with_backup" %}';
+        const backupLink = document.createElement('a');
+        backupLink.href = backupUrl;
+        backupLink.download = 'archive_backup_before_delete.json';
+        document.body.appendChild(backupLink);
+        backupLink.click();
+        document.body.removeChild(backupLink);
+
+        // Wait 1 second for download to start, then delete
+        setTimeout(function() {
+            btnYes.textContent = 'Deleting...';
+
+            // Step 2: Submit delete request via AJAX
+            fetch('{% url "admin_clear_archive" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: 'confirmation=' + encodeURIComponent(confirmation)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`✅ Success: ${data.message}`);
+                    window.location.reload();
+                } else {
+                    errorDiv.textContent = data.error || 'Unknown error occurred';
+                    errorDiv.style.display = 'block';
+                    btnYes.disabled = false;
+                    btnYes.textContent = 'Yes, snap it away';
+                }
+            })
+            .catch(error => {
+                errorDiv.textContent = 'Network error: ' + error.message;
+                errorDiv.style.display = 'block';
+                btnYes.disabled = false;
+                btnYes.textContent = 'Yes, snap it away';
+            });
+        }, 1000); // 1 second delay for backup download
+    });
+
+    // Allow Enter key to confirm
+    confirmInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            btnYes.click();
+        }
+    });
+});
 </script>
 {% endblock %}

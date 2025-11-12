@@ -814,3 +814,311 @@ successful research outcomes and publications.
 ================================================================================
 END OF JUSTIFICATION
 ================================================================================
+
+
+================================================================================
+SCHOOL SERVER MIGRATION TODO - Lab Equipment Queue
+================================================================================
+
+## OVERVIEW
+Migrate lab equipment scheduler from Render (PostgreSQL expires in 1-2 months)
+to school server infrastructure. Requirements:
+- External access (users can access from anywhere)
+- Temperature gateway integration (runs on lab computer, updates via API)
+- Zero ongoing cost
+- Data persistence and backups
+
+## PHASE 1: SCHOOL IT COORDINATION
+[ ] Contact school IT department to request:
+    [ ] Server access (Linux VM or web hosting account)
+    [ ] Public domain/subdomain (e.g., qhog.physics.school.edu)
+    [ ] Database hosting (PostgreSQL or MySQL)
+    [ ] SSL certificate for HTTPS access
+    [ ] Firewall configuration (HTTP/HTTPS ports open externally)
+
+[ ] Clarify deployment requirements:
+    [ ] Server OS and access method (SSH, cPanel, etc.)
+    [ ] Python version available (need 3.9+)
+    [ ] Can install packages (pip, virtualenv)?
+    [ ] Redis availability (for WebSockets)
+    [ ] Disk space allocation
+    [ ] Backup policy and procedures
+    [ ] Uptime guarantee (24/7 or business hours?)
+    [ ] Summer/holiday shutdown schedule
+
+[ ] Test external access:
+    [ ] Verify domain resolves from outside school network
+    [ ] Test SSH access from home/off-campus
+    [ ] Check firewall allows HTTP/HTTPS traffic
+    [ ] Confirm SSL certificate will be provided
+
+## PHASE 2: TEMPERATURE GATEWAY CONFIGURATION
+Critical: Gateway runs on lab computer (local network access to machines),
+must communicate with Django server on school infrastructure.
+
+[ ] Network connectivity tests:
+    [ ] Can lab computer reach school server? (ping test)
+    [ ] Test API call from lab computer to school server URL
+    [ ] Check school firewall doesn't block outbound from lab
+    [ ] If blocked, request IT to whitelist school server domain
+
+[ ] Update temperature gateway configuration:
+    [ ] Update temperature_gateway/gateway_config.json:
+        - Change DJANGO_API_URL: "https://your-school-domain.edu"
+        - Update TEMPERATURE_GATEWAY_API_KEY (generate new on server)
+    [ ] Test gateway connectivity to new URL
+    [ ] Verify gateway logs show successful API calls
+
+[ ] Keep gateway on lab computer (recommended):
+    - Already has network access to machine IPs (10.3.118.x, 192.168.10.x)
+    - No VPN/VLAN configuration needed
+    - Simpler deployment
+
+## PHASE 3: DATA EXPORT FROM RENDER
+[ ] Before migration, backup all data:
+    [ ] Admin dashboard → Database Management → "Export Complete Database"
+    [ ] Save to multiple locations (local + cloud)
+    [ ] Download from GitHub database-backups branch (last 8 weeks)
+    [ ] Verify backup file is valid JSON and >1KB
+
+[ ] Document current Render configuration:
+    [ ] Note all environment variables (SECRET_KEY, API keys, etc.)
+    [ ] Export database schema (for reference)
+    [ ] Document current user list (emails, roles)
+
+## PHASE 4: DEPLOY DJANGO ON SCHOOL SERVER
+
+### IF School Provides Shared Hosting (cPanel/WordPress-style):
+[ ] Setup Python environment:
+    [ ] Install Python 3.9+ in user directory (if not available system-wide)
+    [ ] Create virtual environment: python -m venv venv
+    [ ] Activate: source venv/bin/activate
+
+[ ] Deploy application:
+    [ ] Clone repository: git clone https://github.com/Timothy-Rosno/DN_QUEUE.git
+    [ ] Install dependencies: pip install -r requirements.txt
+    [ ] Configure settings.py for production:
+        - DEBUG = False
+        - ALLOWED_HOSTS = ['your-school-domain.edu']
+        - SECRET_KEY = 'generate-new-secret-key'
+        - DATABASE_URL = 'school-provided-database-url'
+        - REDIS_URL = 'school-redis-or-skip-if-unavailable'
+
+[ ] Database setup:
+    [ ] Create database via cPanel/hosting panel
+    [ ] Get connection string from hosting provider
+    [ ] Set DATABASE_URL environment variable
+    [ ] Run migrations: python manage.py migrate
+    [ ] Load backup: python manage.py loaddata backup.json
+    [ ] Create superuser: python manage.py createsuperuser
+
+[ ] Web server configuration:
+    [ ] Configure .htaccess for WSGI/passenger (hosting-specific)
+    [ ] OR setup gunicorn + nginx reverse proxy
+    [ ] Configure static files: python manage.py collectstatic
+    [ ] Setup SSL certificate (Let's Encrypt or hosting-provided)
+
+### IF School Provides Full Server (Linux VM):
+[ ] Install system dependencies:
+    [ ] sudo apt update && sudo apt upgrade
+    [ ] sudo apt install python3.9 python3.9-venv python3-pip
+    [ ] sudo apt install postgresql postgresql-contrib
+    [ ] sudo apt install redis-server
+    [ ] sudo apt install nginx
+    [ ] sudo apt install supervisor  # for process management
+
+[ ] Setup PostgreSQL:
+    [ ] sudo -u postgres psql
+    [ ] CREATE DATABASE qhog;
+    [ ] CREATE USER qhog WITH PASSWORD 'secure-password';
+    [ ] GRANT ALL PRIVILEGES ON DATABASE qhog TO qhog;
+    [ ] Test connection: psql -h localhost -U qhog -d qhog
+
+[ ] Deploy application:
+    [ ] Clone to /opt/qhog: git clone https://github.com/Timothy-Rosno/DN_QUEUE.git /opt/qhog
+    [ ] cd /opt/qhog
+    [ ] python3.9 -m venv venv
+    [ ] source venv/bin/activate
+    [ ] pip install -r requirements.txt
+
+[ ] Configure environment variables (/opt/qhog/.env):
+    SECRET_KEY=generate-new-secret-key
+    DEBUG=False
+    ALLOWED_HOSTS=your-school-domain.edu
+    DATABASE_URL=postgresql://qhog:password@localhost/qhog
+    REDIS_URL=redis://localhost:6379
+    TEMPERATURE_GATEWAY_API_KEY=generate-new-key
+    BACKUP_API_KEY=generate-new-key
+    BASE_URL=https://your-school-domain.edu
+
+[ ] Run migrations and restore data:
+    [ ] python manage.py migrate
+    [ ] python manage.py loaddata /path/to/backup.json
+    [ ] python manage.py createsuperuser
+    [ ] python manage.py collectstatic
+
+[ ] Setup systemd services:
+    [ ] Create /etc/systemd/system/qhog-web.service (Daphne)
+    [ ] Create /etc/systemd/system/qhog-gateway.service (temperature_gateway)
+    [ ] sudo systemctl daemon-reload
+    [ ] sudo systemctl enable qhog-web qhog-gateway
+    [ ] sudo systemctl start qhog-web qhog-gateway
+
+[ ] Configure nginx reverse proxy:
+    [ ] Create /etc/nginx/sites-available/qhog
+    [ ] Proxy to Daphne on port 8000
+    [ ] Setup SSL with certbot: sudo certbot --nginx -d your-domain.edu
+    [ ] sudo nginx -t && sudo systemctl reload nginx
+
+[ ] Configure firewall:
+    [ ] sudo ufw allow 80/tcp   # HTTP
+    [ ] sudo ufw allow 443/tcp  # HTTPS
+    [ ] sudo ufw enable
+
+## PHASE 5: SSL & SECURITY
+[ ] Setup HTTPS:
+    [ ] If school provides certificate: install it
+    [ ] If not: Use Let's Encrypt (certbot --nginx)
+    [ ] Test SSL: https://www.ssllabs.com/ssltest/
+
+[ ] Security hardening:
+    [ ] Change all secret keys (SECRET_KEY, API keys)
+    [ ] Set strong database password
+    [ ] Disable DEBUG mode (DEBUG=False)
+    [ ] Configure CSRF_TRUSTED_ORIGINS
+    [ ] Setup fail2ban for SSH protection
+    [ ] Regular security updates (sudo apt update)
+
+## PHASE 6: TESTING & VERIFICATION
+[ ] Test external access:
+    [ ] Access site from off-campus (phone 4G, home network)
+    [ ] Test user login/registration
+    [ ] Submit test queue entry
+    [ ] Check WebSocket notifications work (bell icon updates)
+
+[ ] Test temperature gateway integration:
+    [ ] On lab computer: restart temperature_gateway.py
+    [ ] Check gateway logs: should show successful API calls
+    [ ] Verify machine temperatures update on dashboard (15-second interval)
+    [ ] Test machine status (online/offline) displays correctly
+    [ ] Power off a machine, verify status changes to "Disconnected"
+
+[ ] Test all features:
+    [ ] Admin dashboard loads
+    [ ] User management (approve/reject registrations)
+    [ ] Queue management (add/edit/cancel entries)
+    [ ] Rush job appeals
+    [ ] Preset management
+    [ ] Archive management & database exports
+    [ ] Notifications (in-app + email via Slack)
+
+[ ] Performance testing:
+    [ ] Load test with 10+ simultaneous users
+    [ ] Check WebSocket stability under load
+    [ ] Verify database query performance
+    [ ] Monitor server resource usage (CPU, RAM, disk)
+
+## PHASE 7: DNS & DOMAIN CONFIGURATION
+[ ] Update DNS records (if using custom domain):
+    [ ] A record: your-domain.edu → school-server-ip
+    [ ] OR CNAME: your-domain.edu → school-server-hostname
+    [ ] Wait for DNS propagation (check with: dig your-domain.edu)
+
+[ ] Update all URLs in code:
+    [ ] BASE_URL in Django settings
+    [ ] CSRF_TRUSTED_ORIGINS
+    [ ] temperature_gateway DJANGO_API_URL
+    [ ] GitHub Actions keep-alive workflow (if still needed)
+    [ ] Email notification links
+
+## PHASE 8: MONITORING & BACKUPS
+[ ] Setup monitoring:
+    [ ] UptimeRobot or similar (ping URL every 5 minutes)
+    [ ] Email alerts if site goes down
+    [ ] Disk space monitoring
+    [ ] Database size monitoring
+
+[ ] Automated backups:
+    [ ] Keep GitHub Actions weekly backup (update URL to school server)
+    [ ] Setup cron job for nightly database backups
+    [ ] Store backups in multiple locations
+    [ ] Test restore procedure monthly
+
+[ ] Error logging:
+    [ ] Configure Django error emails (ADMINS setting)
+    [ ] Setup log rotation (logrotate)
+    [ ] Monitor Django logs: tail -f /opt/qhog/logs/django.log
+
+## PHASE 9: DOCUMENTATION & HANDOFF
+[ ] Document server setup:
+    [ ] How to SSH to server
+    [ ] Where application is located
+    [ ] How to restart services (systemctl restart qhog-web)
+    [ ] Where logs are located
+    [ ] How to update code (git pull)
+    [ ] Database backup/restore commands
+
+[ ] Create maintenance runbook:
+    [ ] Common issues and fixes
+    [ ] Emergency contacts (IT, PI, grad students)
+    [ ] Quarterly maintenance tasks
+    [ ] Annual security update schedule
+
+[ ] Train backup administrators:
+    [ ] At least 2 people should know how to maintain system
+    [ ] Share server credentials securely
+    [ ] Document IT contact information
+
+## PHASE 10: CUTOVER FROM RENDER
+[ ] Final preparation:
+    [ ] Export latest data from Render
+    [ ] Import to school server
+    [ ] Verify all data migrated correctly
+    [ ] Test thoroughly on school server
+
+[ ] DNS switch (if using custom domain):
+    [ ] Update DNS to point to school server
+    [ ] Wait 24-48 hours for propagation
+    [ ] Monitor both servers during transition
+
+[ ] Decommission Render:
+    [ ] Once school server stable for 1 week:
+        [ ] Download final backup from Render
+        [ ] Suspend Render web service
+        [ ] Delete PostgreSQL database (saves $7/month)
+        [ ] Delete Redis instance
+        [ ] Keep Render account (or cancel)
+
+## CRITICAL DEPENDENCIES
+1. Temperature gateway MUST reach Django API
+   - Lab computer → school server connectivity
+   - School firewall must allow outbound API calls
+   - Test with: curl -X POST school-server-url/schedule/api/update-temperature/
+
+2. External users MUST reach website
+   - DNS must resolve externally
+   - School firewall must allow HTTP/HTTPS inbound
+   - SSL certificate required (browsers block HTTP)
+
+3. WebSocket support required
+   - Redis needed for Django Channels
+   - nginx must proxy WebSocket connections
+   - Test real-time notifications work
+
+## QUESTIONS FOR SCHOOL IT
+1. What server access is available? (VM, shared hosting, or dedicated)
+2. Can you provide a public subdomain? (e.g., qhog.physics.edu)
+3. Is PostgreSQL or MySQL available?
+4. Is Redis available for WebSockets?
+5. Can external users access the site? (firewall configuration)
+6. Can lab computers make outbound API calls to school servers?
+7. Is SSL certificate provided or should we use Let's Encrypt?
+8. What's the uptime policy? (24/7, business hours, summer shutdown)
+9. Who can help with emergency server issues?
+10. What's the backup policy?
+
+## NOTES
+- Temperature gateway stays on lab computer (has machine network access)
+- Django server on school infrastructure (external access)
+- Gateway sends temp/status to Django via HTTPS API
+- Users access Django from anywhere via public URL
