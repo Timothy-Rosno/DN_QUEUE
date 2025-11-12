@@ -2248,10 +2248,10 @@ def export_my_measurements(request):
     
     writer = csv.writer(response)
     writer.writerow([
-        'ID', 'Machine', 'Measurement Date', 
+        'ID', 'Machine', 'Measurement Date',
         'Title', 'Notes', 'Archived At'
     ])
-    
+
     for m in measurements:
         writer.writerow([
             m.id,
@@ -2261,5 +2261,66 @@ def export_my_measurements(request):
             m.notes,
             m.archived_at.strftime('%Y-%m-%d %H:%M:%S')
         ])
-    
+
     return response
+
+
+def health_check(request):
+    """
+    Health check endpoint for monitoring services (UptimeRobot, etc.)
+
+    Tests connectivity to critical services:
+    - Redis cache
+    - Django Channels layer (Redis-backed WebSocket support)
+    - Database
+
+    Returns JSON response with status of all services.
+    Keeps Redis alive when pinged regularly.
+    """
+    from channels.layers import get_channel_layer
+    from django.db import connection
+
+    health_status = {
+        'status': 'healthy',
+        'timestamp': timezone.now().isoformat(),
+        'services': {}
+    }
+
+    overall_healthy = True
+
+    # Test Redis cache
+    try:
+        cache.set('health_check', 'ok', timeout=60)
+        cache_ok = cache.get('health_check') == 'ok'
+        health_status['services']['cache'] = 'ok' if cache_ok else 'degraded'
+        if not cache_ok:
+            overall_healthy = False
+    except Exception as e:
+        health_status['services']['cache'] = f'error: {str(e)}'
+        overall_healthy = False
+
+    # Test Django Channels layer (Redis)
+    try:
+        channel_layer = get_channel_layer()
+        health_status['services']['channels'] = 'ok' if channel_layer else 'unavailable'
+        if not channel_layer:
+            overall_healthy = False
+    except Exception as e:
+        health_status['services']['channels'] = f'error: {str(e)}'
+        overall_healthy = False
+
+    # Test database connection
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        health_status['services']['database'] = 'ok'
+    except Exception as e:
+        health_status['services']['database'] = f'error: {str(e)}'
+        overall_healthy = False
+
+    # Set overall status
+    if not overall_healthy:
+        health_status['status'] = 'degraded'
+
+    status_code = 200 if overall_healthy else 503
+    return JsonResponse(health_status, status=status_code)

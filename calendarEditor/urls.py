@@ -114,6 +114,9 @@ urlpatterns = [
     # One-time token login (for Slack notifications)
     path('token-login/<str:token>/', views.token_login, name='token_login'),
 
+    # Health check endpoint (for UptimeRobot and monitoring)
+    path('health/', views.health_check, name='health_check'),
+
     # LEGACY ROUTES - Scheduled for removal (Old ScheduleEntry system)
     path('schedule/', views.schedule_list, name='schedule'),  # LEGACY: Old schedule list view
     path('create/', views.create_schedule, name='create_schedule'),  # LEGACY: Create schedule

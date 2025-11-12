@@ -101,6 +101,22 @@ ASGI_APPLICATION = "mysite.asgi.application"
 
 # Channel Layers Configuration (for WebSocket real-time updates)
 REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379')
+
+# Cache Configuration (Django Cache Framework)
+# Configured to gracefully handle Redis unavailability
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SOCKET_CONNECT_TIMEOUT': 5,  # seconds
+            'SOCKET_TIMEOUT': 5,  # seconds
+            'IGNORE_EXCEPTIONS': True,  # Don't crash app if Redis is unavailable
+        }
+    }
+}
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -119,8 +135,14 @@ database_url = os.environ.get('DATABASE_URL')
 
 if database_url:
     # Production: Use PostgreSQL via DATABASE_URL
+    # conn_max_age: 300 seconds to prevent stale connections after spin-downs
+    # conn_health_checks: Verify connections are alive before using (Django 4.1+)
     DATABASES = {
-        "default": dj_database_url.parse(database_url, conn_max_age=600)
+        "default": dj_database_url.parse(
+            database_url,
+            conn_max_age=300,
+            conn_health_checks=True
+        )
     }
 else:
     # Local development: SQLite in project directory

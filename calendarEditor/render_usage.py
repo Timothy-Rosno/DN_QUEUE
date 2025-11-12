@@ -19,21 +19,37 @@ def increment_request_count():
     """
     Increment the request counter for the current month.
     Uses Django cache to store counts efficiently.
-    """
-    now = timezone.now()
-    cache_key = get_cache_key_for_month(now.year, now.month)
 
-    # Increment counter, default to 1 if doesn't exist
-    # Timeout set to 45 days to persist across month boundary
-    current = cache.get(cache_key, 0)
-    cache.set(cache_key, current + 1, timeout=60*60*24*45)
+    Gracefully handles Redis connection failures to prevent app crashes.
+    """
+    try:
+        now = timezone.now()
+        cache_key = get_cache_key_for_month(now.year, now.month)
+
+        # Increment counter, default to 1 if doesn't exist
+        # Timeout set to 45 days to persist across month boundary
+        current = cache.get(cache_key, 0)
+        cache.set(cache_key, current + 1, timeout=60*60*24*45)
+    except Exception as e:
+        # Log but don't crash - Redis may be unavailable during cold starts
+        print(f"Warning: Could not increment request count: {e}")
+        pass
 
 
 def get_monthly_request_count():
-    """Get total requests for the current month."""
-    now = timezone.now()
-    cache_key = get_cache_key_for_month(now.year, now.month)
-    return cache.get(cache_key, 0)
+    """
+    Get total requests for the current month.
+
+    Returns 0 if Redis is unavailable.
+    """
+    try:
+        now = timezone.now()
+        cache_key = get_cache_key_for_month(now.year, now.month)
+        return cache.get(cache_key, 0)
+    except Exception as e:
+        # Return 0 if Redis is unavailable
+        print(f"Warning: Could not get monthly request count: {e}")
+        return 0
 
 
 def get_render_usage_stats():

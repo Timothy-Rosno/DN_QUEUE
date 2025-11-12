@@ -6,7 +6,15 @@
   pip install -r requirements.txt
   python manage.py runserver 0.0.0.0:8000
 
-
+but now what I want is to remove the auto-logout capability
+  so that instances will stay logged in unless logged out. Just need an
+  authentication check for instances from links, so if a user is sent a link
+  that goes to a different account, and their device is currently logged in
+  (save login for device if not shared option?) to a different account, it
+  will make them sign in to the correct account according to the link. If the
+  login info matches the session or device, however that will work, then just
+  route them to the correct page since it matches. 
+  
 [ ] [STACKER]   See how PC affects optics (as opposed to jjust PDMS) -- traversal especially.
 [ ] [STACKER]   Make faster the cornersearch
 [ ] [STACKER]   Write out full wiring automated test.  <-- moving towards real process. 
