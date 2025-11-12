@@ -31,9 +31,7 @@ services:
       - key: BACKUP_API_KEY
         generateValue: true
       - key: DATABASE_URL
-        fromDatabase:
-          name: qhog-db
-          property: connectionString
+        sync: false  # Manually configured to use Supabase
       - key: REDIS_URL
         fromService:
           type: redis
@@ -46,9 +44,3 @@ services:
     plan: free
     maxmemoryPolicy: noeviction
     ipAllowList: []  # Allow connections from any Render service
-
-databases:
-  - name: qhog-db
-    databaseName: qhog
-    user: qhog
-    plan: free
