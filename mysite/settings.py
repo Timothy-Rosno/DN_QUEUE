@@ -139,7 +139,7 @@ CHANNEL_LAYERS = {
 database_url = os.environ.get('DATABASE_URL')
 
 if database_url:
-    # Production: Use PostgreSQL via DATABASE_URL (Supabase)
+    # Production: Use PostgreSQL via DATABASE_URL (Neon, Supabase, etc.)
     # Optimized for free tier with cold starts
     DATABASES = {
         "default": dj_database_url.parse(
@@ -148,10 +148,10 @@ if database_url:
             conn_health_checks=True  # Verify connections before use (Django 4.1+)
         )
     }
-    # Add connection timeout options for Supabase
+    # Connection options compatible with pooled connections (Neon, Supabase pooler)
     DATABASES["default"]["OPTIONS"] = {
         "connect_timeout": 10,  # 10 second connection timeout
-        "options": "-c statement_timeout=30000"  # 30 second query timeout
+        "sslmode": "require"  # Require SSL for secure connections
     }
 else:
     # Local development: SQLite in project directory
