@@ -7,7 +7,7 @@ This guide will walk you through setting up your own instance of the Lab Queue M
 1. [Overview](#overview)
 2. [Prerequisites](#prerequisites)
 3. [Step 1: Fork GitHub Repository](#step-1-fork-github-repository)
-4. [Step 2: Set Up Supabase Database](#step-2-set-up-supabase-database)
+4. [Step 2: Set Up Supabase Database](#step-2-set-up-supabase-database) #Actually changed to 
 5. [Step 3: Set Up Render Web Service](#step-3-set-up-render-web-service)
 6. [Step 4: Set Up Render Redis](#step-4-set-up-render-redis)
 7. [Step 5: Configure Environment Variables](#step-5-configure-environment-variables)
