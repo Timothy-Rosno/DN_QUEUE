@@ -9,6 +9,10 @@ class UserApprovalMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # Skip middleware for health check endpoint to avoid DB queries during cold starts
+        if request.path == '/schedule/health/':
+            return self.get_response(request)
+
         # List of URLs that unapproved users can access
         allowed_urls = [
             reverse('login'),

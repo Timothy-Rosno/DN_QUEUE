@@ -28,6 +28,10 @@ class CheckReminderMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # Skip middleware for health check endpoint to avoid DB queries during cold starts
+        if request.path == '/schedule/health/':
+            return self.get_response(request)
+
         # Check for pending reminders BEFORE processing the request
         # This ensures reminders are sent even if the request fails
         self._check_pending_reminders()
@@ -86,8 +90,9 @@ class RenderUsageMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Increment request counter before processing request
-        increment_request_count()
+        # Skip tracking for health checks to avoid Redis connection attempts during cold starts
+        if request.path != '/schedule/health/':
+            increment_request_count()
 
         response = self.get_response(request)
         return response

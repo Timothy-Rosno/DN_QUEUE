@@ -122,6 +122,11 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [REDIS_URL],
+            # Gracefully handle Redis unavailability during cold starts
+            "capacity": 1500,  # Max messages in channel
+            "expiry": 10,  # Message expiry in seconds
+            "group_expiry": 86400,  # 24 hours
+            "channel_capacity": 100,
         },
     },
 }
@@ -134,15 +139,19 @@ CHANNEL_LAYERS = {
 database_url = os.environ.get('DATABASE_URL')
 
 if database_url:
-    # Production: Use PostgreSQL via DATABASE_URL
-    # conn_max_age: 300 seconds to prevent stale connections after spin-downs
-    # conn_health_checks: Verify connections are alive before using (Django 4.1+)
+    # Production: Use PostgreSQL via DATABASE_URL (Supabase)
+    # Optimized for free tier with cold starts
     DATABASES = {
         "default": dj_database_url.parse(
             database_url,
-            conn_max_age=300,
-            conn_health_checks=True
+            conn_max_age=60,  # Shorter for free tier cold starts (1 minute)
+            conn_health_checks=True  # Verify connections before use (Django 4.1+)
         )
+    }
+    # Add connection timeout options for Supabase
+    DATABASES["default"]["OPTIONS"] = {
+        "connect_timeout": 10,  # 10 second connection timeout
+        "options": "-c statement_timeout=30000"  # 30 second query timeout
     }
 else:
     # Local development: SQLite in project directory
