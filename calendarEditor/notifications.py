@@ -485,8 +485,8 @@ def notify_checkout_reminder(queue_entry):
         create_notification(
             recipient=user,
             notification_type='checkout_reminder',
-            title='Time for Check-Out!',
-            message=f'Your estimated measurement time has elapsed for "{queue_entry.title}" on {queue_entry.assigned_machine.name}. Please check out if you\'re finished!',
+            title='Measurement Time Expired',
+            message=f'Predicted measurement time expired for "{queue_entry.title}" on {queue_entry.assigned_machine.name} -- did you forget to check out?',
             related_queue_entry=queue_entry,
             related_machine=queue_entry.assigned_machine,
         )

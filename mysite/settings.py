@@ -126,7 +126,6 @@ CHANNEL_LAYERS = {
             "capacity": 1500,  # Max messages in channel
             "expiry": 10,  # Message expiry in seconds
             "group_expiry": 86400,  # 24 hours
-            "channel_capacity": 100,
         },
     },
 }
