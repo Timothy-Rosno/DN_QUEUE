@@ -1,5 +1,6 @@
 from django.shortcuts import redirect
 from django.contrib import messages
+from django.contrib.auth import logout
 from django.urls import reverse
 
 class UserApprovalMiddleware:
@@ -18,6 +19,7 @@ class UserApprovalMiddleware:
             reverse('login'),
             reverse('logout'),
             reverse('register'),
+            reverse('home'),  # Allow home page access
             '/admin/',  # Allow access to Django admin
         ]
 
@@ -33,14 +35,18 @@ class UserApprovalMiddleware:
                 if not profile.is_approved:
                     # Allow access to allowed URLs
                     if not any(request.path.startswith(url) for url in allowed_urls):
-                        messages.warning(request, 'Your account is pending approval. You will be notified once an administrator approves your account.')
-                        return redirect('login')
+                        # Log out the user and redirect to home
+                        logout(request)
+                        messages.warning(request, 'Your account is pending approval by an administrator. You will be able to log in once your account is approved.')
+                        return redirect('home')
             except Exception:
                 # If no profile exists, create one
                 from .models import UserProfile
                 UserProfile.objects.create(user=request.user, is_approved=False)
                 if not any(request.path.startswith(url) for url in allowed_urls):
-                    messages.warning(request, 'Your account is pending approval. You will be notified once an administrator approves your account.')
-                    return redirect('login')
+                    # Log out the user and redirect to home
+                    logout(request)
+                    messages.warning(request, 'Your account is pending approval by an administrator. You will be able to log in once your account is approved.')
+                    return redirect('home')
 
         return self.get_response(request)

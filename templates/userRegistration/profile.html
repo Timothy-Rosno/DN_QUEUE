@@ -12,6 +12,12 @@
         <p><strong>Name:</strong> {{ user.first_name }} {{ user.last_name }}</p>
     </div>
 
+    <div style="margin: 1rem 0; padding: 0.75rem 1rem; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+        <p style="margin: 0; color: #856404; font-size: 0.9rem;">
+            <strong>Note:</strong> To change your username, email, name, or security question, please contact an administrator.
+        </p>
+    </div>
+
     <h2 style="margin-top: 2rem;">Update Profile Information</h2>
     <form method="post" style="margin-top: 1rem;" id="profileForm">
         {% csrf_token %}

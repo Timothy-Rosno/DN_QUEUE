@@ -169,8 +169,16 @@
                                     <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 0.25rem; flex: 0 0 36px;">
                                     </div>
 
-                                    <!-- Right column: Cancel button (matches Edit/Cancel layout) -->
+                                    <!-- Right column: Edit and Cancel buttons (matches queued layout) -->
                                     <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 auto; min-height: 60px;">
+                                        <!-- Edit button -->
+                                        <a href="{% url 'admin_edit_entry' entry.id %}"
+                                        class="btn btn-secondary btn-sm"
+                                        style="flex: 1; display: flex; align-items: center; justify-content: center;">
+                                        Edit
+                                        </a>
+
+                                        <!-- Cancel button -->
                                         <button type="button" class="btn btn-danger btn-sm cancel-entry-btn"
                                             data-entry-id="{{ entry.id }}"
                                             data-entry-title="{{ entry.title }}"

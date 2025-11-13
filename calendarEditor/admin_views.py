@@ -113,6 +113,15 @@ def approve_user(request, user_id):
             triggering_user=user
         )
 
+        # Send notification to the user via the notification system (Slack first, then email fallback)
+        notifications.create_notification(
+            recipient=user,
+            notification_type='account_approved',
+            title='Your account has been approved!',
+            message=f'Great news! Your account has been approved by {request.user.username}. You can now log in and access all features of the scheduler system.',
+            triggering_user=request.user,
+        )
+
         messages.success(request, f'User {user.username} has been approved.')
     else:
         messages.info(request, f'User {user.username} is already approved.')
@@ -146,6 +155,16 @@ def reject_user(request, user_id):
             profile.approved_by = None
             profile.approved_at = None
             profile.save()
+
+            # Send notification to the user via the notification system (Slack first, then email fallback)
+            notifications.create_notification(
+                recipient=user,
+                notification_type='account_unapproved',
+                title='Your account has been unapproved',
+                message=f'Your account has been unapproved by {request.user.username}. You will need to contact an administrator for more information.',
+                triggering_user=request.user,
+            )
+
             messages.success(request, f'User {user.username} has been unapproved.')
         else:
             messages.info(request, f'User {user.username} is already unapproved.')
@@ -216,6 +235,15 @@ def promote_to_staff(request, user_id):
             except UserProfile.DoesNotExist:
                 pass
 
+            # Send notification to the user via the notification system (Slack first, then email fallback)
+            notifications.create_notification(
+                recipient=user,
+                notification_type='account_promoted',
+                title='You have been promoted to staff',
+                message=f'Congratulations! Admin {request.user.username} has promoted you to staff. You now have access to administrative features.',
+                triggering_user=request.user,
+            )
+
             messages.success(request, f'{user.username} has been promoted to staff.')
 
     # Redirect back with preserved query parameters
@@ -248,6 +276,16 @@ def demote_from_staff(request, user_id):
         else:
             user.is_staff = False
             user.save()
+
+            # Send notification to the user via the notification system (Slack first, then email fallback)
+            notifications.create_notification(
+                recipient=user,
+                notification_type='account_demoted',
+                title='You have been demoted from staff',
+                message=f'Admin {request.user.username} has demoted you from staff to regular user. You no longer have access to administrative features.',
+                triggering_user=request.user,
+            )
+
             messages.success(request, f'{user.username} has been demoted to regular user.')
 
     # Redirect back with preserved query parameters
@@ -259,6 +297,63 @@ def demote_from_staff(request, user_id):
             return redirect(f"{reverse('admin_users')}?{parsed.query}")
 
     return redirect('admin_users')
+
+
+@staff_member_required
+def admin_edit_user_info(request, user_id=None):
+    """Edit all user information (username, email, name, security question, etc.)."""
+    from userRegistration.forms import AdminEditUserForm
+
+    if user_id:
+        # Edit existing user
+        user_to_edit = get_object_or_404(User, id=user_id)
+
+        if request.method == 'POST':
+            form = AdminEditUserForm(user_to_edit, request.POST)
+            if form.is_valid():
+                # Update user model fields
+                user_to_edit.username = form.cleaned_data['username']
+                user_to_edit.email = form.cleaned_data['email']
+                user_to_edit.first_name = form.cleaned_data['first_name']
+                user_to_edit.last_name = form.cleaned_data['last_name']
+                user_to_edit.save()
+
+                # Update profile fields
+                try:
+                    profile = user_to_edit.profile
+                except UserProfile.DoesNotExist:
+                    profile = UserProfile.objects.create(user=user_to_edit)
+
+                profile.phone_number = form.cleaned_data['phone_number']
+                profile.department = form.cleaned_data['department']
+                profile.notes = form.cleaned_data['notes']
+                profile.slack_member_id = form.cleaned_data['slack_member_id']
+                profile.security_question = form.cleaned_data['security_question']
+                profile.security_question_custom = form.cleaned_data['security_question_custom']
+
+                # Update security answer if provided
+                if form.cleaned_data['security_answer']:
+                    profile.set_security_answer(form.cleaned_data['security_answer'])
+
+                profile.save()
+
+                messages.success(request, f'User information for {user_to_edit.username} updated successfully.')
+                return redirect('admin_users')
+        else:
+            form = AdminEditUserForm(user_to_edit)
+
+        context = {
+            'form': form,
+            'user_to_edit': user_to_edit,
+        }
+        return render(request, 'calendarEditor/admin/admin_edit_user_info.html', context)
+    else:
+        # Display dropdown to select user
+        all_users = User.objects.select_related('profile').order_by('username')
+        context = {
+            'all_users': all_users,
+        }
+        return render(request, 'calendarEditor/admin/admin_select_user_to_edit.html', context)
 
 
 @staff_member_required
@@ -1106,13 +1201,13 @@ def admin_presets(request):
 def admin_edit_entry(request, entry_id):
     """
     Admin page for editing queue entries.
-    Only queued entries can be edited.
+    Both queued and running entries can be edited.
     """
     queue_entry = get_object_or_404(QueueEntry, id=entry_id)
 
-    # Only allow editing queued entries
-    if queue_entry.status != 'queued':
-        messages.error(request, f'Cannot edit entry with status "{queue_entry.status}". Only queued entries can be edited.')
+    # Allow editing both queued and running entries
+    if queue_entry.status not in ['queued', 'running']:
+        messages.error(request, f'Cannot edit entry with status "{queue_entry.status}". Only queued and running entries can be edited.')
         return redirect('admin_queue')
 
     # Store original values for change tracking

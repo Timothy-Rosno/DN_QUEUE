@@ -263,19 +263,21 @@ def reset_password(request):
 
 def recover_username(request):
     """Recover username by entering email address."""
-    found_username = None
+    found_usernames = None
 
     if request.method == 'POST':
         email = request.POST.get('email', '').strip()
 
-        try:
-            user = User.objects.get(email=email)
-            found_username = user.username
-        except User.DoesNotExist:
+        # Handle multiple users with same email
+        users = User.objects.filter(email=email)
+
+        if users.exists():
+            found_usernames = [user.username for user in users]
+        else:
             messages.error(request, 'No account found with that email address.')
 
     return render(request, 'userRegistration/recover_username.html', {
-        'found_username': found_username
+        'found_usernames': found_usernames
     })
 
 

@@ -12,13 +12,13 @@
         {{ form.as_p }}
 
         <div style="margin-top: 1rem; margin-bottom: 1rem;">
-            <label style="display: flex; align-items: center; cursor: pointer;">
-                <input type="checkbox" name="remember_me" id="remember_me" style="margin-right: 0.5rem;">
-                <span>Keep me signed in (don't use on shared devices)</span>
+            <label for="remember_me" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;" title="Stay signed in for 1 year">
+                <input type="checkbox" name="remember_me" id="remember_me" style="margin-right: 0.5rem; width: auto; cursor: pointer;">
+                <span style="font-weight: bold;">Keep me signed in</span>
             </label>
-            <p style="font-size: 0.85rem; color: #666; margin: 0.5rem 0 0 1.75rem;">
-                Checked: Stay signed in for 1 year. Unchecked: Stay signed in for 7 days.
-            </p>
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">
+                If checked, you'll stay signed in for 1 year. Otherwise, 7 days. Don't use on shared devices.
+            </small>
         </div>
 
         <div style="margin-top: 1.5rem;">
@@ -36,4 +36,41 @@
         Don't have an account? <a href="{% url 'register' %}">Register here</a>
     </p>
 </div>
+
+<style>
+    /* Delayed tooltip for remember me checkbox */
+    label[for="remember_me"][title]:hover::after {
+        content: attr(title);
+        position: absolute;
+        background-color: #2c3e50;
+        color: white;
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        white-space: nowrap;
+        z-index: 1000;
+        margin-top: 2.5rem;
+        margin-left: -5rem;
+        animation: fadeIn 0.1s;
+        animation-delay: 0.1s;
+        animation-fill-mode: both;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Make checkbox cursor pointer */
+    input[type="checkbox"] {
+        cursor: pointer !important;
+    }
+    label:has(input[type="checkbox"]) {
+        cursor: pointer !important;
+    }
+</style>
 {% endblock %}

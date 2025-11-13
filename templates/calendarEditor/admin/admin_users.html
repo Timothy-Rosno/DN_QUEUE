@@ -146,6 +146,28 @@
     {% endif %}
 </div>
 
+<!-- Edit User Information Section -->
+<div class="card">
+    <h2>Edit User Information</h2>
+    <p style="color: #7f8c8d; margin-bottom: 1rem;">Change a user's username, email, name, security question, or other information.</p>
+
+    <form method="get" action="{% url 'admin_edit_user_info' %}" style="display: flex; gap: 1rem; align-items: end; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 200px;">
+            <label for="user_select" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Select User</label>
+            <select name="user_id" id="user_select" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="">-- Select a user --</option>
+                {% for user_item in users %}
+                    <option value="{{ user_item.id }}">{{ user_item.username }} ({{ user_item.email }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <button type="button" class="btn" onclick="editSelectedUser()">Edit User Info</button>
+        </div>
+    </form>
+</div>
+
 <div style="margin-top: 1rem;">
     <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
 </div>
@@ -170,6 +192,19 @@ function clearFilters() {
     document.getElementById('status').value = 'all';
     // Submit the form to refresh with cleared filters
     document.querySelector('form').submit();
+}
+
+function editSelectedUser() {
+    const userSelect = document.getElementById('user_select');
+    const userId = userSelect.value;
+
+    if (!userId) {
+        alert('Please select a user to edit.');
+        return;
+    }
+
+    // Navigate to the edit page for the selected user
+    window.location.href = `/schedule/admin-users/edit-user-info/${userId}/`;
 }
 </script>
 

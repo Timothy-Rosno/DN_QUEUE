@@ -7,10 +7,19 @@
     <h1>Recover Username</h1>
     <p style="color: #7f8c8d; margin-top: 0.5rem;">Enter your email address to retrieve your username.</p>
 
-    {% if found_username %}
+    {% if found_usernames %}
         <div style="margin: 1.5rem 0; padding: 1rem; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; color: #155724;">
-            <p style="margin: 0;"><strong>Your username is:</strong></p>
-            <p style="font-size: 1.2rem; font-weight: bold; margin: 0.5rem 0 0 0;">{{ found_username }}</p>
+            {% if found_usernames|length == 1 %}
+                <p style="margin: 0;"><strong>Your username is:</strong></p>
+                <p style="font-size: 1.2rem; font-weight: bold; margin: 0.5rem 0 0 0;">{{ found_usernames.0 }}</p>
+            {% else %}
+                <p style="margin: 0;"><strong>Multiple accounts found with this email:</strong></p>
+                <ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem;">
+                    {% for username in found_usernames %}
+                        <li style="font-size: 1.1rem; font-weight: bold; margin: 0.25rem 0;">{{ username }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
         </div>
 
         <div style="margin-top: 1.5rem;">

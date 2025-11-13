@@ -8,6 +8,23 @@
 
 ## Testing Setup
 
+## UPDATE PROGRESS
+TODO BATCH 1: 
+1. Guard schedule/queue with @login
+2. Slack notif for account approval/status changes
+3. Remember me checkbox fix
+4. Fix login behavior for unapproved accounts
+5. Fixed recover-username edge case (multiple usernames per email)
+6. Contact admin for specific profile info changes
+7. Create admin way to make said changes
+8. Check in/check out undo checkin
+9. Allow admins to edit running entries.
+Extra info: Notifications are set up only for slack and the web version at the moment, not email. 
+Test especially that the web notification works.
+
+
+
+
 ### Test User Accounts Needed
 
 Create these accounts for testing:
@@ -305,7 +322,7 @@ Create these accounts for testing:
 **Test Reminder Scheduling:**
 - [X] After checking in, verify reminder is scheduled
 - [X] Note the estimated completion time
-- [TODO] (Hard to test immediately - requires waiting for reminder due time) I THINK I HAVE A CRYOCORE RUNNING RIGHT NOW TO CHECK THAT?? HAD TO CHANGE THE CODE A BIT. The code is still mad about something, when API is unreachable sometimes randomly, but it stays up, so eh. Ah, it has 40 minutes left.
+- [Worked] (Hard to test immediately - requires waiting for reminder due time) I THINK I HAVE A CRYOCORE RUNNING RIGHT NOW TO CHECK THAT?? HAD TO CHANGE THE CODE A BIT. The code is still mad about something, when API is unreachable sometimes randomly, but it stays up, so eh. Ah, it has 40 minutes left.
 
 ### Check-Out Process
 
@@ -852,32 +869,32 @@ Create these accounts for testing:
 - [ ] Submit
 - [ ] Entry removed from queue
 - [ ] User receives notification with reason
-
+- [TODO] Details if logged in, otherwise just name, have a field for details with description: GIve a detailed description as to what meassurements you're needin to do. Don't pull up user.
 ### Move Entry Up in Queue
 
-- [ ] Find entry at position #5 or higher
-- [ ] Click "Move Up" button
-- [ ] Entry moves to position #4
-- [ ] Order numbers adjust for other entries
-- [ ] Click repeatedly → entry continues moving up
-- [ ] Cannot move above position #1
+- [X] Find entry at position #5 or higher
+- [X] Click "Move Up" button
+- [X] Entry moves to position #4
+- [X] Order numbers adjust for other entries
+- [X] Click repeatedly → entry continues moving up
+- [X] Cannot move above position #1
 
 ### Move Entry Down in Queue
 
-- [ ] Find entry near top of queue
-- [ ] Click "Move Down" button
-- [ ] Entry moves down one position
-- [ ] Other entries adjust
-- [ ] Click repeatedly → entry continues moving down
+- [X] Find entry near top of queue
+- [X] Click "Move Down" button
+- [X] Entry moves down one position
+- [X] Other entries adjust
+- [X] Click repeatedly → entry continues moving down
 
 ### Queue Next (Jump to Position #1)
 
-- [ ] Find entry at position #7
-- [ ] Click "Queue Next" button
-- [ ] See confirmation
-- [ ] Entry jumps to position #1
-- [ ] All other entries shift down
-- [ ] User receives "Ready for Check-In" notification
+- [X] Find entry at position #7
+- [X] Click "Queue Next" button
+- [X] See confirmation
+- [X] Entry jumps to position #1
+- [X] All other entries shift down
+- [X] User receives "Ready for Check-In" notification
 
 ### Reassign Machine
 
@@ -891,59 +908,60 @@ Create these accounts for testing:
 
 ### Admin Check-In (For User)
 
-- [ ] Find entry at position #1 (ready to check in)
-- [ ] Click "Check In" button
-- [ ] Entry status changes to "Running"
-- [ ] Started timestamp recorded
-- [ ] User receives notification
-- [ ] Reminder scheduled
+- [X] Find entry at position #1 (ready to check in)
+- [X] Click "Check In" button
+- [X] Entry status changes to "Running"
+- [X] Started timestamp recorded
+- [X] User receives notification
+- [X] Reminder scheduled
 
 ### Admin Check-Out (For User)
 
-- [ ] Find running entry
-- [ ] Click "Check Out" button
-- [ ] Fill in completion form (optional notes)
-- [ ] Submit
-- [ ] Entry status changes to "Completed"
-- [ ] Completed timestamp recorded
-- [ ] User receives notification
-- [ ] Next entry in queue becomes "Ready"
+- [X] Find running entry
+- [X] Click "Check Out" button
+- [X] Fill in completion form (optional notes)
+- [X] Submit
+- [X] Entry status changes to "Completed"
+- [X] Completed timestamp recorded
+- [X] User receives notification
+- [X] Next entry in queue becomes "Ready"
 
 ---
 
 ## 14. RUSH JOB REVIEW - ADMIN
 
 ### View Rush Job Requests (`/schedule/admin-rush-jobs/`)
-
-- [ ] See list of pending rush job requests
-- [ ] Each request shows:
-  - [ ] User
-  - [ ] Machine
-  - [ ] Title
-  - [ ] Justification
-  - [ ] Requested date
-  - [ ] Actions (Approve/Reject)
-- [ ] If no requests, see "No pending rush job requests" message
+- [TODO] Send the correct notification when moved into first by admin: Machine ready vs just on deck
+- [TODO] REMOVE MAX TEMP, JUST COMMENT IT OUT from every form, IT"S CONFUSING
+- [X] See list of pending rush job requests
+- [X] Each request shows:
+  - [X] User
+  - [X] Machine
+  - [X] Title
+  - [X] Justification
+  - [X] Requested date
+  - [X] Actions (Approve/Reject)
+- [X] If no requests, see "No pending rush job requests" message
 
 ### Approve Rush Job
 
-- [ ] Have test_user1 submit rush job request
-- [ ] In admin panel, see request appear
-- [ ] Click "Approve" button
-- [ ] Entry marked as "Rush"
-- [ ] Entry moves to front of queue (position #1 or near top)
-- [ ] User receives "Rush job approved" notification
-- [ ] Request disappears from pending list
+- [X] Have test_user1 submit rush job request
+- [X] In admin panel, see request appear
+- [X] Click "Approve" button
+- [X] Entry marked as "Rush"
+- [X] Entry moves to front of queue (position #1 or near top)
+- [X] User receives "Rush job approved" notification
+- [X] Request disappears from pending list
 
 ### Reject Rush Job
 
-- [ ] Have test_user2 submit rush job request
-- [ ] Click "Reject" button
-- [ ] Enter rejection reason: "Insufficient justification"
-- [ ] Submit
-- [ ] Entry remains in queue at regular position (not rushed)
-- [ ] User receives "Rush job rejected" notification with reason
-- [ ] Request disappears from pending list
+- [X] Have test_user2 submit rush job request
+- [X] Click "Reject" button
+- [TODO] Enter rejection reason: "Insufficient justification"
+- [X] Submit
+- [X] Entry remains in queue at regular position (not rushed)
+- [TODO] User receives "Rush job rejected" notification with reason
+- [X] Request disappears from pending list
 
 ---
 
@@ -951,33 +969,33 @@ Create these accounts for testing:
 
 ### View All Presets (`/schedule/admin-presets/`)
 
-- [ ] See list of ALL presets (all users, all visibility levels)
-- [ ] Each preset shows:
-  - [ ] Name
-  - [ ] Creator
-  - [ ] Visibility
-  - [ ] Machine
-  - [ ] Created date
-  - [ ] Actions (View/Edit/Delete)
-- [ ] Filter by visibility: Private/Lab/Public
-- [ ] Filter by creator
+- [X] See list of ALL presets (all users, all visibility levels)
+- [X] Each preset shows:
+  - [X] Name
+  - [X] Creator
+  - [X] Visibility
+  - [X] Machine
+  - [X] Created date
+  - [X] Actions (View/Edit/Delete)
+- [X] ORDER by visibility: Private/Lab/Public
+- [X] ORDER by creator
 
-### Admin Edit Any Preset
+### Admin Edit Any PUBLIC Preset
 
-- [ ] Click "Edit" on preset created by ANOTHER user
-- [ ] See edit form
-- [ ] Make changes
-- [ ] Submit
-- [ ] Changes saved
-- [ ] Creator receives notification about admin edit
+- [X] Click "Edit" on preset created by ANOTHER user
+- [X] See edit form
+- [X] Make changes
+- [X] Submit
+- [X] Changes saved
+- [X] Creator receives notification about admin edit
 
-### Admin Delete Any Preset
+### Admin Delete Any PUBLIC Preset
 
-- [ ] Click "Delete" on any preset
-- [ ] See confirmation (Thanos modal if implemented)
-- [ ] Confirm deletion
-- [ ] Preset removed
-- [ ] Users following this preset receive notification
+- [X] Click "Delete" on any preset
+- [X] See confirmation (Thanos modal if implemented)
+- [X] Confirm deletion
+- [X] Preset removed
+- [X] Users following this preset receive notification
 
 ---
 
@@ -985,104 +1003,104 @@ Create these accounts for testing:
 
 ### View Storage Stats (`/schedule/admin/storage-stats/`)
 
-- [ ] See database size information
-- [ ] See storage usage percentage
-- [ ] See breakdown by table:
-  - [ ] Queue Entries
-  - [ ] Archived Measurements
-  - [ ] Users
-  - [ ] Notifications
-  - [ ] Sessions
-- [ ] See total size in MB
-- [ ] See warning if over threshold (>80% of 3GB for Neon)
+- [X] See database size information
+- [X] See storage usage percentage
+- [X] See breakdown by table:
+  - [X] Queue Entries
+  - [X] Archived Measurements
+  - [X] Users
+  - [X] Notifications
+  - [X] Sessions
+- [X] See total size in MB
+- [X] See warning if over threshold (>80% of 3GB for Neon)
 
 ### Export Full Database
 
-- [ ] Click "Export Entire Database" button
-- [ ] See download start immediately (or after short processing)
-- [ ] Download completes with JSON file
-- [ ] Filename format: `database_backup_YYYY-MM-DD_HH-MM-SS.json`
-- [ ] File size should be reasonable (check it's not empty)
-- [ ] Open file → verify it's valid JSON
-- [ ] Should contain all tables: users, queue entries, machines, etc.
+- [X] Click "Export Entire Database" button
+- [X] See download start immediately (or after short processing)
+- [X] Download completes with JSON file
+- [X] Filename format: `database_backup_YYYY-MM-DD_HH-MM-SS.json`
+- [X] File size should be reasonable (check it's not empty)
+- [X] Open file → verify it's valid JSON
+- [X] Should contain all tables: users, queue entries, machines, etc.
 
 ### Export Archive Only
 
-- [ ] Click "Export Archive Only" button
-- [ ] Download JSON file
-- [ ] Open file → verify it contains only archived measurements
-- [ ] Should NOT include users, queue entries, etc.
+- [X] Click "Export Archive Only" button
+- [X] Download JSON file
+- [X] Open file → verify it contains only archived measurements
+- [X] Should NOT include users, queue entries, etc.
 
 ### Import/Restore Database
 
 **Test Replace Mode:**
-- [ ] Click "Import/Restore Database" button
-- [ ] Select mode: "Replace (Delete existing data)"
-- [ ] Upload backup JSON file (from previous export)
-- [ ] See Thanos modal warning
-- [ ] Type "CONFIRM RESTORE" in text box
-- [ ] Submit
-- [ ] See processing message
-- [ ] See success message after completion
-- [ ] Verify data was restored:
-  - [ ] Check queue entries match backup
-  - [ ] Check users match backup
-  - [ ] Check machines match backup
-  - [ ] Current data was wiped and replaced
+- [X] Click "Import/Restore Database" button
+- [X] Select mode: "Replace (Delete existing data)"
+- [X] Upload backup JSON file (from previous export)
+- [X] See Thanos modal warning
+- [X] Type "CONFIRM RESTORE" in text box
+- [X] Submit
+- [X] See processing message
+- [X] See success message after completion
+- [X] Verify data was restored:
+  - [X] Check queue entries match backup
+  - [X] Check users match backup
+  - [X] Check machines match backup
+  - [X] Current data was wiped and replaced
 
 **Test Merge Mode:**
-- [ ] Make note of current database state (count entries)
-- [ ] Upload backup JSON with DIFFERENT data
-- [ ] Select mode: "Merge (Keep existing data)"
-- [ ] See Thanos modal
-- [ ] Type "CONFIRM RESTORE"
-- [ ] Submit
-- [ ] See success message
-- [ ] Verify data was merged:
-  - [ ] Old entries still exist
-  - [ ] New entries from backup added
-  - [ ] Duplicate entries handled appropriately
-  - [ ] Entry count increased
+- [X] Make note of current database state (count entries)
+- [X] Upload backup JSON with DIFFERENT data
+- [X] Select mode: "Merge (Keep existing data)"
+- [X] See Thanos modal
+- [X] Type "CONFIRM RESTORE"
+- [X] Submit
+- [X] See success message
+- [X] Verify data was merged:
+  - [X] Old entries still exist
+  - [X] New entries from backup added
+  - [X] Duplicate entries handled appropriately
+  - [X] Entry count increased
 
 **Test Validation Errors:**
-- [ ] Try to upload invalid JSON file → see error
-- [ ] Try to upload JSON with wrong structure → see error
-- [ ] Try without typing "CONFIRM RESTORE" → submission blocked
+- [X] Try to upload invalid JSON file → see error
+- [X] Try to upload JSON with wrong structure → see error
+- [X] Try without typing "CONFIRM RESTORE" → submission blocked
 
 ### Clear Archive with Backup
 
-- [ ] Click "Clear Archive with Backup" button
-- [ ] See confirmation
-- [ ] Download backup JSON starts
-- [ ] After download, archive data is cleared
-- [ ] Archive page shows 0 entries
-- [ ] Backup file contains all deleted archives
-- [ ] Other data (users, queue) unaffected
+- [X] Click "Clear Archive with Backup" button
+- [X] See confirmation
+- [X] Download backup JSON starts
+- [X] After download, archive data is cleared
+- [X] Archive page shows 0 entries
+- [X] Backup file contains all deleted archives
+- [X] Other data (users, queue) unaffected
 
-### Clear Archive (Without Backup)
+### Clear Archive (Without Backup) THERE IS NO OPTION FOR THAT.
 
-- [ ] Click "Clear Archive" button (dangerous action)
-- [ ] See strong warning message
-- [ ] See Thanos modal with text confirmation
-- [ ] Type confirmation text
-- [ ] Submit
-- [ ] All archived measurements deleted
-- [ ] Archive page shows 0 entries
-- [ ] NO backup file generated
-- [ ] Other data unaffected
+- [X] Click "Clear Archive" button (dangerous action)
+- [X] See strong warning message
+- [X] See Thanos modal with text confirmation
+- [X] Type confirmation text
+- [X] Submit
+- [X] All archived measurements deleted
+- [X] Archive page shows 0 entries
+- [X] NO backup file generated
+- [X] Other data unaffected
 
 ---
 
 ## 17. RENDER USAGE STATS - ADMIN (Optional)
 
 ### View Render Usage (`/schedule/admin/render-usage/`)
-
-- [ ] See usage statistics (if implemented)
-- [ ] See request count for current month
-- [ ] See estimated uptime hours
-- [ ] See percentage of free tier limit used
-- [ ] See days remaining in month
-- [ ] Color coding: green (<80%), yellow (80-95%), red (>95%)
+NOT REAL DATA PROBABLY, JUST MATH
+- [X] See usage statistics (if implemented)
+- [X] See request count for current month
+- [X] See estimated uptime hours
+- [X] See percentage of free tier limit used
+- [X] See days remaining in month
+- [X] Color coding: green (<80%), yellow (80-95%), red (>95%)
 
 ---
 
@@ -1111,30 +1129,32 @@ Create these accounts for testing:
 - [ ] Tab 2: Delete the same entry
 - [ ] Tab 1: Try to save changes
 - [ ] Should see error: "Entry no longer exists"
+- [TODO] Allow delete but catch save if doesn't exist gracefully with a banner and a reload.
 
 **Test Queue Position Updates:**
 - [ ] Open queue page in two tabs
 - [ ] Tab 1: Admin moves entry up
 - [ ] Tab 2: Refresh → should see new position
 - [ ] Both tabs should show consistent order
+- [TODO] Queue admin reordering needs some love. Not sure how to fix it.
 
 ### Invalid URLs
 
-- [ ] Try accessing `/schedule/edit/9999999/` (non-existent entry)
-- [ ] Should see 404 error
-- [ ] Try accessing `/schedule/preset/view/9999/` (non-existent preset)
-- [ ] Should see 404 error
-- [ ] Try accessing deleted entry URL
-- [ ] Should see 404 or "Entry not found" message
+- [X] Try accessing `/schedule/edit/9999999/` (non-existent entry)
+- [X] Should see 404 error
+- [X] Try accessing `/schedule/preset/view/9999/` (non-existent preset)
+- [X] Should see 404 error
+- [X] Try accessing deleted entry URL
+- [X] Should see 404 or "Entry not found" message
 
 ### Permission Errors
 
 **Regular User Accessing Admin Pages:**
-- [ ] Login as regular user
-- [ ] Try accessing `/schedule/admin-dashboard/` directly
-- [ ] Should see "Permission Denied" error or redirect to home
-- [ ] Try accessing `/schedule/admin-users/` directly
-- [ ] Should see error/redirect
+- [X] Login as regular user
+- [X] Try accessing `/schedule/admin-dashboard/` directly
+- [X] Should see "Permission Denied" error or redirect to home
+- [X] Try accessing `/schedule/admin-users/` directly
+- [X] Should see error/redirect
 
 **User Editing Other User's Data:**
 - [ ] Login as test_user1
@@ -1142,7 +1162,7 @@ Create these accounts for testing:
 - [ ] Should see "Permission Denied" error
 - [ ] Try to edit test_user2's preset
 - [ ] Should see error
-
+- [TODO] WYM Try to cancel??? wym guessable?
 ### Database Connection Errors
 
 **Simulate Connection Loss:**
@@ -1171,13 +1191,7 @@ Create these accounts for testing:
 
 ### File Upload Edge Cases
 
-**Archive File Upload:**
-- [ ] Try uploading very large file (>10MB)
-- [ ] Should see error or file rejected
-- [ ] Try uploading invalid file type (.exe, .sh)
-- [ ] Should see error
-- [ ] Try uploading file with special characters in name
-- [ ] Should be sanitized or rejected
+- [TODO] Allow spaces in username?
 
 ### Cross-Site Request Forgery (CSRF)
 
@@ -1185,7 +1199,7 @@ Create these accounts for testing:
 - [ ] Try submitting form without CSRF token (use browser dev tools)
 - [ ] Should see "CSRF token missing" error
 - [ ] Form submission should be rejected
-
+- [TODO] Learn what this is
 ---
 
 ## 19. WEBSOCKET REAL-TIME UPDATES (Production Only)
@@ -1198,7 +1212,7 @@ Create these accounts for testing:
 - [ ] Browser 1: Admin moves entry in queue
 - [ ] Browser 2: Should see entry position update WITHOUT refresh
 - [ ] Test with multiple simultaneous admins
-
+- [TODO] Make the refresh not needed for ordering. Query the database in the websocket??? IDK
 ### Preset Updates
 
 - [ ] Browser 1: User edits preset
@@ -1220,9 +1234,9 @@ Create these accounts for testing:
 ### Test on Mobile Device or Browser Dev Tools
 
 **Navigation:**
-- [ ] Menu collapses to hamburger icon on small screens
-- [ ] Hamburger menu opens/closes correctly
-- [ ] All links accessible on mobile
+- [X] Menu collapses to hamburger icon on small screens
+- [X] Hamburger menu opens/closes correctly
+- [X] All links accessible on mobile
 - [ ] Dropdowns work on touch
 
 **Forms:**
@@ -1242,7 +1256,7 @@ Create these accounts for testing:
 - [ ] Confirmation dialogs display correctly
 
 ---
-
+- [TODO] Remove schedule entries from db and endpoints
 ## 21. BROWSER COMPATIBILITY
 
 Test on multiple browsers:
@@ -1301,37 +1315,37 @@ Test on multiple browsers:
 
 ### Authentication
 
-- [ ] Cannot access authenticated pages without login
-- [ ] Session expires after inactivity (7 days for non-remember-me)
-- [ ] Logout completely clears session
-- [ ] Cannot reuse old session cookies after logout
+- [X] Cannot access authenticated pages without login
+- [TODO] Session expires after inactivity (7 days for non-remember-me)
+- [X] Logout completely clears session
+- [X] Cannot reuse old session cookies after logout
 
 ### Authorization
 
-- [ ] Regular users cannot access admin pages
-- [ ] Users cannot modify other users' data
-- [ ] Staff-only features blocked for regular users
-- [ ] Superuser features blocked for non-superusers
+- [X] Regular users cannot access admin pages
+- [X] Users cannot modify other users' data
+- [X] Staff-only features blocked for regular users
+- [X] Superuser features blocked for non-superusers
 
 ### SQL Injection Prevention
 
-- [ ] Try entering `' OR '1'='1` in search fields
-- [ ] Should NOT cause SQL errors
-- [ ] Should NOT bypass authentication
-- [ ] Django ORM should parameterize queries
+- [TODO] Try entering `' OR '1'='1` in search fields
+- [TODO] Should NOT cause SQL errors
+- [TODO] Should NOT bypass authentication
+- [TODO] Django ORM should parameterize queries
 
 ### XSS Prevention
 
-- [ ] Enter `<script>alert('XSS')</script>` in form fields
-- [ ] Should be escaped/sanitized when displayed
-- [ ] Should NOT execute as JavaScript
-- [ ] Check queue title, notes, preset names
+- [TODO] Enter `<script>alert('XSS')</script>` in form fields
+- [TODO] Should be escaped/sanitized when displayed
+- [TODO] Should NOT execute as JavaScript
+- [TODO] Check queue title, notes, preset names
 
 ### CSRF Protection
 
-- [ ] All forms include CSRF token
-- [ ] Cannot submit forms from external sites
-- [ ] CSRF token validated on submission
+- [TODO] All forms include CSRF token
+- [TODO] Cannot submit forms from external sites
+- [TODO] CSRF token validated on submission
 
 ---
 
@@ -1346,7 +1360,7 @@ Test on multiple browsers:
 - [ ] Verify user's archives are handled appropriately
 - [ ] No orphaned data in database
 
-**Delete Machine with Data:**
+**Delete Machine with Data:** [TODO] Should have been done elsewhere.
 - [ ] Try to delete machine with active queue entries
 - [ ] Should be blocked with error
 - [ ] Complete/cancel all entries for that machine
@@ -1361,17 +1375,17 @@ Test on multiple browsers:
 - [ ] Estimated duration must be reasonable (<100 hours)
 
 **User Data Validation:**
-- [ ] Email must be valid format
-- [ ] Username must be unique
-- [ ] Password must meet complexity requirements
-- [ ] Required fields enforced
+- [X] Email must be valid format
+- [X] Username must be unique
+- [X] Password must meet complexity requirements
+- [X] Required fields enforced
 
 ### Timestamps
 
-- [ ] Created timestamps set automatically
-- [ ] Updated timestamps change on edit
-- [ ] Timezone-aware timestamps stored correctly
-- [ ] Times display in correct timezone for user
+- [X] Created timestamps set automatically
+- [X] Updated timestamps change on edit
+- [TODO] Timezone-aware timestamps stored correctly
+- [TODO] Check that Times display in correct timezone for user
 
 ---
 
@@ -1380,26 +1394,26 @@ Test on multiple browsers:
 ### Test Database Export/Import Cycle
 
 1. **Export Current Database:**
-   - [ ] Export full database
-   - [ ] Note counts: X users, Y queue entries, Z archives
+   - [X] Export full database
+   - [X] Note counts: X users, Y queue entries, Z archives
 
 2. **Make Changes:**
-   - [ ] Add 5 new queue entries
-   - [ ] Delete 2 users
-   - [ ] Create 3 new presets
-
+   - [TODO] Add 5 new queue entries
+   - [TODO] Delete 2 users
+   - [TODO] Create 3 new presets
+Add/delete each
 3. **Restore from Backup:**
-   - [ ] Import backup in "Replace" mode
-   - [ ] Verify counts match original (X users, Y entries, Z archives)
-   - [ ] Verify recent changes are gone (back to backup state)
+   - [TODO] Import backup in "Replace" mode
+   - [TODO] Verify counts match original (X users, Y entries, Z archives)
+   - [TODO] Verify recent changes are gone (back to backup state)
 
 4. **Test Merge Mode:**
-   - [ ] Make backup of current state
-   - [ ] Add new data
-   - [ ] Import backup in "Merge" mode
-   - [ ] Verify OLD data exists
-   - [ ] Verify NEW data also exists
-   - [ ] No duplicates created
+   - [TODO] Make backup of current state
+   - [TODO] Add new data
+   - [TODO] Import backup in "Merge" mode
+   - [TODO] Verify OLD data exists
+   - [TODO] Verify NEW data also exists
+   - [TODO] No duplicates created
 
 ---
 
@@ -1422,7 +1436,9 @@ After completing all sections:
 - [ ] Rush job workflow works
 - [ ] Permission system works correctly
 - [ ] Database export/import works
-
+- [TODO] Add page somewheree for admins to edit the matchmaking algorithm (i.e. checkbox for if to enforce Optical Requirement if selected, prioritization order, etc.)
+- [TODO] FIX Fridge Specifications what info it reveals, and Status message changing based on query. The Offline status is great, but I would live the Disconnected - Idle Connected - Measuring to show up under Status:
+- [TODO] Fix how the title bar looks.
 ### Nice-to-Have Features (Test if time)
 - [ ] WebSocket real-time updates (production only)
 - [ ] Slack notifications (if configured)

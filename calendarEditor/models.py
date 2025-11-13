@@ -477,6 +477,10 @@ class Notification(models.Model):
         ('admin_check_in', 'Admin Checked You In'),
         ('admin_checkout', 'Admin Checked You Out'),
         ('admin_edit_entry', 'Admin Edited Your Entry'),
+        ('account_approved', 'Account Approved'),
+        ('account_unapproved', 'Account Unapproved'),
+        ('account_promoted', 'Promoted to Staff'),
+        ('account_demoted', 'Demoted from Staff'),
         # Admin-specific notifications
         ('admin_new_user', 'New User Signup'),
         ('admin_rush_job', 'Rush Job Submitted'),

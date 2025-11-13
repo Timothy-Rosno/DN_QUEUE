@@ -15,6 +15,7 @@ urlpatterns = [
     # Check-in/Check-out paths (user self-service)
     path('check-in/<int:entry_id>/', views.check_in_job, name='check_in_job'),
     path('check-out/<int:entry_id>/', views.check_out_job, name='check_out_job'),
+    path('undo-check-in/<int:entry_id>/', views.undo_check_in, name='undo_check_in'),
     path('check-in-check-out/', views.check_in_check_out, name='check_in_check_out'),
 
     # Preset management paths
@@ -37,6 +38,8 @@ urlpatterns = [
     path('admin-users/delete/<int:user_id>/', admin_views.delete_user, name='delete_user'),
     path('admin-users/promote/<int:user_id>/', admin_views.promote_to_staff, name='promote_to_staff'),
     path('admin-users/demote/<int:user_id>/', admin_views.demote_from_staff, name='demote_from_staff'),
+    path('admin-users/edit-user-info/', admin_views.admin_edit_user_info, name='admin_edit_user_info'),
+    path('admin-users/edit-user-info/<int:user_id>/', admin_views.admin_edit_user_info, name='admin_edit_user_info_with_id'),
     path('admin-machines/', admin_views.admin_machines, name='admin_machines'),
     path('admin-machines/add/', admin_views.add_machine, name='add_machine'),
     path('admin-machines/edit/<int:machine_id>/', admin_views.edit_machine, name='edit_machine'),

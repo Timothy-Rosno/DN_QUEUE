@@ -227,3 +227,102 @@ class ChangeSecurityQuestionForm(forms.Form):
             self.add_error('new_security_answer_confirm', 'Answers do not match.')
 
         return cleaned_data
+
+
+class AdminEditUserForm(forms.Form):
+    """Form for admins to edit all user information."""
+    username = forms.CharField(
+        max_length=150,
+        required=True,
+        label='Username'
+    )
+    email = forms.EmailField(
+        required=True,
+        label='Email'
+    )
+    first_name = forms.CharField(
+        max_length=30,
+        required=False,
+        label='First Name'
+    )
+    last_name = forms.CharField(
+        max_length=30,
+        required=False,
+        label='Last Name'
+    )
+    phone_number = forms.CharField(
+        max_length=15,
+        required=False,
+        label='Phone Number'
+    )
+    department = forms.CharField(
+        max_length=100,
+        required=False,
+        label='Department'
+    )
+    notes = forms.CharField(
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}),
+        label='Notes'
+    )
+    slack_member_id = forms.CharField(
+        max_length=50,
+        required=False,
+        label='Slack Member ID'
+    )
+    security_question = forms.ChoiceField(
+        choices=UserProfile.SECURITY_QUESTIONS,
+        required=False,
+        label='Security Question'
+    )
+    security_question_custom = forms.CharField(
+        max_length=200,
+        required=False,
+        label='Custom Security Question'
+    )
+    security_answer = forms.CharField(
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={'autocomplete': 'off'}),
+        label='New Security Answer (leave blank to keep current)',
+        help_text='Only fill this if you want to change the security answer'
+    )
+
+    def __init__(self, user_instance, *args, **kwargs):
+        self.user_instance = user_instance
+        super().__init__(*args, **kwargs)
+
+        # Pre-populate fields with current user data
+        if user_instance:
+            self.fields['username'].initial = user_instance.username
+            self.fields['email'].initial = user_instance.email
+            self.fields['first_name'].initial = user_instance.first_name
+            self.fields['last_name'].initial = user_instance.last_name
+
+            if hasattr(user_instance, 'profile'):
+                profile = user_instance.profile
+                self.fields['phone_number'].initial = profile.phone_number
+                self.fields['department'].initial = profile.department
+                self.fields['notes'].initial = profile.notes
+                self.fields['slack_member_id'].initial = profile.slack_member_id
+                self.fields['security_question'].initial = profile.security_question
+                self.fields['security_question_custom'].initial = profile.security_question_custom
+
+    def clean_username(self):
+        """Validate that username is unique (except for current user)."""
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username=username).exclude(id=self.user_instance.id).exists():
+            raise forms.ValidationError('This username is already taken.')
+        return username
+
+    def clean(self):
+        cleaned_data = super().clean()
+        security_question = cleaned_data.get('security_question')
+        security_question_custom = cleaned_data.get('security_question_custom')
+
+        # If custom question is selected, custom text is required
+        if security_question == 'custom' and not security_question_custom:
+            self.add_error('security_question_custom', 'Please enter a custom security question.')
+
+        return cleaned_data

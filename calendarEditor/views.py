@@ -154,6 +154,7 @@ def fridge_list(request):
     return render(request, 'calendarEditor/public/fridge_list.html', context)
 
 
+@login_required
 def public_queue(request):
     """Public queue page showing full queue for all machines with filters."""
     from django.db.models import Q, Count
@@ -759,6 +760,83 @@ def check_out_job(request, entry_id):
         print(f"WebSocket broadcast failed: {e}")
 
     messages.success(request, f'🎉 Checked out! Your measurement on {machine.name} is complete and archived.')
+    return redirect('check_in_check_out')
+
+
+@login_required
+def undo_check_in(request, entry_id):
+    """
+    Undo a check-in to move running entry back to on-deck position (RUNNING → QUEUED at position 1).
+
+    This moves the running entry back to position 1 and bumps all other queued entries down by 1.
+    Sets the machine back to idle status.
+
+    Requirements:
+    - User must own the entry
+    - Entry status must be 'running'
+    """
+    queue_entry = get_object_or_404(QueueEntry, id=entry_id, user=request.user)
+
+    # Validate entry can be undone
+    if queue_entry.status != 'running':
+        messages.error(request, f'Cannot undo check-in - job status is "{queue_entry.get_status_display()}". Only running jobs can be undone.')
+        return redirect('check_in_check_out')
+
+    if not queue_entry.assigned_machine:
+        messages.error(request, 'Cannot undo check-in - no machine assigned.')
+        return redirect('check_in_check_out')
+
+    machine = queue_entry.assigned_machine
+
+    # Bump all existing queued entries down by 1 position
+    existing_queued = QueueEntry.objects.filter(
+        assigned_machine=machine,
+        status='queued'
+    ).order_by('queue_position')
+
+    for entry in existing_queued:
+        entry.queue_position += 1
+        entry.save(update_fields=['queue_position'])
+
+    # Move this entry back to queued status at position 1
+    queue_entry.status = 'queued'
+    queue_entry.queue_position = 1
+    queue_entry.started_at = None
+    queue_entry.reminder_due_at = None
+    queue_entry.reminder_sent = False
+    queue_entry.save()
+
+    # Update machine status to idle
+    machine.current_status = 'idle'
+    machine.current_user = None
+    machine.estimated_available_time = None
+    machine.save()
+
+    # Auto-clear any running-related notifications
+    auto_clear_notifications(related_queue_entry=queue_entry)
+
+    # Send on-deck or ready-for-check-in notification
+    from .matching_algorithm import check_and_notify_on_deck_status
+    check_and_notify_on_deck_status(queue_entry)
+
+    # Broadcast WebSocket update
+    try:
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            'queue_updates',
+            {
+                'type': 'queue_update',
+                'update_type': 'undo_checkin',
+                'entry_id': queue_entry.id,
+                'user_id': queue_entry.user.id,
+                'machine_id': machine.id,
+                'triggering_user_id': request.user.id,
+            }
+        )
+    except Exception as e:
+        print(f"WebSocket broadcast failed: {e}")
+
+    messages.success(request, f'Check-in undone! Your measurement on {machine.name} has been moved back to position #1 (on deck).')
     return redirect('check_in_check_out')
 
 

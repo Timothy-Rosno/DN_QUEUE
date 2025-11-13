@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% block title %}Edit User Information - Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Edit User Information</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">Editing information for user: <strong>{{ user_to_edit.username }}</strong></p>
+
+    <div style="margin-top: 1rem;">
+        <a href="{% url 'admin_users' %}" class="btn btn-secondary">← Back to User Management</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>User Details</h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <!-- Username -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.username.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Username *
+            </label>
+            {{ form.username }}
+            {% if form.username.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.username.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Email -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.email.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Email *
+            </label>
+            {{ form.email }}
+            {% if form.email.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.email.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- First Name -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.first_name.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                First Name
+            </label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.first_name.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Last Name -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.last_name.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Last Name
+            </label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.last_name.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Phone Number -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.phone_number.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Phone Number
+            </label>
+            {{ form.phone_number }}
+            {% if form.phone_number.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.phone_number.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Department -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.department.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Department
+            </label>
+            {{ form.department }}
+            {% if form.department.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.department.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Notes -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.notes.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Notes
+            </label>
+            {{ form.notes }}
+            {% if form.notes.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.notes.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Slack Member ID -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.slack_member_id.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Slack Member ID
+            </label>
+            {{ form.slack_member_id }}
+            {% if form.slack_member_id.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.slack_member_id.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">
+                Optional - Leave blank for automatic lookup
+            </small>
+        </div>
+
+        <!-- Security Question -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.security_question.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Security Question
+            </label>
+            {{ form.security_question }}
+            {% if form.security_question.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.security_question.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Custom Security Question -->
+        <div id="customQuestionDiv" style="margin-bottom: 1.5rem; display: none;">
+            <label for="{{ form.security_question_custom.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Custom Security Question
+            </label>
+            {{ form.security_question_custom }}
+            {% if form.security_question_custom.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.security_question_custom.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Security Answer -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.security_answer.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                New Security Answer
+            </label>
+            {{ form.security_answer }}
+            {% if form.security_answer.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.security_answer.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">
+                {{ form.security_answer.help_text }}
+            </small>
+        </div>
+
+        <div style="margin-top: 1.5rem;">
+            <button type="submit" class="btn">Save Changes</button>
+            <a href="{% url 'admin_users' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Show/hide custom question field based on security question selection
+const securityQuestionSelect = document.getElementById('{{ form.security_question.id_for_label }}');
+const customQuestionDiv = document.getElementById('customQuestionDiv');
+
+function toggleCustomQuestion() {
+    if (securityQuestionSelect.value === 'custom') {
+        customQuestionDiv.style.display = 'block';
+    } else {
+        customQuestionDiv.style.display = 'none';
+    }
+}
+
+securityQuestionSelect.addEventListener('change', toggleCustomQuestion);
+
+// Initialize on page load
+toggleCustomQuestion();
+</script>
+
+{% endblock %}
