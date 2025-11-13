@@ -21,11 +21,33 @@ class CustomLoginView(LoginView):
 
     def form_valid(self, form):
         """Handle successful login with optional 'Remember Me' functionality."""
+        from django.contrib.auth import logout
+        from django.contrib import messages
+        from django.shortcuts import redirect
+
         # Check if user selected "Remember Me" checkbox
         remember_me = self.request.POST.get('remember_me', False)
 
         # Call parent form_valid to log the user in
         response = super().form_valid(form)
+
+        # Check if user is approved (skip for staff/superusers)
+        user = self.request.user
+        if not (user.is_staff or user.is_superuser):
+            try:
+                profile = user.profile
+                if not profile.is_approved:
+                    # Log out the user immediately
+                    logout(self.request)
+                    messages.warning(self.request, 'Your account is pending approval by an administrator. You will be able to log in once your account is approved.')
+                    return redirect('home')
+            except Exception:
+                # If no profile exists, create one and log them out
+                from .models import UserProfile
+                UserProfile.objects.create(user=user, is_approved=False)
+                logout(self.request)
+                messages.warning(self.request, 'Your account is pending approval by an administrator. You will be able to log in once your account is approved.')
+                return redirect('home')
 
         # Set session expiry based on "Remember Me" preference
         if remember_me:

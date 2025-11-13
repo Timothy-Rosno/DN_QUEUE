@@ -10,13 +10,13 @@
 
 ## UPDATE PROGRESS
 TODO BATCH 1: 
-1. Guard schedule/queue with @login
+1. OK   Guard schedule/queue with @login 
 2. Slack notif for account approval/status changes
-3. Remember me checkbox fix
+3. OK   Remember me checkbox fix
 4. Fix login behavior for unapproved accounts
-5. Fixed recover-username edge case (multiple usernames per email)
-6. Contact admin for specific profile info changes
-7. Create admin way to make said changes
+5. OK   Fixed recover-username edge case (multiple usernames per email)
+6. OK   Contact admin for specific profile info changes
+7. OK   Create admin way to make said changes
 8. Check in/check out undo checkin
 9. Allow admins to edit running entries.
 Extra info: Notifications are set up only for slack and the web version at the moment, not email. 
@@ -28,7 +28,7 @@ Test especially that the web notification works.
 ### Test User Accounts Needed
 
 Create these accounts for testing:
-
+- [TODO] Add admin only button in Queue status that routs admins to the /schedule/admin-queue
 - [X] **Test Admin** - Username: `test_admin` - Staff status: YES
 - [X] **Test User 1** - Username: `test_user1` - Approved, not staff
 - [X] **Test User 2** - Username: `test_user2` - Approved, not staff

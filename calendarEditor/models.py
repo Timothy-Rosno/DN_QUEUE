@@ -481,6 +481,7 @@ class Notification(models.Model):
         ('account_unapproved', 'Account Unapproved'),
         ('account_promoted', 'Promoted to Staff'),
         ('account_demoted', 'Demoted from Staff'),
+        ('account_info_changed', 'Account Information Changed'),
         # Admin-specific notifications
         ('admin_new_user', 'New User Signup'),
         ('admin_rush_job', 'Rush Job Submitted'),

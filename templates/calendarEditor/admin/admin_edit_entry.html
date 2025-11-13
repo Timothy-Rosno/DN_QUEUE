@@ -185,8 +185,8 @@
 
         <!-- Optical Requirements -->
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: flex; align-items: center; cursor: pointer;">
-                {{ form.requires_optical }}
+            <label for="{{ form.requires_optical.id_for_label }}" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+                <span title="">{{ form.requires_optical }}</span>
                 <span style="margin-left: 0.5rem; font-weight: bold;">{{ form.requires_optical.label }}</span>
             </label>
             {% if form.requires_optical.errors %}
@@ -222,9 +222,9 @@
 
         <!-- Rush Job -->
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: flex; align-items: center; cursor: pointer;">
-                {{ form.is_rush_job }}
-                <span style="margin-left: 0.5rem; font-weight: bold;">{{ form.is_rush_job.label }}</span>
+            <label for="{{ form.is_rush_job.id_for_label }}" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+                <span title="">{{ form.is_rush_job }}</span>
+                <span style="margin-left: 0.5rem; font-weight: bold; color: #e74c3c;">{{ form.is_rush_job.label }}</span>
             </label>
             {% if form.is_rush_job.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.is_rush_job.errors }}</div>

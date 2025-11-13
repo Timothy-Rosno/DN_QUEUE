@@ -311,6 +311,19 @@ def admin_edit_user_info(request, user_id=None):
         if request.method == 'POST':
             form = AdminEditUserForm(user_to_edit, request.POST)
             if form.is_valid():
+                # Track changes for notification
+                changed_fields = []
+
+                # Check user model field changes
+                if user_to_edit.username != form.cleaned_data['username']:
+                    changed_fields.append(f"Username: {user_to_edit.username} → {form.cleaned_data['username']}")
+                if user_to_edit.email != form.cleaned_data['email']:
+                    changed_fields.append(f"Email: {user_to_edit.email} → {form.cleaned_data['email']}")
+                if user_to_edit.first_name != form.cleaned_data['first_name']:
+                    changed_fields.append(f"First Name: {user_to_edit.first_name} → {form.cleaned_data['first_name']}")
+                if user_to_edit.last_name != form.cleaned_data['last_name']:
+                    changed_fields.append(f"Last Name: {user_to_edit.last_name} → {form.cleaned_data['last_name']}")
+
                 # Update user model fields
                 user_to_edit.username = form.cleaned_data['username']
                 user_to_edit.email = form.cleaned_data['email']
@@ -324,6 +337,22 @@ def admin_edit_user_info(request, user_id=None):
                 except UserProfile.DoesNotExist:
                     profile = UserProfile.objects.create(user=user_to_edit)
 
+                # Check profile field changes
+                if profile.phone_number != form.cleaned_data['phone_number']:
+                    changed_fields.append(f"Phone Number: {profile.phone_number or '(empty)'} → {form.cleaned_data['phone_number'] or '(empty)'}")
+                if profile.department != form.cleaned_data['department']:
+                    changed_fields.append(f"Department: {profile.department or '(empty)'} → {form.cleaned_data['department'] or '(empty)'}")
+                if profile.notes != form.cleaned_data['notes']:
+                    changed_fields.append(f"Notes: {profile.notes or '(empty)'} → {form.cleaned_data['notes'] or '(empty)'}")
+                if profile.slack_member_id != form.cleaned_data['slack_member_id']:
+                    changed_fields.append(f"Slack Member ID: {profile.slack_member_id or '(empty)'} → {form.cleaned_data['slack_member_id'] or '(empty)'}")
+                if profile.security_question != form.cleaned_data['security_question']:
+                    changed_fields.append("Security Question changed")
+                if profile.security_question_custom != form.cleaned_data['security_question_custom']:
+                    changed_fields.append("Custom Security Question changed")
+                if form.cleaned_data['security_answer']:
+                    changed_fields.append("Security Answer changed")
+
                 profile.phone_number = form.cleaned_data['phone_number']
                 profile.department = form.cleaned_data['department']
                 profile.notes = form.cleaned_data['notes']
@@ -336,6 +365,17 @@ def admin_edit_user_info(request, user_id=None):
                     profile.set_security_answer(form.cleaned_data['security_answer'])
 
                 profile.save()
+
+                # Send notification if any fields were changed
+                if changed_fields:
+                    changes_text = "\n".join(f"• {change}" for change in changed_fields)
+                    notifications.create_notification(
+                        recipient=user_to_edit,
+                        notification_type='account_info_changed',
+                        title='Admin changed your account information',
+                        message=f'Admin {request.user.username} updated your account information:\n\n{changes_text}',
+                        triggering_user=request.user,
+                    )
 
                 messages.success(request, f'User information for {user_to_edit.username} updated successfully.')
                 return redirect('admin_users')

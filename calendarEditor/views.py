@@ -840,9 +840,6 @@ def undo_check_in(request, entry_id):
     return redirect('check_in_check_out')
 
 
-from django.utils import timezone
-from datetime import timedelta
-
 @login_required
 def check_in_check_out(request):
     """
