@@ -12,18 +12,18 @@
 
 Create these accounts for testing:
 
-- [ ] **Test Admin** - Username: `test_admin` - Staff status: YES
-- [ ] **Test User 1** - Username: `test_user1` - Approved, not staff
-- [ ] **Test User 2** - Username: `test_user2` - Approved, not staff
-- [ ] **Test User 3** - Username: `test_unapproved` - NOT approved yet
-- [ ] **Test User 4** - Username: `test_user_slack` - With Slack ID configured (if testing Slack)
+- [X] **Test Admin** - Username: `test_admin` - Staff status: YES
+- [X] **Test User 1** - Username: `test_user1` - Approved, not staff
+- [X] **Test User 2** - Username: `test_user2` - Approved, not staff
+- [X] **Test User 3** - Username: `test_unapproved` - NOT approved yet
+- [X] **Test User 4** - Username: `test_user_slack` - With Slack ID configured (if testing Slack)
 
 ### Test Data Setup
 
-- [ ] At least 3 machines configured (different names, statuses)
-- [ ] At least 5 queue entries in various states (pending, ready, running, completed)
-- [ ] At least 3 presets created by different users
-- [ ] Some archived measurements
+- [X] At least 3 machines configured (different names, statuses)
+- [X] At least 5 queue entries in various states (pending, ready, running, completed)
+- [X] At least 3 presets created by different users
+- [X] Some archived measurements
 
 ---
 
@@ -31,31 +31,33 @@ Create these accounts for testing:
 
 ### Homepage (`/`)
 
-- [ ] Visit homepage without being logged in
-- [ ] See welcome message and description
-- [ ] Click "View Public Queue" link → redirects to `/schedule/queue/`
-- [ ] Click "View Lab Fridges" link → redirects to `/schedule/fridges/`
-- [ ] Click "Login" button → redirects to login page
-- [ ] Click "Register" button → redirects to registration page
-- [ ] No admin links visible
+- [X] Visit homepage without being logged in
+- [X] See welcome message and description
+- [TODO] Click "View Public Queue" link → redirects to `/schedule/queue/` NOT GUARDED BUT SHOULD BE UNLESS WANT QUEUE VISIBLE TO PUBLIC. I THINK NEED LOGIN IS BETTER?
+- [TODO] Change text to Login to view queue entries
+- [X] Click "View Lab Fridges" link → redirects to `/schedule/fridges/`
+- [X] Click "Login" button → redirects to login page
+- [X] Click "Register" button → redirects to registration page
+- [X] No admin links visible
+
 
 ### Public Queue Page (`/schedule/queue/`)
 
-- [ ] View queue without login
-- [ ] See all pending and running queue entries
-- [ ] See machine assignments
-- [ ] See estimated durations
-- [ ] See user names (should be visible publicly)
-- [ ] NO action buttons visible (no cancel, check-in, etc.)
-- [ ] Try accessing other pages → should redirect to login
+- [X] View queue without login
+- [X] See all pending and running queue entries
+- [X] See machine assignments
+- [X] See estimated durations
+- [X] See user names (should be visible publicly)
+- [X] NO action buttons visible (no cancel, check-in, etc.)
+- [X] Try accessing other pages → should redirect to login
 
 ### Fridge List Page (`/schedule/fridges/`)
 
-- [ ] View fridge list without login
-- [ ] See machine names
-- [ ] See temperature readings (if available)
-- [ ] See online/offline status
-- [ ] NO edit/delete buttons visible
+- [X] View fridge list without login
+- [X] See machine names
+- [X] See temperature readings (if available)
+- [X] See online/offline status
+- [X] NO edit/delete buttons visible
 
 ---
 
@@ -64,80 +66,84 @@ Create these accounts for testing:
 ### Registration (`/register/`)
 
 **Test Valid Registration:**
-- [ ] Fill in all fields correctly
+- [TODO] CHANGE TEXT TO SLACK INFORMATION, ALLOW SPACES IN USERNAME IS THERE A REASON WHY THEY AREN'T ALLOWED RN?
+- [X] Fill in all fields correctly
   - Username: `test_newuser`
   - Email: `test@example.com`
   - Password: Strong password
   - First/Last Name
   - Security Question: Select from dropdown
   - Security Answer: Provide answer
-- [ ] Submit form
-- [ ] See success message: "Account created successfully! Your account is pending approval..."
-- [ ] Redirected to login page
-- [ ] Try logging in immediately → should see "pending approval" message
+- [X] Submit form
+- [X] See success message: "Account created successfully! Your account is pending approval..."
+- [X] Redirected to login page
+- [X] Try logging in immediately → should see "pending approval" message
+- [TODO] NOTIFY WHEN APPROVED!
 
 **Test Invalid Registration:**
-- [ ] Try duplicate username → see error
-- [ ] Try weak password → see validation error
-- [ ] Try mismatched passwords → see error
-- [ ] Leave required fields blank → see validation errors
-- [ ] Try invalid email format → see error
+- [X] Try duplicate username → see error
+- [X] Try weak password → see validation error
+- [X] Try mismatched passwords → see error
+- [X] Leave required fields blank → see validation errors
+- [X] Try invalid email format → see error
 
 ### Login (`/login/`)
 
 **Test Approved User Login:**
-- [ ] Enter valid credentials (test_user1)
-- [ ] Check "Remember Me" checkbox → session should last 1 year
-- [ ] Don't check "Remember Me" → session should last 7 days
-- [ ] Successfully login → redirect to home page
-- [ ] See username in top right corner
-- [ ] See "Logout" option
+- [X] Enter valid credentials (test_user1)
+- [TODO] Check "Remember Me" checkbox → session should last 1 year MIGHT COMMENT THIS OUT IT FEELS WEIRD
+- [TODO] Don't check "Remember Me" → session should last 7 days GOOD DEFAULT AND THEY DONT HAVE TO DO ANYTHING
+- [X] Successfully login → redirect to home page YES OR ADMIN PAGE
+- [X] See username in top right corner
+- [X] See "Logout" option
 
 **Test Unapproved User Login:**
-- [ ] Login as `test_unapproved`
-- [ ] See "pending approval" message
-- [ ] Redirected back to login page
-- [ ] Cannot access any authenticated pages
+- [X] Login as `test_unapproved`
+- [X] See "pending approval" message
+- [TODO] Redirected back to login page WELL THEY CAN SEE WHAT TABS EXIST BUT THEY CAN'T ACCESS ANYTHING. I'M OK WITH THAT AS A FEATURE. LIKE A TASTE OF WHAT THEY'RE MISSING OUT ON.
+- [X] Cannot access any authenticated pages
+- [TODO] Fix bug: WHEN USER IS UNAPPROVED AND SOMEONE ELSE SIGNS IN FROM THERE, THE LOGIN PAGE IS STILL OF THAT OTHER USER SO IT SENDS THE YOU'RE NOT APPROVED MESSAGE, SO I THINK I NEED TO CHANGE HOW THE REDIRECT TO LOGIN WORKS SO THAT UNAPPROVED BASICALLY SAYS THE MESSAGE BUT LOGS THEM OUT AND BRINGS THEM BACK TO THE LOGIN WITH NOTHING ELSE VISIBLE.
 
 **Test Invalid Login:**
-- [ ] Wrong password → see "invalid credentials" error
-- [ ] Wrong username → see "invalid credentials" error
-- [ ] Blank fields → see validation errors
+- [X] Wrong password → see "invalid credentials" error
+- [X] Wrong username → see "invalid credentials" error
+- [X] Blank fields → see validation errors
 
 **Test "Remember Me" Feature:**
-- [ ] Login WITH checkbox checked
-- [ ] Close browser completely
-- [ ] Reopen and visit site
-- [ ] Should still be logged in (1 year session)
-- [ ] Logout, login WITHOUT checkbox
-- [ ] Session should expire after 7 days (hard to test, check cookie expiry)
+- [X] Login WITH checkbox checked
+- [X] Close browser completely
+- [X] Reopen and visit site
+- [X] Should still be logged in (1 year session)
+- [X] Logout, login WITHOUT checkbox
+- [X] Session should expire after 7 days (hard to test, check cookie expiry)
 
 ### Password Reset Flow (`/forgot-password/`)
 
-- [ ] Click "Forgot your password?" on login page
-- [ ] Enter username: `test_user1`
-- [ ] Submit → redirected to security question page
-- [ ] See user's security question displayed
-- [ ] Enter correct answer → redirected to password reset page
-- [ ] Enter new password (twice, matching)
-- [ ] Submit → see success message
-- [ ] Redirected to login
-- [ ] Login with NEW password → should work
-- [ ] Try login with OLD password → should fail
+- [X] Click "Forgot your password?" on login page
+- [X] Enter username: `test_user1`
+- [X] Submit → redirected to security question page
+- [X] See user's security question displayed
+- [X] Enter correct answer → redirected to password reset page
+- [X] Enter new password (twice, matching)
+- [X] Submit → see success message
+- [X] Redirected to login
+- [X] Login with NEW password → should work
+- [X] Try login with OLD password → should fail
 
 **Test Wrong Security Answer:**
-- [ ] Go through forgot password flow
-- [ ] Enter WRONG security answer
-- [ ] See error message
-- [ ] Should stay on security question page
+- [X] Go through forgot password flow
+- [X] Enter WRONG security answer
+- [X] See error message
+- [X] Should stay on security question page
 
 ### Username Recovery (`/recover-username/`)
 
-- [ ] Click "Forgot your username?" on login page
-- [ ] Enter email address: `test@example.com`
-- [ ] Submit
-- [ ] See username displayed on page
-- [ ] Try invalid email → see error message
+- [X] Click "Forgot your username?" on login page
+- [X] Enter email address: `test@example.com`
+- [X] Submit
+- [X] See username displayed on page
+- [X] Try invalid email → see error message
+- [TODO] FIX THE CASE OF MULTIPLE USERNAMES FOR ONE EMAIL ACCOUNT, RN IT 500 SERVER ERRORS WHICH IS FAIR.
 
 ---
 
@@ -145,45 +151,42 @@ Create these accounts for testing:
 
 ### Navigation Bar (All Pages)
 
-- [ ] See username in top right
-- [ ] Hover/click username → see dropdown menu
-- [ ] Dropdown shows:
-  - [ ] "My Queue" link
-  - [ ] "Submit Queue Entry" link
-  - [ ] "Profile" link
-  - [ ] "Check In/Out" link (if has active jobs)
-  - [ ] "Notifications" link
-  - [ ] "Archive" link
-  - [ ] "Logout" link
-- [ ] NO admin links visible for regular users
-- [ ] All links navigate to correct pages
+- [X] See username in top right
+- [X] Hover/click username → see dropdown menu
+- [X] Dropdown shows:
+  - [X] "My Queue" link
+  - [X] "Submit Queue Entry" link
+  - [X] "Profile" link
+  - [X] "Check In/Out" link (if has active jobs)
+  - [X] "Notifications" link
+  - [X] "Archive" link
+  - [X] "Logout" link
+- [X] NO admin links visible for regular users
+- [X] All links navigate to correct pages
 
 ### User Profile Page (`/profile/`)
 
 **Profile Information Tab:**
-- [ ] See current profile information displayed
-- [ ] Edit First Name → save → see success message
-- [ ] Edit Last Name → save → see success message
-- [ ] Changes reflected on page after refresh
-- [ ] Try blank required fields → see validation error
-
+- [X] See current profile information displayed
+- [TODO] Edit First Name → save → see success message NEED TO MAKE EDITABLE
+- [TODO] Edit Last Name → save → see success message NEED TO BAKE EDITABLE
+- [WouldWork] Changes reflected on page after refresh
+- [X] Try blank required fields → see validation error
+- [TODO] Make the slack member ID instructions easier, and make it A PART OF REGISTRATION THAT ISN'T REQUIRED.
 **Notification Preferences Tab:**
-- [ ] See list of notification types
-- [ ] Toggle "Queue Position: On Deck" → save → see success
-- [ ] Toggle "Queue Position: Ready for Check-In" → save (should NOT disable - critical)
-- [ ] Toggle "Checkout Reminder" → save (should NOT disable - critical)
-- [ ] Toggle other notifications → save → verify saved
-- [ ] Refresh page → verify checkboxes reflect saved state
-- [ ] See "Followed Presets" section
-- [ ] See list of followed presets (if any)
+- [X] See list of notification types
+- [X] Toggle "Queue Position: On Deck" → save → see success
+- [X] Toggle "Queue Position: Ready for Check-In" → save (should NOT disable - critical)
+- [X] Toggle "Checkout Reminder" → save (should NOT disable - critical)
+- [X] Toggle other notifications → save → verify saved
+- [X] Refresh page → verify checkboxes reflect saved state
+- [X] See "Followed Presets" section
+- [X] See list of followed presets (if any)
 
-**Security Settings:**
-- [ ] Click "Change Security Question"
-- [ ] Enter current security answer
-- [ ] Select new security question
-- [ ] Enter new security answer
-- [ ] Submit → see success message
-- [ ] Verify change by going through password reset flow
+**Security:**
+- [X] Decide to delete changing 
+- [TODO] Add a little line in the Profile Information that if you need to change your security question, username, email, or name, contact an administrator.
+- [TODO] Make staff capable of changing ALL user information, including security question
 
 ---
 
@@ -192,87 +195,87 @@ Create these accounts for testing:
 ### Submit Queue Entry (`/schedule/submit/`)
 
 **Test Basic Submission:**
-- [ ] See form with all fields
-- [ ] Select machine from dropdown
-- [ ] Enter job title: "Test Measurement 1"
-- [ ] Enter description/notes
-- [ ] Enter estimated duration: 2 hours
-- [ ] Select priority: Normal
-- [ ] Submit form
-- [ ] See success message
-- [ ] Redirected to "My Queue" page
-- [ ] See new entry in "My Upcoming Jobs" section
+- [X] See form with all fields
+- [NotAThingButThanks...ItAssignsBasedOnTheAssignmentAlgorithm] Select machine from dropdown
+- [X] Enter job title: "Test Measurement 1"
+- [X] Enter description/notes
+- [TODO] Enter estimated duration: 2 hours DECIDE IF YOU WANT THIS
+- [X] Select priority: Normal
+- [X] Submit form
+- [X] See success message
+- [X] Redirected to "My Queue" page <-- Actually want them to stay on this page
+- [X] See new entry in "My Upcoming Jobs" section
 
 **Test Rush Job Request:**
-- [ ] Fill in form as above
-- [ ] Check "Request Rush Job" checkbox
-- [ ] Enter rush justification: "Urgent deadline tomorrow"
-- [ ] Submit
-- [ ] See message about pending admin approval
-- [ ] Entry should show "Rush (Pending)" status
-- [ ] Admin should see notification about rush request
+- [X] Fill in form as above
+- [X] Check "Request Rush Job" checkbox
+- [X] Enter rush justification: "Urgent deadline tomorrow"
+- [X] Submit
+- [X] See message about pending admin approval
+- [X] Entry should show "Rush (Pending)" status
+- [X] Admin should see notification about rush request
 
 **Test Preset Loading:**
-- [ ] Click "Load Preset" dropdown
-- [ ] Select existing preset
-- [ ] Verify form fields auto-fill with preset values
-- [ ] Modify one field
-- [ ] Submit
-- [ ] Verify entry uses modified values
+- [X] Click "Load Preset" dropdown
+- [X] Select existing preset
+- [X] Verify form fields auto-fill with preset values
+- [X] Modify one field
+- [X] Submit
+- [X] Verify entry uses modified values
 
 **Test Preset Creation:**
-- [ ] Fill in form with specific values
-- [ ] Click "Save as Preset"
-- [ ] Enter preset name: "My Test Preset"
-- [ ] Choose visibility: "Private"
-- [ ] Submit
-- [ ] See success message
-- [ ] Refresh page → new preset appears in dropdown
-- [ ] Load preset → verify values match
+- [X] Fill in form with specific values
+- [X] Click "Save as Preset"
+- [X] Enter preset name: "My Test Preset"
+- [X] Choose visibility: "Private"
+- [X] Submit
+- [X] See success message
+- [X] Refresh page → new preset appears in dropdown
+- [X] Load preset → verify values match
 
 **Test Following Presets:**
-- [ ] Load a preset created by ANOTHER user (if available)
-- [ ] Click "Follow This Preset" button (if visible)
-- [ ] See success message
-- [ ] Go to Profile → Notification Preferences
-- [ ] See preset in "Followed Presets" section
-- [ ] Unfollow from profile → verify removed
+- [X] Load a preset created by ANOTHER user (if available)
+- [X] Click "Follow This Preset" button (if visible)
+- [X] See success message
+- [X] Go to Profile → Notification Preferences
+- [X] See preset in "Followed Presets" section
+- [X] Unfollow from profile → verify removed
 
 **Test Validation Errors:**
-- [ ] Submit form with missing machine → see error
-- [ ] Submit with missing title → see error
-- [ ] Submit with negative duration → see error
-- [ ] Submit with duration > 24 hours → see warning/error
-- [ ] Submit with missing justification for rush job → see error
+- [X] Submit form with missing machine → see error
+- [X] Submit with missing title → see error
+- [X] Submit with negative duration → see error
+- [X] Submit with duration > 24 hours → see warning/error
+- [X] Submit with missing justification for rush job → see error
 
 ### My Queue Page (`/schedule/my-queue/`)
 
 **View My Queue:**
-- [ ] See "My Upcoming Jobs" section
-- [ ] See entries in order (rush first, then order number)
-- [ ] Each entry shows:
-  - [ ] Machine assignment
-  - [ ] Title
-  - [ ] Status (Pending, Ready, Running)
-  - [ ] Position in queue
-  - [ ] Estimated duration
-  - [ ] Rush indicator (if applicable)
-- [ ] See "My Completed Jobs" section (last 10)
-- [ ] See completed entries with completion dates
+- [X] See "My Upcoming Jobs" section
+- [X] See entries in order (rush first, then order number)
+- [X] Each entry shows:
+  - [X] Machine assignment
+  - [X] Title
+  - [X] Status (Pending, Ready, Running)
+  - [X] Position in queue
+  - [X] Estimated duration
+  - [X] Rush indicator (if applicable)
+- [X] See "My Completed Jobs" section (last 10)
+- [X] See completed entries with completion dates
 
 **Cancel Queue Entry:**
-- [ ] Find a PENDING entry
-- [ ] Click "Cancel" button
-- [ ] See confirmation dialog
-- [ ] Confirm cancellation
-- [ ] Entry disappears from list
-- [ ] See success message
-- [ ] Verify entry is gone after page refresh
+- [X] Find a PENDING entry
+- [X] Click "Cancel" button
+- [X] See confirmation dialog
+- [X] Confirm cancellation
+- [X] Entry disappears from list
+- [X] See success message
+- [X] Verify entry is gone after page refresh
 
 **Test Cannot Cancel Running Entry:**
-- [ ] Try to cancel entry with status "Running"
-- [ ] Should NOT see cancel button (or see error if attempted)
-- [ ] Running entries can only be checked out, not cancelled
+- [X] Try to cancel entry with status "Running"
+- [X] Should NOT see cancel button (or see error if attempted)
+- [X] Running entries can only be checked out, not cancelled
 
 ---
 
@@ -281,56 +284,57 @@ Create these accounts for testing:
 ### Check-In Process
 
 **From My Queue Page:**
-- [ ] Find entry with status "Ready for Check-In"
-- [ ] Click "Check In" button
-- [ ] See confirmation dialog
-- [ ] Confirm check-in
-- [ ] Entry status changes to "Running"
-- [ ] See "Started At" timestamp
-- [ ] "Check In" button disappears
-- [ ] "Check Out" button appears
-- [ ] Estimated completion time displayed
+- [X] Find entry with status "Ready for Check-In"
+- [X] Click "Check In" button
+- [X] See confirmation dialog
+- [X] Confirm check-in
+- [X] Entry status changes to "Running"
+- [X] See "Started At" timestamp
+- [X] "Check In" button disappears
+- [X] "Check Out" button appears
+- [X] Estimated completion time displayed
 
 **From Check In/Out Page (`/schedule/check-in-check-out/`):**
-- [ ] Visit check-in page
-- [ ] See "Ready to Check In" section
-- [ ] See entry listed
-- [ ] Click "Check In" button
-- [ ] See confirmation
-- [ ] Entry moves to "Currently Running" section
+- [X] Visit check-in page
+- [X] See "Ready to Check In" section
+- [X] See entry listed
+- [X] Click "Check In" button
+- [X] See confirmation
+- [X] Entry moves to "Currently Running" section
 
 **Test Reminder Scheduling:**
-- [ ] After checking in, verify reminder is scheduled
-- [ ] Note the estimated completion time
-- [ ] (Hard to test immediately - requires waiting for reminder due time)
+- [X] After checking in, verify reminder is scheduled
+- [X] Note the estimated completion time
+- [TODO] (Hard to test immediately - requires waiting for reminder due time) I THINK I HAVE A CRYOCORE RUNNING RIGHT NOW TO CHECK THAT?? HAD TO CHANGE THE CODE A BIT. The code is still mad about something, when API is unreachable sometimes randomly, but it stays up, so eh. Ah, it has 40 minutes left.
 
 ### Check-Out Process
 
 **From My Queue Page:**
-- [ ] Find entry with status "Running"
-- [ ] Click "Check Out" button
-- [ ] See form with optional fields:
-  - [ ] Actual duration (auto-filled)
-  - [ ] Notes/results
-  - [ ] Option to save to archive
-- [ ] Fill in results/notes
-- [ ] Check "Save to Archive" if desired
-- [ ] Submit
-- [ ] Entry status changes to "Completed"
-- [ ] See "Completed At" timestamp
-- [ ] Entry moves to "Completed" section
-- [ ] If archived, see success message with archive link
+- [TODO] SHOULD THERE BE AN UNDO CHECK-IN? I FEEL LIKE THAT'S GONNA MAKE IT DIFFICULT...
+- [X] Find entry with status "Running"
+- [X] Click "Check Out" button
+- [X] See form with optional fields:
+  - [X] Actual duration (auto-filled)
+  - [X] Notes/results
+  - [X] Option to save to archive <-- automatic
+- [X] Fill in results/notes
+- [X] Check "Save to Archive" if desired
+- [X] Submit
+- [X] Entry status changes to "Completed"
+- [X] See "Completed At" timestamp
+- [X] Entry moves to "Completed" section
+- [X] If archived, see success message with archive link
 
 **From Check In/Out Page:**
-- [ ] See "Currently Running" section
-- [ ] Find running entry
-- [ ] Click "Check Out" button
-- [ ] Fill in checkout form
-- [ ] Submit
-- [ ] Entry disappears from "Running" section
-- [ ] Moves to "Recent Completions" (if shown)
+- [X] See "Currently Running" section
+- [X] Find running entry
+- [X] Click "Check Out" button
+- [X] Fill in checkout form
+- [X] Submit
+- [X] Entry disappears from "Running" section
+- [X] Moves to "Recent Completions" (if shown)
 
-**Test Early/Late Checkout:**
+**Test Early/Late Checkout:** huh? [TODO]
 - [ ] Check in to a job (estimated 2 hours)
 - [ ] Check out after 30 minutes (early)
 - [ ] Verify actual duration is calculated correctly (~0.5 hours)
@@ -344,48 +348,36 @@ Create these accounts for testing:
 ## 6. ARCHIVE MANAGEMENT - REGULAR USER
 
 ### View Archives (`/schedule/archive/`)
-
-- [ ] Visit archive page
-- [ ] See list of archived measurements
-- [ ] Filter by machine → dropdown filters list
-- [ ] Search by title → results filter correctly
-- [ ] See columns: Machine, Date, Title, Notes, Actions
-- [ ] Pagination works (if > 20 entries)
-
-### Create Archive Entry (`/schedule/archive/create/`)
-
-- [ ] Click "New Archive Entry"
-- [ ] Select machine
-- [ ] Enter measurement date (date picker)
-- [ ] Enter title: "Manual Archive Test"
-- [ ] Enter notes/results
-- [ ] Upload file (optional) - test with small CSV/PDF
-- [ ] Submit
-- [ ] See success message
-- [ ] Entry appears in archive list
-- [ ] Download file → verify correct file downloads
+- [TODO] REMOVE THE ACTIONS TAB.
+- [X] Visit archive page
+- [X] See list of archived measurements
+- [X] Filter by machine → dropdown filters list
+- [X] Search by title → results filter correctly
+- [X] See columns: Machine, Date, Title, Notes, Actions
+- [TODO] Pagination works (if > 20 entries) NO PAGINATION MADE NOW
+- [TODO] Remove the Day: Filtration. It's causing a bug with all years
 
 ### Save from Queue Entry
 
-- [ ] During check-out, enable "Save to Archive"
-- [ ] Fill in optional notes
-- [ ] Submit checkout
-- [ ] Go to archive page
-- [ ] Verify entry was created with:
-  - [ ] Correct machine
-  - [ ] Correct date (check-in date)
-  - [ ] Queue entry title
-  - [ ] Any notes added
+- [X] During check-out, enable "Save to Archive"
+- [X] Fill in optional notes
+- [X] Submit checkout
+- [X] Go to archive page
+- [X] Verify entry was created with:
+  - [X] Correct machine
+  - [X] Correct date (check-in date)
+  - [X] Queue entry title
+  - [X] Any notes added
 
 ### Export My Measurements
 
-- [ ] Click "Export My Measurements" button
-- [ ] See CSV file download
-- [ ] Open CSV in spreadsheet app
-- [ ] Verify contains:
-  - [ ] All YOUR archived measurements (not others')
-  - [ ] Correct columns: ID, Machine, Date, Title, Notes, Archived At
-  - [ ] Data is accurate
+- [X] Click "Export My Measurements" button
+- [X] See CSV file download
+- [X] Open CSV in spreadsheet app
+- [X] Verify contains:
+  - [X] All YOUR archived measurements (not others')
+  - [X] Correct columns: ID, Machine, Date, Title, Notes, Archived At
+  - [X] Data is accurate
 
 ### Bulk Delete Archives
 
@@ -393,111 +385,116 @@ Create these accounts for testing:
 
 ### Delete Single Archive Entry
 
-- [ ] Find an archive entry YOU created
-- [ ] Click "Delete" button
-- [ ] See confirmation dialog
-- [ ] Confirm deletion
-- [ ] Entry disappears from list
-- [ ] See success message
-- [ ] Try to delete entry created by ANOTHER user
-- [ ] Should NOT see delete button (or get error)
+- [X] Find an archive entry YOU created
+- [X] Click "Delete" button
+- [X] See confirmation dialog
+- [X] Confirm deletion
+- [X] Entry disappears from list
+- [X] See success message
+- [X] Try to delete entry created by ANOTHER user
+- [X] Should NOT see delete button (or get error)
+- [TODO] PRIVATE PRESET DELETE BUTTONS AREN'T THANOS DIALOG. PUBLIC PRESET DELETE BUTTONS ARE! staff only
 
 ### Download Archive Files
 
-- [ ] Find entry with uploaded file
-- [ ] Click "Download" link
-- [ ] File downloads correctly
-- [ ] File is the correct file (not corrupted)
-- [ ] Verify filename matches original upload
-
+- [X] Find entry with uploaded file
+- [X] Click "Download" link
+- [X] File downloads correctly
+- [X] File is the correct file (not corrupted)
+- [X] Verify filename matches original upload
+- [TODO] EXPORT ALL MEASUREMENT BUTTON FOR ARCHIVE -- all users
 ---
 
 ## 7. PRESET MANAGEMENT - REGULAR USER
 
 ### View Preset (`/schedule/preset/view/<id>/`)
 
-- [ ] Navigate to preset view (from submit page "View" link)
-- [ ] See preset details:
-  - [ ] Name
-  - [ ] Creator
-  - [ ] Visibility (Private/Lab/Public)
-  - [ ] Machine
-  - [ ] Estimated duration
-  - [ ] Description/notes
-  - [ ] Fields (if any custom fields)
-- [ ] See "Use This Preset" button → redirects to submit page with preset loaded
+- [X] Navigate to preset view (from submit page "View" link)
+- [X] See preset details:
+  - [X] Name
+  - [X] Creator
+  - [X] Visibility (Private/Lab/Public)
+  - [X] Machine
+  - [X] Estimated duration
+  - [X] Description/notes
+  - [X] Fields (if any custom fields)
+- [X] See "Use This Preset" button → redirects to submit page with preset loaded
 
 ### Create Preset (from Submit Page)
 
-- [ ] Fill in queue submission form
-- [ ] Click "Save as Preset" button
-- [ ] See preset creation modal
-- [ ] Enter name: "New Test Preset"
-- [ ] Select visibility: "Lab Members"
-- [ ] Submit
-- [ ] See success message
-- [ ] Preset appears in dropdown on submit page
-- [ ] Verify preset is saved correctly
+- [X] Fill in queue submission form
+- [X] Click "Save as Preset" button
+- [X] See preset creation modal
+- [X] Enter name: "New Test Preset"
+- [X] Select visibility: "Lab Members"
+- [X] Submit
+- [X] See success message
+- [X] Preset appears in dropdown on submit page
+- [X] Verify preset is saved correctly
 
 ### Edit Preset (`/schedule/preset/edit/<id>/`)
 
-- [ ] From submit page, select YOUR preset
-- [ ] Click "Edit Preset" button
-- [ ] See preset edit form
-- [ ] Change preset name: "Updated Preset Name"
-- [ ] Change visibility: "Public"
-- [ ] Modify default duration
-- [ ] Submit
-- [ ] See success message
-- [ ] Reload submit page → verify changes reflected
-- [ ] Try to edit ANOTHER user's preset
-- [ ] Should get permission denied error (unless preset is shared and editable)
+- [X] From submit page, select YOUR preset
+- [X] Click "Edit Preset" button
+- [X] See preset edit form
+- [X] Change preset name: "Updated Preset Name"
+- [X] Change visibility: "Public"
+- [X] Modify default duration
+- [X] Submit
+- [X] See success message
+- [X] Reload submit page → verify changes reflected
+- [X] Try to edit ANOTHER user's preset
+- [X] Should get permission denied error (unless preset is shared and editable)
 
 ### Copy Preset (`/schedule/preset/copy/<id>/`)
 
-- [ ] Select ANY preset (yours or others')
-- [ ] Click "Copy Preset" button
-- [ ] See copy form with preset values pre-filled
-- [ ] Change name: "Copied from X"
-- [ ] Change visibility if desired
-- [ ] Submit
-- [ ] See success message
-- [ ] New preset appears in YOUR preset list
-- [ ] Verify it's a separate copy (editing it doesn't affect original)
+- [X] Select ANY preset (yours or others')
+- [X] Click "Copy Preset" button
+- [X] See copy form with preset values pre-filled
+- [X] Change name: "Copied from X"
+- [X] Change visibility if desired
+- [X] Submit
+- [X] See success message
+- [X] New preset appears in YOUR preset list
+- [X] Verify it's a separate copy (editing it doesn't affect original)
 
 ### Delete Preset
 
-- [ ] Select YOUR preset from dropdown
-- [ ] Click "Delete Preset" button
-- [ ] See confirmation dialog (possibly Thanos modal if implemented)
-- [ ] Confirm deletion
-- [ ] Preset disappears from dropdown
-- [ ] See success message
-- [ ] Try to delete preset you DON'T own
-- [ ] Should not see delete button or get permission error
+- [X] Select YOUR preset from dropdown
+- [X] Click "Delete Preset" button
+- [TODO] See confirmation dialog (possibly Thanos modal if implemented) NEED TO MAKE CUSTOM UI THANOS FOR STAFF AND NORMAL FOR NORMAL
+- [TODO] MAKE CUSTOM OK DIALOG FOR IF THE PRESET YOU WERE VIEWING WAS DELETED BY ANOTHER USER
+- [X] Confirm deletion
+- [X] Preset disappears from dropdown
+- [X] See success message
+- [X] Try to delete preset you DON'T own
+- [X] Should not see delete button or get permission error
 
 ### Follow/Unfollow Presets
 
 **Follow Preset:**
-- [ ] Load a preset created by ANOTHER user
-- [ ] Click "Follow This Preset" button
-- [ ] See success message
-- [ ] Go to Profile → Notification Preferences
-- [ ] See preset listed in "Followed Presets"
-- [ ] When preset is updated, you should get notification (test later)
+- [X] Load a preset created by ANOTHER user
+- [X] Click "Follow This Preset" button
+- [X] See success message
+- [X] Go to Profile → Notification Preferences
+- [X] See preset listed in "Followed Presets"
+- [TODO] When preset is updated, you should get notification (test later) NOT WORKING
 
 **Unfollow Preset:**
-- [ ] From Profile page, find followed preset
-- [ ] Click "Unfollow" button
-- [ ] Preset removed from list
-- [ ] No longer receive updates about this preset
+- [X] From Profile page, find followed preset
+- [X] Click "Unfollow" button
+- [X] Preset removed from list
+- [X] No longer receive updates about this preset
+- [TODO] MAKE UNFOLLOW A THANOS SNAP DIALOG for admins
 
 ---
 
 ## 8. NOTIFICATIONS - REGULAR USER
 
 ### View Notifications (`/schedule/notifications/`)
-
+- [ ] IF THEY'RE NOT ON SLACK, USE EMAIL
+- [ ] DON'T DOUBLE NOTIFICATION? MAYBE OK TO LEAVE, BUT PROBABLY SHOULD LEAVE IT AS 
+- [ ] NEED THE POSITION #1 NOTIFICATION TO REFLECT THE MACHINE STATUS (If it's not running and is available, send it, otherwise, check every hour until it's not running and is available (as ooposed to disabled by admin (which stops you from checking in)), like if there's no running measurement in it)
 - [ ] Visit notifications page
 - [ ] See notification list sorted by date (newest first)
 - [ ] Unread notifications highlighted/bolded
@@ -599,47 +596,47 @@ Create these accounts for testing:
 
 ### Setup
 
-- [ ] Verify SLACK_BOT_TOKEN is set in Render environment
-- [ ] Verify YOUR user has Slack User ID configured in profile
-- [ ] Verify Slack bot is installed in workspace
+- [X] Verify SLACK_BOT_TOKEN is set in Render environment
+- [X] Verify YOUR user has Slack User ID configured in profile
+- [X] Verify Slack bot is installed in workspace
 
 ### Test Slack Notifications
 
 **For each notification type above, verify Slack DM is received:**
 
 **Ready for Check-In (Slack):**
-- [ ] Trigger "ready for check-in" event
-- [ ] Check Slack DMs from bot
-- [ ] Should receive message about job ready
-- [ ] Message includes one-time login link
-- [ ] Click link → should auto-login and redirect to check-in page
+- [X] Trigger "ready for check-in" event
+- [X] Check Slack DMs from bot
+- [X] Should receive message about job ready
+- [X] Message includes one-time login link
+- [X] Click link → should auto-login and redirect to check-in page
 
 **Checkout Reminder (Slack):**
-- [ ] Trigger checkout reminder
-- [ ] Check Slack DMs
-- [ ] Should receive reminder message
-- [ ] Message includes login link to checkout page
+- [X] Trigger checkout reminder
+- [X] Check Slack DMs
+- [X] Should receive reminder message
+- [X] Message includes login link to checkout page
 
 **Rush Job Approved/Rejected (Slack):**
-- [ ] Trigger rush job decision
-- [ ] Check Slack DMs
-- [ ] Should receive notification with decision
+- [X] Trigger rush job decision
+- [X] Check Slack DMs
+- [X] Should receive notification with decision
 
 **One-Time Login Token:**
-- [ ] Receive Slack notification with link
-- [ ] Click link → should auto-login
-- [ ] Should redirect to intended page (check-in, queue, etc.)
-- [ ] Token should work multiple times (not consumed on first use)
-- [ ] After 24 hours, token should expire
-- [ ] Expired token shows error message
-
+- [X] Receive Slack notification with link
+- [X] Click link → should auto-login
+- [X] Should redirect to intended page (check-in, queue, etc.)
+- [X] Token should work multiple times (not consumed on first use)
+- [X] After 24 hours, token should expire
+- [X] Expired token shows error message
+- [TODO] Chnage expired token message to be about how it's been more than 24 hours, the link has expired.
 **Test Wrong User Token Login:**
-- [ ] Get notification link meant for test_user1
-- [ ] Log in as test_user2
-- [ ] Click test_user1's notification link
-- [ ] Should be logged out automatically
-- [ ] Should see message: "This link is for test_user1..."
-- [ ] Should be prompted to login as correct user
+- [X] Get notification link meant for test_user1
+- [X] Log in as test_user2
+- [X] Click test_user1's notification link
+- [X] Should be logged out automatically
+- [X] Should see message: "This link is for test_user1..."
+- [X] Should be prompted to login as correct user
 
 ---
 
@@ -648,27 +645,27 @@ Create these accounts for testing:
 ### Access Admin Dashboard
 
 **Login as test_admin (staff user):**
-- [ ] See "Admin Dashboard" link in navigation dropdown
-- [ ] Click → navigate to `/schedule/admin-dashboard/`
-- [ ] See dashboard with widgets:
-  - [ ] Total Users
-  - [ ] Pending Approvals
-  - [ ] Active Queue Entries
-  - [ ] Total Machines
-  - [ ] Rush Job Requests
-- [ ] See navigation cards for:
-  - [ ] User Management
-  - [ ] Queue Management
-  - [ ] Machine Management
-  - [ ] Preset Management
-  - [ ] Database Management
-  - [ ] Storage Stats
-  - [ ] Rush Job Review
+- [X] See "Admin Dashboard" link in navigation dropdown
+- [X] Click → navigate to `/schedule/admin-dashboard/`
+- [X] See dashboard with widgets:
+  - [X] Total Users
+  - [X] Pending Approvals
+  - [X] Active Queue Entries
+  - [X] Total Machines
+  - [X] Rush Job Requests
+- [X] See navigation cards for:
+  - [X] User Management
+  - [X] Queue Management
+  - [X] Machine Management
+  - [X] Preset Management
+  - [X] Database Management
+  - [X] Storage Stats
+  - [X] Rush Job Review
 
 **Test Regular User Access:**
-- [ ] Login as test_user1 (non-staff)
-- [ ] Try accessing `/schedule/admin-dashboard/` directly
-- [ ] Should get "Permission Denied" error or redirect
+- [X] Login as test_user1 (non-staff)
+- [X] Try accessing `/schedule/admin-dashboard/` directly
+- [X] Should get "Permission Denied" error or redirect
 
 ---
 
@@ -676,175 +673,181 @@ Create these accounts for testing:
 
 ### View Users (`/schedule/admin-users/`)
 
-- [ ] See list of all users
-- [ ] Each user shows:
-  - [ ] Username
-  - [ ] Email
-  - [ ] Name
-  - [ ] Approval status
-  - [ ] Staff status
-  - [ ] Date joined
-  - [ ] Actions (Approve/Reject/Delete/Promote/Demote)
-- [ ] See separate sections:
-  - [ ] Pending Approvals (highlighted)
-  - [ ] Approved Users
-  - [ ] Rejected Users
+- [X] See list of all users
+- [X] Each user shows:
+  - [X] Username
+  - [X] Email
+  - [X] Name
+  - [X] Approval status
+  - [X] Staff status
+  - [X] Date joined
+  - [X] Actions (Approve/Reject/Delete/Promote/Demote)
+- [TODO] Make Approve/Unapprove/Delete all the same size (Unapprove size)
+- [X] See separate sections:
+  - [X] Pending Approvals (highlighted)
+  - [X] Approved Users
+  - [X] Rejected Users
+- [TODO] Alphabetize by username PLEASE IT'S KILLING ME
 
 ### Approve User
 
-- [ ] Find test_unapproved in pending list
-- [ ] Click "Approve" button
-- [ ] See confirmation
-- [ ] User moves to "Approved Users" section
-- [ ] User receives notification (check in their account)
-- [ ] User can now login and access site
+- [X] Find test_unapproved in pending list
+- [X] Click "Approve" button
+- [X] See confirmation
+- [X] User moves to "Approved Users" section
+- [TODO] User receives notification (check in their account)
+- [X] User can now login and access site
 
 ### Reject User
 
-- [ ] Create new test account that needs approval
-- [ ] In admin panel, click "Reject" button
-- [ ] Enter rejection reason: "Test rejection"
-- [ ] Submit
-- [ ] User moves to "Rejected Users" section
-- [ ] User receives notification with reason
-- [ ] User still cannot login
-
+- [X] Create new test account that needs approval
+- [X] In admin panel, click "Reject" button [TODO] NOTE THERE IS NO REJECT BUTTON, just DELETE
+- [X] Enter rejection reason: "Test rejection"
+- [X] Submit
+- [X] User moves to "Rejected Users" section
+- [X] User receives notification with reason
+- [X] User still cannot login
+- [TODO] MAKE REJECTED OPTION for button and Status
+- [TODO] In MANAGE USERS, MAKE UNAPPROVE USERS THE TOP SECTION, THEN ACTIVE USERS, THEN REJECTED USERS
+- [TODO] REJECTED USERS CAN BE APPROVED OR DELETED.
+- [TODO] Defend against ddos attack how?
 ### Delete User
 
-- [ ] Find user you want to delete (NOT yourself)
-- [ ] Click "Delete" button
-- [ ] See confirmation dialog (warning about data deletion)
-- [ ] Confirm deletion
-- [ ] User removed from list
-- [ ] User's data (queue entries, archives) should be deleted or orphaned
-- [ ] User cannot login anymore
+- [X] Find user you want to delete (NOT yourself)
+- [X] Click "Delete" button
+- [X] See confirmation dialog (warning about data deletion)
+- [X] Confirm deletion
+- [X] User removed from list
+- [X] User's data (queue entries, archives) should be deleted or orphaned
+- [X] User cannot login anymore
 
 ### Promote to Staff
 
-- [ ] Find approved regular user (test_user1)
-- [ ] Click "Promote to Staff" button
-- [ ] See confirmation
-- [ ] User now shows as "Staff: Yes"
-- [ ] User receives notification about promotion
-- [ ] Login as that user → should see admin links now
+- [X] Find approved regular user (test_user1)
+- [X] Click "Promote to Staff" button
+- [X] See confirmation
+- [X] User now shows as "Staff: Yes"
+- [TODO] User receives notification about promotion or demotion
+- [X] Login as that user → should see admin links now
 
 ### Demote from Staff
 
-- [ ] Find staff user (not yourself, not superuser)
-- [ ] Click "Demote from Staff" button
-- [ ] See confirmation
-- [ ] User no longer shows as staff
-- [ ] User receives notification
-- [ ] Login as that user → admin links disappear
+- [X] Find staff user (not yourself, not superuser)
+- [X] Click "Demote from Staff" button
+- [X] See confirmation
+- [X] User no longer shows as staff
+- [X] Login as that user → admin links disappear
 
 ### Test Cannot Demote Self
 
-- [ ] Try to demote your own account
-- [ ] Should see error message
-- [ ] Action should be blocked
-
+- [X] Try to demote your own account
+- [X] Should see error message
+- [X] Action should be blocked
+- [TODO] Thus, REMOVE PENDING USERS PAGE AND FIX THE DIRECT FROM THE LINK OF NOTIFICATION TO ADMINS FOR PENDING USERS NOTIF.
 ---
 
 ## 12. MACHINE MANAGEMENT - ADMIN
 
 ### View Machines (`/schedule/admin-machines/`)
 
-- [ ] See list of all machines
+- [X] See list of all machines
 - [ ] Each machine shows:
-  - [ ] Name
-  - [ ] Slug (URL identifier)
-  - [ ] Description
-  - [ ] Status (Online/Offline/Maintenance)
-  - [ ] Temperature (if available)
-  - [ ] Last updated
-  - [ ] Actions (Edit/Delete)
+  - [X] Name
+  - [?] Slug (URL identifier)
+  - [X] Description
+  - [X] Status (Online/Offline/Maintenance)
+  - [X] Temperature (if available)
+  - [X] Last updated
+  - [X] Actions (Edit/Delete)
 
 ### Add Machine
 
-- [ ] Click "Add New Machine" button
-- [ ] Fill in form:
-  - [ ] Name: "Test Machine 4"
-  - [ ] Slug: "test-machine-4" (auto-generated or manual)
-  - [ ] Description: "Test equipment for testing"
-  - [ ] Status: "Online"
-- [ ] Submit
-- [ ] See success message
-- [ ] Machine appears in list
-- [ ] Machine appears in queue submission dropdown
-
+- [X] Click "Add New Machine" button
+- [X] Fill in form:
+  - [X] Name: "Test Machine 4"
+  - [X] Slug: "test-machine-4" (auto-generated or manual)
+  - [X] Description: "Test equipment for testing"
+  - [X] Status: "Online"
+- [X] Submit
+- [X] See success message
+- [X] Machine appears in list
+- [X] Machine appears in queue submission dropdown
+- [TODO] CHANGE TEXT FROM EDIT MACHINE TO EDIT/DELETE
 ### Edit Machine
 
-- [ ] Click "Edit" on existing machine
-- [ ] Change name: "Updated Test Machine"
-- [ ] Change status: "Maintenance"
-- [ ] Change description
-- [ ] Submit
-- [ ] See success message
-- [ ] Changes reflected in machine list
-- [ ] Changes reflected in public pages (queue, fridges)
-
+- [X] Click "Edit" on existing machine
+- [X] Change name: "Updated Test Machine"
+- [X] Change status: "Maintenance"
+- [X] Change description
+- [X] Submit
+- [X] See success message
+- [X] Changes reflected in machine list
+- [X] Changes reflected in public pages (queue, fridges)
+- [TODO] FIX BORDER/FITTING OF THE CONTENT FOR admin-queue page. Rn if page small it extends beyond the blue border instead of just making the things scrollable within the blue border, you know?
 ### Delete Machine
 
 **Test Cannot Delete with Active Queue Entries:**
-- [ ] Find machine with pending/running queue entries
-- [ ] Click "Delete" button
-- [ ] Should see error: "Cannot delete machine with active queue entries"
-- [ ] Machine remains in list
+- [X] Find machine with pending/running queue entries
+- [X] Click "Delete" button
+- [X] Should see error: "Cannot delete machine with active queue entries"
+- [X] Machine remains in list
 
 **Test Successful Deletion:**
-- [ ] Find machine with NO queue entries
-- [ ] Click "Delete" button
-- [ ] See confirmation dialog
-- [ ] Confirm deletion
-- [ ] Machine removed from list
-- [ ] Machine no longer appears in dropdowns
+- [X] Find machine with NO queue entries
+- [X] Click "Delete" button
+- [X] See confirmation dialog
+- [X] Confirm deletion
+- [X] Machine removed from list
+- [X] Machine no longer appears in dropdowns
+- [TODO] QUEUE ENTRIES DETECTED --> IT HAS N active QUEUE ENTRIES, ARE YOU SURE YOU WOULD LIKE TO DELETE MACHINE X? YES, RESOTRE BALANCE or NO, SPARE THEM ALL. If none active, just do it. Even if archived. The database isn't set up to handle a new machine ,for some reason. Like the measurement for new machine finished, but it doesn't show up in archive, even though it is completed.
 
 ### Temperature Updates (If temperature gateway configured)
 
-- [ ] Check machine temperature display
-- [ ] If temperature gateway is running:
-  - [ ] See actual temperature values
-  - [ ] See last updated timestamp
-  - [ ] Temperature updates every 5 minutes
-- [ ] If no temperature gateway:
-  - [ ] Temperature shows as "None" or "N/A"
-
+- [X] Check machine temperature display
+- [X] If temperature gateway is running:
+  - [X] See actual temperature values
+  - [X] See last updated timestamp
+  - [X] Temperature updates every 5 minutes
+- [X] If no temperature gateway:
+  - [X] Temperature shows as "None" or "N/A"
+- [TODO] FIX UP THE REST OF THE TEMPERATURE GATEWAY CODE FOR THE 3 OTHER MACHINES
 ---
 
 ## 13. QUEUE MANAGEMENT - ADMIN
 
 ### View Admin Queue (`/schedule/admin-queue/`)
 
-- [ ] See comprehensive queue view
-- [ ] Sections:
-  - [ ] All Pending Entries (ordered)
-  - [ ] Running Entries
-  - [ ] Recently Completed
-- [ ] Each entry shows:
-  - [ ] Position number
-  - [ ] User
-  - [ ] Machine
-  - [ ] Title
-  - [ ] Status
-  - [ ] Rush indicator
-  - [ ] Estimated duration
-  - [ ] Actions
+- [X] See comprehensive queue view
+- [X] Sections:
+  - [X] All Pending Entries (ordered)
+  - [X] Running Entries
+  - [X] Recently Completed
+- [X] Each entry shows:
+  - [X] Position number
+  - [X] User
+  - [X] Machine
+  - [X] Title
+  - [X] Status
+  - [X] Rush indicator
+  - [X] Estimated duration
+  - [X] Actions
 
 ### Edit Queue Entry
 
-- [ ] Click "Edit" on any entry
-- [ ] See edit form with all fields
-- [ ] Change machine assignment
-- [ ] Change estimated duration
-- [ ] Change notes
-- [ ] Submit
-- [ ] See success message
-- [ ] Changes reflected in queue
-- [ ] User receives notification about changes
-
+- [TODO] Click "Edit" on any entry, even running ones? That interaction is scary.
+- [X] See edit form with all fields
+- [TODO] FIX THE CHECKBOX DISPLAY ON THE EDIT FORM
+- [X] Change machine assignment
+- [X] Change estimated duration
+- [X] Change notes
+- [X] Submit
+- [X] See success message
+- [X] Changes reflected in queue
+- [X] User receives notification about changes
+- [TODO] Figure out what can be changed about a running entry: Name, notes, etc.
 ### Cancel Queue Entry (Admin)
-
-- [ ] Click "Cancel" on any entry
+- [TODO] Don't notify about position changes when it's from a delete of one behind it in the queue
+- [X] Click "Cancel" on any entry
 - [ ] Enter cancellation reason: "Admin test cancellation"
 - [ ] Submit
 - [ ] Entry removed from queue

@@ -53,13 +53,14 @@ class CheckReminderMiddleware:
         try:
             # Find all entries with pending reminders
             # Using select_for_update() with skip_locked=True to handle concurrent requests
-            # Note: Cannot use select_related() with FOR UPDATE on nullable foreign keys (PostgreSQL limitation)
+            # Note: Must clear default ordering to avoid LEFT OUTER JOIN on nullable assigned_machine FK
+            # (PostgreSQL does not allow FOR UPDATE on nullable side of outer join)
             with transaction.atomic():
                 pending_entries = QueueEntry.objects.select_for_update(skip_locked=True).filter(
                     reminder_due_at__lte=now,
                     reminder_sent=False,
                     status='running'  # Only send if still running (not checked out early)
-                )
+                ).order_by()  # Clear Model.Meta.ordering to prevent JOIN
 
                 for entry in pending_entries:
                     try:
