@@ -40,14 +40,14 @@ class CustomLoginView(LoginView):
                     # Log out the user immediately
                     logout(self.request)
                     messages.warning(self.request, 'Your account is pending approval by an administrator. You will be able to log in once your account is approved.')
-                    return redirect('home')
+                    return redirect('login')
             except Exception:
                 # If no profile exists, create one and log them out
                 from .models import UserProfile
                 UserProfile.objects.create(user=user, is_approved=False)
                 logout(self.request)
                 messages.warning(self.request, 'Your account is pending approval by an administrator. You will be able to log in once your account is approved.')
-                return redirect('home')
+                return redirect('login')
 
         # Set session expiry based on "Remember Me" preference
         if remember_me:

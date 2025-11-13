@@ -88,6 +88,10 @@
         {% if user.is_authenticated %}
             <a href="{% url 'submit_queue' %}?next=public_queue" class="btn">Submit Queue Request</a>
             <a href="{% url 'my_queue' %}" class="btn btn-secondary">View My Queue</a>
+            {% if user.is_staff %}
+                <!--Gotta test this real quick [TODO]  -->
+                <a href="{% url 'admin_queue' %}" class="btn btn-secondary">Edit Queue</a>  
+            {% endif %}
         {% endif %}
     </div>
 </div>

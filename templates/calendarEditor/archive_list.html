@@ -161,7 +161,9 @@
                 <th style="min-width: 150px; text-align: center;">Title</th>
                 <th style="width: 110px; text-align: center;">Status</th>
                 <th style="min-width: 150px; text-align: center;">Notes</th>
-                <th style="width: {% if user.is_staff %}160px{% else %}90px{% endif %}; text-align: center;">Actions</th>
+                {% if user.is_staff %}
+                <th style="width: 160px; text-align: center;">Actions</th>
+                {% endif %}
             </tr>
         </thead>
         <tbody>

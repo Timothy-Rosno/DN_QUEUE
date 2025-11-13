@@ -11,14 +11,14 @@
 ## UPDATE PROGRESS
 TODO BATCH 1: 
 1. OK   Guard schedule/queue with @login 
-2. Slack notif for account approval/status changes
+2. OK   Slack notif for account approval/status changes
 3. OK   Remember me checkbox fix
-4. Fix login behavior for unapproved accounts
+4. OK   Fix login behavior for unapproved accounts FIND THE THING NOW FIND IT FIND IT FIND IT
 5. OK   Fixed recover-username edge case (multiple usernames per email)
 6. OK   Contact admin for specific profile info changes
 7. OK   Create admin way to make said changes
 8. Check in/check out undo checkin
-9. Allow admins to edit running entries.
+9. OK   Allow admins to edit running entries.
 Extra info: Notifications are set up only for slack and the web version at the moment, not email. 
 Test especially that the web notification works.
 
@@ -50,8 +50,8 @@ Create these accounts for testing:
 
 - [X] Visit homepage without being logged in
 - [X] See welcome message and description
-- [TODO] Click "View Public Queue" link → redirects to `/schedule/queue/` NOT GUARDED BUT SHOULD BE UNLESS WANT QUEUE VISIBLE TO PUBLIC. I THINK NEED LOGIN IS BETTER?
-- [TODO] Change text to Login to view queue entries
+- [DONE] Click "View Public Queue" link → redirects to `/schedule/queue/` NOT GUARDED BUT SHOULD BE UNLESS WANT QUEUE VISIBLE TO PUBLIC. I THINK NEED LOGIN IS BETTER?
+- [DONE/[TODO]/TESTING] Change text to Login to view queue entries
 - [X] Click "View Lab Fridges" link → redirects to `/schedule/fridges/`
 - [X] Click "Login" button → redirects to login page
 - [X] Click "Register" button → redirects to registration page
@@ -95,7 +95,7 @@ Create these accounts for testing:
 - [X] See success message: "Account created successfully! Your account is pending approval..."
 - [X] Redirected to login page
 - [X] Try logging in immediately → should see "pending approval" message
-- [TODO] NOTIFY WHEN APPROVED!
+- [DONE] NOTIFY WHEN APPROVED!
 
 **Test Invalid Registration:**
 - [X] Try duplicate username → see error
@@ -108,8 +108,8 @@ Create these accounts for testing:
 
 **Test Approved User Login:**
 - [X] Enter valid credentials (test_user1)
-- [TODO] Check "Remember Me" checkbox → session should last 1 year MIGHT COMMENT THIS OUT IT FEELS WEIRD
-- [TODO] Don't check "Remember Me" → session should last 7 days GOOD DEFAULT AND THEY DONT HAVE TO DO ANYTHING
+- [DONE] Check "Remember Me" checkbox → session should last 1 year MIGHT COMMENT THIS OUT IT FEELS WEIRD
+- [DONE] Don't check "Remember Me" → session should last 7 days GOOD DEFAULT AND THEY DONT HAVE TO DO ANYTHING
 - [X] Successfully login → redirect to home page YES OR ADMIN PAGE
 - [X] See username in top right corner
 - [X] See "Logout" option
@@ -117,9 +117,9 @@ Create these accounts for testing:
 **Test Unapproved User Login:**
 - [X] Login as `test_unapproved`
 - [X] See "pending approval" message
-- [TODO] Redirected back to login page WELL THEY CAN SEE WHAT TABS EXIST BUT THEY CAN'T ACCESS ANYTHING. I'M OK WITH THAT AS A FEATURE. LIKE A TASTE OF WHAT THEY'RE MISSING OUT ON.
+- [DONE] Redirected back to login page WELL THEY CAN SEE WHAT TABS EXIST BUT THEY CAN'T ACCESS ANYTHING. I'M OK WITH THAT AS A FEATURE. LIKE A TASTE OF WHAT THEY'RE MISSING OUT ON.
 - [X] Cannot access any authenticated pages
-- [TODO] Fix bug: WHEN USER IS UNAPPROVED AND SOMEONE ELSE SIGNS IN FROM THERE, THE LOGIN PAGE IS STILL OF THAT OTHER USER SO IT SENDS THE YOU'RE NOT APPROVED MESSAGE, SO I THINK I NEED TO CHANGE HOW THE REDIRECT TO LOGIN WORKS SO THAT UNAPPROVED BASICALLY SAYS THE MESSAGE BUT LOGS THEM OUT AND BRINGS THEM BACK TO THE LOGIN WITH NOTHING ELSE VISIBLE.
+- [DONE] Fix bug: WHEN USER IS UNAPPROVED AND SOMEONE ELSE SIGNS IN FROM THERE, THE LOGIN PAGE IS STILL OF THAT OTHER USER SO IT SENDS THE YOU'RE NOT APPROVED MESSAGE, SO I THINK I NEED TO CHANGE HOW THE REDIRECT TO LOGIN WORKS SO THAT UNAPPROVED BASICALLY SAYS THE MESSAGE BUT LOGS THEM OUT AND BRINGS THEM BACK TO THE LOGIN WITH NOTHING ELSE VISIBLE.
 
 **Test Invalid Login:**
 - [X] Wrong password → see "invalid credentials" error
@@ -160,7 +160,7 @@ Create these accounts for testing:
 - [X] Submit
 - [X] See username displayed on page
 - [X] Try invalid email → see error message
-- [TODO] FIX THE CASE OF MULTIPLE USERNAMES FOR ONE EMAIL ACCOUNT, RN IT 500 SERVER ERRORS WHICH IS FAIR.
+- [DONE] FIX THE CASE OF MULTIPLE USERNAMES FOR ONE EMAIL ACCOUNT, RN IT 500 SERVER ERRORS WHICH IS FAIR.
 
 ---
 
@@ -185,8 +185,8 @@ Create these accounts for testing:
 
 **Profile Information Tab:**
 - [X] See current profile information displayed
-- [TODO] Edit First Name → save → see success message NEED TO MAKE EDITABLE
-- [TODO] Edit Last Name → save → see success message NEED TO BAKE EDITABLE
+- [DONE] Edit First Name → save → see success message NEED TO MAKE EDITABLE
+- [DONE] Edit Last Name → save → see success message NEED TO BAKE EDITABLE
 - [WouldWork] Changes reflected on page after refresh
 - [X] Try blank required fields → see validation error
 - [TODO] Make the slack member ID instructions easier, and make it A PART OF REGISTRATION THAT ISN'T REQUIRED.
@@ -202,8 +202,8 @@ Create these accounts for testing:
 
 **Security:**
 - [X] Decide to delete changing 
-- [TODO] Add a little line in the Profile Information that if you need to change your security question, username, email, or name, contact an administrator.
-- [TODO] Make staff capable of changing ALL user information, including security question
+- [DONE] Add a little line in the Profile Information that if you need to change your security question, username, email, or name, contact an administrator.
+- [DONE] Make staff capable of changing ALL user information, including security question
 
 ---
 
@@ -327,7 +327,7 @@ Create these accounts for testing:
 ### Check-Out Process
 
 **From My Queue Page:**
-- [TODO] SHOULD THERE BE AN UNDO CHECK-IN? I FEEL LIKE THAT'S GONNA MAKE IT DIFFICULT...
+- [DONE/[TODO]/TESTING] SHOULD THERE BE AN UNDO CHECK-IN? I FEEL LIKE THAT'S GONNA MAKE IT DIFFICULT...
 - [X] Find entry with status "Running"
 - [X] Click "Check Out" button
 - [X] See form with optional fields:
@@ -352,20 +352,14 @@ Create these accounts for testing:
 - [X] Moves to "Recent Completions" (if shown)
 
 **Test Early/Late Checkout:** huh? [TODO]
-- [ ] Check in to a job (estimated 2 hours)
-- [ ] Check out after 30 minutes (early)
-- [ ] Verify actual duration is calculated correctly (~0.5 hours)
-- [ ] Check in to another job (estimated 1 hour)
-- [ ] Wait longer than estimated (hard to test)
-- [ ] Check out late
-- [ ] Verify actual duration is calculated correctly
-
+- [TODO] Track Duration and record and report it in the archive fields. Gets early and late check-outs
+- [TODO] Duration Act. h m (Sched. h m)
 ---
 
 ## 6. ARCHIVE MANAGEMENT - REGULAR USER
 
 ### View Archives (`/schedule/archive/`)
-- [TODO] REMOVE THE ACTIONS TAB.
+- [TODO] REMOVE THE ACTIONS TAB for users
 - [X] Visit archive page
 - [X] See list of archived measurements
 - [X] Filter by machine → dropdown filters list
