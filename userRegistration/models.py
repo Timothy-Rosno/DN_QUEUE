@@ -15,10 +15,21 @@ class UserProfile(models.Model):
         ('custom', 'Create your own question'),
     ]
 
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('rejected', 'Rejected'),
+        ('approved', 'Approved'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     phone_number = models.CharField(max_length=15, blank=True)
     department = models.CharField(max_length=100, blank=True)
     notes = models.CharField(max_length=500, blank=True, help_text="Additional information about the user (max 500 characters)")
+
+    # New status field (replaces is_approved boolean)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', help_text="User approval status")
+
+    # Legacy field - kept for migration compatibility, will be removed later
     is_approved = models.BooleanField(default=False, help_text="Has this user been approved by an admin?")
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_users')
     approved_at = models.DateTimeField(null=True, blank=True)

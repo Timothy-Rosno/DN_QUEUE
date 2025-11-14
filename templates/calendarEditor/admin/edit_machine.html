@@ -292,34 +292,73 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnNo = document.getElementById('thanosNo');
     const btnClose = document.getElementById('thanosClose');
     let currentForm = null;
+    let needsConfirmation = false;
+
+    // Check if we need to show confirmation dialog for active queue entries
+    const urlParams = new URLSearchParams(window.location.search);
+    const deleteConfirm = urlParams.get('delete_confirm');
+    const activeCount = urlParams.get('active_count');
 
     // Open modal when delete button clicked
     const deleteForm = document.querySelector('.delete-machine-form');
     if (deleteForm) {
         const deleteBtn = deleteForm.querySelector('button');
+        const machineName = deleteForm.getAttribute('data-machine-name');
+
+        // Auto-open modal if redirected from delete attempt with active entries
+        if (deleteConfirm === '1' && activeCount) {
+            currentForm = deleteForm;
+            needsConfirmation = true;
+            message.textContent = `IT HAS ${activeCount} ACTIVE QUEUE ENTRIES. ARE YOU SURE YOU WOULD LIKE TO DELETE MACHINE ${machineName}?`;
+            btnYes.textContent = 'YES, RESTORE BALANCE';
+            btnNo.textContent = 'NO, SPARE THEM ALL';
+            modal.style.display = 'flex';
+        }
+
         deleteBtn.addEventListener('click', function() {
             currentForm = deleteForm;
-            const machineName = currentForm.getAttribute('data-machine-name');
             message.textContent = `Are you sure you want to delete machine "${machineName}"?`;
+            btnYes.textContent = 'Yes, snap immediately';
+            btnNo.textContent = 'No, spare its circuits';
             modal.style.display = 'flex';
         });
     }
 
-    // Yes button: submit form
+    // Yes button: submit form (with confirmation if needed)
     btnYes.addEventListener('click', function() {
-        if(currentForm) currentForm.submit();
+        if(currentForm) {
+            // If this is a confirmation for active queue entries, add confirmed flag
+            if (needsConfirmation) {
+                const confirmedInput = document.createElement('input');
+                confirmedInput.type = 'hidden';
+                confirmedInput.name = 'confirmed';
+                confirmedInput.value = 'true';
+                currentForm.appendChild(confirmedInput);
+            }
+            currentForm.submit();
+        }
     });
 
     // No button: close modal
     btnNo.addEventListener('click', function() {
         modal.style.display = 'none';
         currentForm = null;
+        needsConfirmation = false;
+        // Clear URL params if present
+        if (deleteConfirm) {
+            window.history.replaceState({}, '', window.location.pathname);
+        }
     });
 
     // Close button: close modal
     btnClose.addEventListener('click', function() {
         modal.style.display = 'none';
         currentForm = null;
+        needsConfirmation = false;
+        // Clear URL params if present
+        if (deleteConfirm) {
+            window.history.replaceState({}, '', window.location.pathname);
+        }
     });
 
     // Close modal when clicking outside
@@ -327,6 +366,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if(e.target === modal) {
             modal.style.display = 'none';
             currentForm = null;
+            needsConfirmation = false;
+            // Clear URL params if present
+            if (deleteConfirm) {
+                window.history.replaceState({}, '', window.location.pathname);
+            }
         }
     });
 });

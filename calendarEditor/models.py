@@ -652,7 +652,8 @@ class ArchivedMeasurement(models.Model):
 
     # Core relationships
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='archived_measurements', help_text="User who created this archive entry")
-    machine = models.ForeignKey(Machine, on_delete=models.CASCADE, related_name='archived_measurements', help_text="Machine used for this measurement")
+    machine = models.ForeignKey(Machine, on_delete=models.SET_NULL, null=True, blank=True, related_name='archived_measurements', help_text="Machine used for this measurement")
+    machine_name = models.CharField(max_length=100, blank=True, help_text="Machine name (preserved if machine is deleted)")
     related_queue_entry = models.ForeignKey(QueueEntry, on_delete=models.SET_NULL, null=True, blank=True, related_name='archived_measurements', help_text="Original queue entry (if archived from queue)")
 
     # Measurement metadata

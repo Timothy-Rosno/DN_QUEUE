@@ -52,13 +52,14 @@ class QueueEntryForm(forms.ModelForm):
             help_text=f'Lowest temperature you need to reach (range: {min_temp_min}-{max_temp_max} K)'
         )
 
-        self.fields['required_max_temp'] = forms.FloatField(
-            required=False,
-            validators=[MinValueValidator(min_temp_min), MaxValueValidator(max_temp_max)],
-            widget=forms.NumberInput(attrs={'min': str(min_temp_min), 'max': str(max_temp_max), 'step': '0.01'}),
-            label='Maximum Temperature (K) - optional',
-            help_text='Leave blank if you only need minimum temperature'
-        )
+        # DEPRECATED: Maximum temperature field has been removed as it was confusing to users
+        # self.fields['required_max_temp'] = forms.FloatField(
+        #     required=False,
+        #     validators=[MinValueValidator(min_temp_min), MaxValueValidator(max_temp_max)],
+        #     widget=forms.NumberInput(attrs={'min': str(min_temp_min), 'max': str(max_temp_max), 'step': '0.01'}),
+        #     label='Maximum Temperature (K) - optional',
+        #     help_text='Leave blank if you only need minimum temperature'
+        # )
 
         self.fields['required_dc_lines'] = forms.IntegerField(
             initial=0,
@@ -103,7 +104,7 @@ class QueueEntryForm(forms.ModelForm):
     class Meta:
         model = QueueEntry
         fields = ('title', 'description',
-                  'required_min_temp', 'required_max_temp',
+                  'required_min_temp',  # 'required_max_temp',  # DEPRECATED - removed from forms
                   'required_b_field_x', 'required_b_field_y', 'required_b_field_z',
                   'required_b_field_direction',
                   'required_dc_lines', 'required_rf_lines',

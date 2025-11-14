@@ -155,4 +155,24 @@
 <div style="margin-top: 1rem;">
     <a href="{% url 'my_queue' %}" class="btn btn-secondary">← Back to My Queue</a>
 </div>
+
+<script>
+// Save scroll position before form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('form[action*="check-in"], form[action*="check-out"], form[action*="undo-check-in"]');
+
+    forms.forEach(function(form) {
+        form.addEventListener('submit', function() {
+            sessionStorage.setItem('checkInCheckOutScrollPosition', window.scrollY);
+        });
+    });
+
+    // Restore scroll position after page load
+    const savedPosition = sessionStorage.getItem('checkInCheckOutScrollPosition');
+    if (savedPosition) {
+        window.scrollTo(0, parseInt(savedPosition));
+        sessionStorage.removeItem('checkInCheckOutScrollPosition');
+    }
+});
+</script>
 {% endblock %}

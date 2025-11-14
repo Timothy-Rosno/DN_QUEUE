@@ -57,7 +57,7 @@
                 <strong style="display: block; margin-bottom: 0.5rem;">Requirements:</strong>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem;">
                     <div><strong>Min Temp:</strong> {{ entry.required_min_temp }} K</div>
-                    <div><strong>Max Temp:</strong> {{ entry.required_max_temp|default:"—" }} K</div>
+                    {% comment %}<div><strong>Max Temp:</strong> {{ entry.required_max_temp|default:"—" }} K</div>{% endcomment %}
                     <div><strong>DC Lines:</strong> {{ entry.required_dc_lines }}</div>
                     <div><strong>RF Lines:</strong> {{ entry.required_rf_lines }}</div>
                     <div><strong>Duration:</strong> {{ entry.estimated_duration_hours }} hours</div>
@@ -91,14 +91,25 @@
     <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
 </div>
 
-<!-- Thanos Snap Confirmation Modal -->
+<!-- Rush Job Rejection Modal -->
 <div id="thanosModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:2rem; border-radius:10px; max-width:400px; width:90%; text-align:center; position:relative;">
-        <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto;">
+    <div style="background:white; padding:2rem; border-radius:10px; max-width:500px; width:90%; text-align:center; position:relative;">
+        <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto; margin-bottom: 1rem;">
         <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
-        <div style="display:flex; justify-content:space-around; gap:1rem;">
-            <button id="thanosYes" class="btn btn-danger">Yes, snap it immediately</button>
-            <button id="thanosNo" class="btn btn-secondary">No, spare its variables</button>
+
+        <!-- Rejection Message Input (hidden by default) -->
+        <div id="rejectionMessageBox" style="display:none; margin-bottom:1rem; text-align:left;">
+            <label for="rejectionMessage" style="display:block; font-weight:bold; margin-bottom:0.5rem;">Enter rejection reason:</label>
+            <textarea id="rejectionMessage" style="width:100%; padding:0.5rem; border:1px solid #ddd; border-radius:4px; min-height:80px; font-family: inherit;">Insufficient justification</textarea>
+            <small style="color:#7f8c8d; display:block; margin-top:0.25rem;">This message will be sent to the user.</small>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display:flex; justify-content:space-around; gap:1rem; flex-wrap:wrap;">
+            <button id="useDefaultMessage" class="btn btn-warning">Use Default Message</button>
+            <button id="useCustomMessage" class="btn btn-warning">Write Custom Message</button>
+            <button id="thanosYes" class="btn btn-danger" style="display:none;">Submit Rejection</button>
+            <button id="thanosNo" class="btn btn-secondary">Cancel</button>
         </div>
         <span id="thanosClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
     </div>
@@ -111,21 +122,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnYes = document.getElementById('thanosYes');
     const btnNo = document.getElementById('thanosNo');
     const btnClose = document.getElementById('thanosClose');
+    const rejectionMessageBox = document.getElementById('rejectionMessageBox');
+    const rejectionMessageInput = document.getElementById('rejectionMessage');
+    const useDefaultBtn = document.getElementById('useDefaultMessage');
+    const useCustomBtn = document.getElementById('useCustomMessage');
     let currentEntryId = null;
     let currentEntryTitle = null;
+    let usingCustomMessage = false;
 
     // Open modal when reject button clicked
     document.querySelectorAll('.reject-rush-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             currentEntryId = this.getAttribute('data-entry-id');
             currentEntryTitle = this.getAttribute('data-entry-title');
-            message.textContent = `Are you sure you want to reject rush job appeal for "${currentEntryTitle}"?`;
+            message.textContent = `Reject rush job appeal for "${currentEntryTitle}"?`;
+
+            // Reset to default message
+            usingCustomMessage = false;
+            rejectionMessageInput.value = 'Insufficient justification';
+            rejectionMessageBox.style.display = 'none';
+            useDefaultBtn.style.display = 'inline-block';
+            useCustomBtn.style.display = 'inline-block';
+            btnYes.style.display = 'none';
+
             modal.style.display = 'flex';
         });
     });
 
-    // Yes button: submit reject form
-    btnYes.addEventListener('click', function() {
+    // Use default message button
+    useDefaultBtn.addEventListener('click', function() {
         if (currentEntryId) {
             const form = document.createElement('form');
             form.method = 'POST';
@@ -141,6 +166,58 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.appendChild(csrfInput);
             }
 
+            // Add default rejection message
+            const messageInput = document.createElement('input');
+            messageInput.type = 'hidden';
+            messageInput.name = 'rejection_message';
+            messageInput.value = 'Insufficient justification';
+            form.appendChild(messageInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+
+    // Use custom message button - show textarea
+    useCustomBtn.addEventListener('click', function() {
+        usingCustomMessage = true;
+        rejectionMessageBox.style.display = 'block';
+        useDefaultBtn.style.display = 'none';
+        useCustomBtn.style.display = 'none';
+        btnYes.style.display = 'inline-block';
+        rejectionMessageInput.focus();
+    });
+
+    // Yes button: submit reject form with custom message
+    btnYes.addEventListener('click', function() {
+        if (currentEntryId) {
+            const customMessage = rejectionMessageInput.value.trim();
+            if (!customMessage) {
+                alert('Please enter a rejection message or click "No" to cancel.');
+                return;
+            }
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/schedule/admin-rush-jobs/reject/${currentEntryId}/`;
+
+            // Add CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken.value;
+                form.appendChild(csrfInput);
+            }
+
+            // Add custom rejection message
+            const messageInput = document.createElement('input');
+            messageInput.type = 'hidden';
+            messageInput.name = 'rejection_message';
+            messageInput.value = customMessage;
+            form.appendChild(messageInput);
+
             document.body.appendChild(form);
             form.submit();
         }
@@ -151,6 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.style.display = 'none';
         currentEntryId = null;
         currentEntryTitle = null;
+        usingCustomMessage = false;
     });
 
     // Close button: close modal
@@ -158,6 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.style.display = 'none';
         currentEntryId = null;
         currentEntryTitle = null;
+        usingCustomMessage = false;
     });
 
     // Click outside modal: close modal
@@ -166,6 +245,7 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.style.display = 'none';
             currentEntryId = null;
             currentEntryTitle = null;
+            usingCustomMessage = false;
         }
     });
 });

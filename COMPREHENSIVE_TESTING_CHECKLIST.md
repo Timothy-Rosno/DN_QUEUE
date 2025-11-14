@@ -17,18 +17,59 @@ TODO BATCH 1:
 5. OK   Fixed recover-username edge case (multiple usernames per email)
 6. OK   Contact admin for specific profile info changes
 7. OK   Create admin way to make said changes
-8. Check in/check out undo checkin
+8. NOT OK   Check in/check out undo checkin     Issue with 500 errors still. Possible that simple routing will fix this?
 9. OK   Allow admins to edit running entries.
 Extra info: Notifications are set up only for slack and the web version at the moment, not email. 
 Test especially that the web notification works.
 
+TODO BATCH 2:
+1. OK   Admin Q routing from normal Q
+2. OK   Redirect to login for unapproved users, not home
+3. NOT OK   Remove Actions column for non-staff in archive  Just has an extra column that's really skinny now lol
 
+TODO BATCH 3:
+1. Remove the Day: Filtration. It's causing a bug with all years
+2. Don't notify about position changes when it's from a delete of one behind it in the queue
+LEFTOVERS TO TEST:
+1. Check-in/check-out undo checkin button activity
+2. Remove actions column for non-staff in archive
+3. Machine status overview --> remove that random "-->"
 
-
+TODO BATCH 4:
+ 1. Undo checkin is till giving Service Error (500), so it should just route
+  back to the same page at the same scroll value. 2. In /admin-users, make two
+  horizontally scrollable vertical containers similar to current Users area,
+  but scrollable instead of just extending beyond the alloted space,
+  alphabetized per section by username: Unapproved users with Pending or
+  Rejected status, Users with Approved status. Pending can be approved or
+  rejected. Rejected can be approved or deleted. Approved can be Unapproved or
+  Deleted. Make all the buttons the same horizontal and vertical size.
+  Vertical is correct. Make new status flags and buttons as needed. Delete and
+  reject should be the warning/error red button, and the other button types
+  are already correct. 3. When notifying a user about their entry reaching
+  position 1 for a machine, it always needs to send the correct form of the
+  message: On deck and get ready, if the machine is measuring/not idle, On
+  deck and machine available to check in if the machine is idle. 
+  CLAUDE LEFT OFF HERE 4. Remove Max
+  temp from every form that has it, it is just confusing. Comment it out
+  everywhere it exists on the forms so it doesn't show up anywhere. 5. When
+  rejecting a rush job, the admin should be allowed to accept the default
+  "Insufficient justification" message or write a custom response, and the
+  user should receive said rush job rejected notification with message. 6.
+  When making a new machine, its queue entries need to be integrated into the
+  system properly, which right now they are not. 7. When a machine is being
+  deleted, its queue entries that are archived should remain, and there should
+  be a delete anyway confirmation after trying to delete: QUEUE ENTRIES
+  DETECTED --> IT HAS N active QUEUE ENTRIES, ARE YOU SURE YOU WOULD LIKE TO
+  DELETE MACHINE X? YES, RESOTRE BALANCE or NO, SPARE THEM ALL. If none
+  active, just do it. Even if archived. The database isn't set up to handle a
+  new machine ,for some reason. Like the measurement for new machine finished,
+  but it doesn't show up in archive, even though it is completed.
+ 
 ### Test User Accounts Needed
 
 Create these accounts for testing:
-- [TODO] Add admin only button in Queue status that routs admins to the /schedule/admin-queue
+- [DONE] Add admin only button in Queue status that routs admins to the /schedule/admin-queue
 - [X] **Test Admin** - Username: `test_admin` - Staff status: YES
 - [X] **Test User 1** - Username: `test_user1` - Approved, not staff
 - [X] **Test User 2** - Username: `test_user2` - Approved, not staff
@@ -359,14 +400,14 @@ Create these accounts for testing:
 ## 6. ARCHIVE MANAGEMENT - REGULAR USER
 
 ### View Archives (`/schedule/archive/`)
-- [TODO] REMOVE THE ACTIONS TAB for users
+- [DONE] REMOVE THE ACTIONS TAB for users
 - [X] Visit archive page
 - [X] See list of archived measurements
 - [X] Filter by machine → dropdown filters list
 - [X] Search by title → results filter correctly
 - [X] See columns: Machine, Date, Title, Notes, Actions
 - [TODO] Pagination works (if > 20 entries) NO PAGINATION MADE NOW
-- [TODO] Remove the Day: Filtration. It's causing a bug with all years
+- [DONE] Remove the Day: Filtration. It's causing a bug with all years
 
 ### Save from Queue Entry
 
@@ -706,7 +747,7 @@ Create these accounts for testing:
 - [X] Click "Approve" button
 - [X] See confirmation
 - [X] User moves to "Approved Users" section
-- [TODO] User receives notification (check in their account)
+- [DONE] User receives notification (check in their account)
 - [X] User can now login and access site
 
 ### Reject User
@@ -738,7 +779,7 @@ Create these accounts for testing:
 - [X] Click "Promote to Staff" button
 - [X] See confirmation
 - [X] User now shows as "Staff: Yes"
-- [TODO] User receives notification about promotion or demotion
+- [DONE] User receives notification about promotion or demotion
 - [X] Login as that user → should see admin links now
 
 ### Demote from Staff
@@ -783,7 +824,7 @@ Create these accounts for testing:
 - [X] See success message
 - [X] Machine appears in list
 - [X] Machine appears in queue submission dropdown
-- [TODO] CHANGE TEXT FROM EDIT MACHINE TO EDIT/DELETE
+- [DONE] CHANGE TEXT FROM EDIT MACHINE TO EDIT/DELETE
 ### Edit Machine
 
 - [X] Click "Edit" on existing machine
@@ -845,9 +886,9 @@ Create these accounts for testing:
 
 ### Edit Queue Entry
 
-- [TODO] Click "Edit" on any entry, even running ones? That interaction is scary.
+- [DONE] Click "Edit" on any entry, even running ones? That interaction is scary.
 - [X] See edit form with all fields
-- [TODO] FIX THE CHECKBOX DISPLAY ON THE EDIT FORM
+- [DONE] FIX THE CHECKBOX DISPLAY ON THE EDIT FORM
 - [X] Change machine assignment
 - [X] Change estimated duration
 - [X] Change notes
@@ -855,7 +896,7 @@ Create these accounts for testing:
 - [X] See success message
 - [X] Changes reflected in queue
 - [X] User receives notification about changes
-- [TODO] Figure out what can be changed about a running entry: Name, notes, etc.
+- [DONE] Figure out what can be changed about a running entry: Name, notes, etc.
 ### Cancel Queue Entry (Admin)
 - [TODO] Don't notify about position changes when it's from a delete of one behind it in the queue
 - [X] Click "Cancel" on any entry

@@ -143,77 +143,66 @@
     <div id="status-overview" class="section-content">
         <div class="status-overview-grid">
             {% for item in machine_status_data %}
-            <div class="status-overview-card" data-machine-id="{{ item.machine.id }}">
-                <div class="status-overview-header">
-                    <span class="status-overview-machine-name">{{ item.machine.name }}</span>
-                    <span class="status-badge machine-status status-{{ item.display_status|lower|cut:' ' }}">
-                        {{ item.display_status }}
-                    </span>
-                </div>
-
-                <div style="font-size: 0.85rem; color: #6c757d;">
-                    <!-- Live Temperature -->
-                    <div style="margin-bottom: 0.5rem;">
-                        <strong>Temperature:</strong>
-                        <span class="machine-temp">
-                        {% if item.live_temp %}
-                            {{ item.live_temp|floatformat:2 }} K
-                        {% else %}
-                            <span style="color: #999;">N/A</span>
-                        {% endif %}
+                <div class="status-overview-card" data-machine-id="{{ item.machine.id }}">
+                    <div class="status-overview-header">
+                        <span class="status-overview-machine-name">{{ item.machine.name }}</span>
+                        <span class="status-badge machine-status status-{{ item.display_status|lower|cut:' ' }}">
+                            {{ item.display_status }}
                         </span>
                     </div>
 
-                    {% if user.is_authenticated %}
-                        <!-- Running Job -->
-                        {% if item.running_job %}
+                    <div style="font-size: 0.85rem; color: #6c757d;">
+                        <!-- Live Temperature -->
                         <div style="margin-bottom: 0.5rem;">
-                            <strong>Running:</strong>
-                            <span>{{ item.running_job.user.username }} - {{ item.running_job.title|truncatechars:30 }}</span><br>
-                            <span class="countdown-timer"
-                                style="font-family: inherit; font-size: 0.85rem; color: #2c3e50;"
-                                data-end-time="{{ item.running_job.started_at|date:'c' }}"
-                                data-duration="{{ item.running_job.estimated_duration_hours }}">
-                                Calculating...
+                            <strong>Temperature:</strong>
+                            <span class="machine-temp">
+                            {% if item.live_temp %}
+                                {{ item.live_temp|floatformat:2 }} K
+                            {% else %}
+                                <span style="color: #999;">N/A</span>
+                            {% endif %}
                             </span>
+                        </div>
 
-                        </div>
-                        {% else %}
-                        <div style="margin-bottom: 0.5rem; color: #6c757d;">
-                            <strong>Running:</strong> None
-                        </div>
+                        {% if user.is_authenticated %}
+                            <!-- Running Job -->
+                            {% if item.running_job %}
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>Running:</strong>
+                                <span>{{ item.running_job.user.username }} - {{ item.running_job.title|truncatechars:30 }}</span><br>
+                                <span class="countdown-timer"
+                                    style="font-family: inherit; font-size: 0.85rem; color: #2c3e50;"
+                                    data-end-time="{{ item.running_job.started_at|date:'c' }}"
+                                    data-duration="{{ item.running_job.estimated_duration_hours }}">
+                                    Calculating...
+                                </span>
+
+                            </div>
+                            {% else %}
+                            <div style="margin-bottom: 0.5rem; color: #6c757d;">
+                                <strong>Running:</strong> None
+                            </div>
+                            {% endif %}
+
+                            <!-- On Deck -->
+                            {% if item.on_deck_job %}
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>On Deck:</strong>
+                                <span>{{ item.on_deck_job.user.username }} - {{ item.on_deck_job.title|truncatechars:30 }}</span>
+                            </div>
+                            {% else %}
+                            <div style="margin-bottom: 0.5rem; color: #6c757d;">
+                                <strong>On Deck:</strong> None
+                            </div>
+                            {% endif %}
+
+                            <!-- Queue Count -->
+                            <div>
+                                <strong>Queue:</strong> {{ item.queue_count }} {{ item.queue_count|pluralize:"entry,entries" }}
+                            </div>
                         {% endif %}
-
-                        <!-- On Deck -->
-                        {% if item.on_deck_job %}
-                        <div style="margin-bottom: 0.5rem;">
-                            <strong>On Deck:</strong>
-                            <span>{{ item.on_deck_job.user.username }} - {{ item.on_deck_job.title|truncatechars:30 }}</span>
-                        </div>
-                        {% else %}
-                        <div style="margin-bottom: 0.5rem; color: #6c757d;">
-                            <strong>On Deck:</strong> None
-                        </div>
-                        {% endif %}
-
-                        <!-- Queue Count -->
-                        <div>
-                            <strong>Queue:</strong> {{ item.queue_count }} {{ item.queue_count|pluralize:"entry,entries" }}
-                        </div>
-                    <!-- {% else %} -->
-                        <!-- Login Required Message -->
-                        <!-- <div style="text-align: center; padding: 1rem 0;"> -->
-                            <!-- <p style="margin-bottom: 0.75rem; color: #6c757d; font-size: 0.9rem;">
-                                Login to view queue entries
-                            </p> -->
-                            <!-- <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
-                                <a href="{% url 'login' %}" class="btn btn-sm" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">Login</a>
-                                <a href="{% url 'register' %}" class="btn btn-sm btn-secondary" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">Register</a>
-                            </div> -->
-                        <!-- </div> -->
-                    {% endif %}
+                    </div>
                 </div>
-            </div>
             {% endfor %}
         </div>
     </div>

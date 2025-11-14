@@ -22,7 +22,7 @@ def admin_dashboard(request):
     """Main admin dashboard with overview stats."""
     # Get stats - exclude staff/superusers from pending count
     pending_users = UserProfile.objects.filter(
-        is_approved=False
+        Q(status='pending') | Q(status='rejected')  # Count both pending and rejected as needing attention
     ).exclude(
         Q(user__is_staff=True) | Q(user__is_superuser=True)
     ).count()
@@ -50,7 +50,7 @@ def admin_dashboard(request):
 
 @staff_member_required
 def admin_users(request):
-    """User management page."""
+    """User management page with improved status filtering."""
     # Get filter from query params
     status_filter = request.GET.get('status', 'all')
 
@@ -59,14 +59,21 @@ def admin_users(request):
 
     # Apply filters
     if status_filter == 'pending':
-        # Pending users: not approved AND not staff/superuser
+        # Pending users: status='pending' AND not staff/superuser
         users = users.filter(
-            profile__is_approved=False
+            profile__status='pending'
+        ).exclude(
+            Q(is_staff=True) | Q(is_superuser=True)
+        )
+    elif status_filter == 'rejected':
+        # Rejected users: status='rejected' AND not staff/superuser
+        users = users.filter(
+            profile__status='rejected'
         ).exclude(
             Q(is_staff=True) | Q(is_superuser=True)
         )
     elif status_filter == 'approved':
-        users = users.filter(profile__is_approved=True)
+        users = users.filter(profile__status='approved')
     elif status_filter == 'staff':
         users = users.filter(is_staff=True)
 
@@ -80,10 +87,26 @@ def admin_users(request):
             Q(last_name__icontains=search_query)
         )
 
-    users = users.order_by('-date_joined')
+    # Split users into unapproved (pending + rejected) and approved for the new design
+    unapproved_users = []
+    approved_users = []
+
+    for user_item in users:
+        if user_item.is_staff or user_item.is_superuser:
+            approved_users.append(user_item)
+        elif user_item.profile.status == 'approved':
+            approved_users.append(user_item)
+        else:  # pending or rejected
+            unapproved_users.append(user_item)
+
+    # Sort alphabetically by username
+    unapproved_users.sort(key=lambda u: u.username.lower())
+    approved_users.sort(key=lambda u: u.username.lower())
 
     context = {
         'users': users,
+        'unapproved_users': unapproved_users,
+        'approved_users': approved_users,
         'status_filter': status_filter,
         'search_query': search_query,
     }
@@ -93,7 +116,7 @@ def admin_users(request):
 
 @staff_member_required
 def approve_user(request, user_id):
-    """Approve a user."""
+    """Approve a user (set status to 'approved')."""
     user = get_object_or_404(User, id=user_id)
 
     try:
@@ -101,8 +124,9 @@ def approve_user(request, user_id):
     except UserProfile.DoesNotExist:
         profile = UserProfile.objects.create(user=user)
 
-    if not profile.is_approved:
-        profile.is_approved = True
+    if profile.status != 'approved':
+        profile.status = 'approved'
+        profile.is_approved = True  # Keep legacy field in sync
         profile.approved_by = request.user
         profile.approved_at = timezone.now()
         profile.save()
@@ -140,7 +164,7 @@ def approve_user(request, user_id):
 
 @staff_member_required
 def reject_user(request, user_id):
-    """Reject/unapprove a user. Staff can only be unapproved by superusers."""
+    """Reject/unapprove a user (set status to 'rejected'). Staff can only be unapproved by superusers."""
     user = get_object_or_404(User, id=user_id)
 
     # Only superusers can unapprove staff users
@@ -150,8 +174,10 @@ def reject_user(request, user_id):
 
     try:
         profile = user.profile
-        if profile.is_approved:
-            profile.is_approved = False
+        if profile.status == 'approved':
+            # Unapprove an approved user -> set to 'pending'
+            profile.status = 'pending'
+            profile.is_approved = False  # Keep legacy field in sync
             profile.approved_by = None
             profile.approved_at = None
             profile.save()
@@ -166,8 +192,24 @@ def reject_user(request, user_id):
             )
 
             messages.success(request, f'User {user.username} has been unapproved.')
+        elif profile.status == 'pending':
+            # Reject a pending user -> set to 'rejected'
+            profile.status = 'rejected'
+            profile.is_approved = False  # Keep legacy field in sync
+            profile.save()
+
+            # Send notification to the user via the notification system (Slack first, then email fallback)
+            notifications.create_notification(
+                recipient=user,
+                notification_type='account_unapproved',
+                title='Your account has been rejected',
+                message=f'Your account request has been rejected by {request.user.username}. Contact an administrator if you believe this is a mistake.',
+                triggering_user=request.user,
+            )
+
+            messages.success(request, f'User {user.username} has been rejected.')
         else:
-            messages.info(request, f'User {user.username} is already unapproved.')
+            messages.info(request, f'User {user.username} is already rejected.')
     except UserProfile.DoesNotExist:
         messages.error(request, f'User {user.username} does not have a profile.')
 
@@ -227,8 +269,9 @@ def promote_to_staff(request, user_id):
             # Auto-approve staff users
             try:
                 profile = user.profile
-                if not profile.is_approved:
-                    profile.is_approved = True
+                if profile.status != 'approved':
+                    profile.status = 'approved'
+                    profile.is_approved = True  # Keep legacy field in sync
                     profile.approved_by = request.user
                     profile.approved_at = timezone.now()
                     profile.save()
@@ -496,19 +539,38 @@ def add_machine(request):
 
 @staff_member_required
 def delete_machine(request, machine_id):
-    """Delete a machine."""
+    """Delete a machine with confirmation if there are active queue entries."""
     if request.method == 'POST':
         machine = get_object_or_404(Machine, id=machine_id)
         machine_name = machine.name
 
-        # Check if machine has any queue entries
-        queue_count = QueueEntry.objects.filter(assigned_machine=machine).count()
-        if queue_count > 0:
-            messages.error(request, f'Cannot delete machine "{machine_name}" - it has {queue_count} queue entries assigned. Please reassign or remove these entries first.')
-            return redirect('edit_machine', machine_id=machine_id)
+        # Check if machine has any ACTIVE queue entries (queued or running)
+        active_queue_count = QueueEntry.objects.filter(
+            assigned_machine=machine,
+            status__in=['queued', 'running']
+        ).count()
 
+        # Check if user confirmed the deletion despite active entries
+        confirmed = request.POST.get('confirmed') == 'true'
+
+        if active_queue_count > 0 and not confirmed:
+            # Return to edit page with warning - template will show Thanos modal
+            messages.warning(request, f'Machine "{machine_name}" has {active_queue_count} active queue entries. Confirm deletion to proceed.')
+            return redirect(f'/schedule/admin-machines/edit/{machine_id}/?delete_confirm=1&active_count={active_queue_count}')
+
+        # Before deleting, preserve machine_name in all archived measurements
+        try:
+            archives = ArchivedMeasurement.objects.filter(machine=machine)
+            for archive in archives:
+                if not archive.machine_name:  # Only update if not already set
+                    archive.machine_name = machine_name
+                    archive.save(update_fields=['machine_name'])
+        except Exception as e:
+            print(f'Warning: Failed to preserve machine name in archives: {str(e)}')
+
+        # Delete the machine (archives will have machine FK set to NULL due to SET_NULL)
         machine.delete()
-        messages.success(request, f'Machine "{machine_name}" has been deleted.')
+        messages.success(request, f'Machine "{machine_name}" has been deleted. Archived measurements have been preserved.')
         return redirect('admin_machines')
 
     # If not POST, redirect back to edit page
@@ -546,6 +608,7 @@ def admin_cancel_entry(request, entry_id):
         ArchivedMeasurement.objects.create(
             user=entry_user,
             machine=machine,
+            machine_name=machine.name if machine else "Unknown Machine",
             related_queue_entry=queue_entry,
             title=entry_title,
             notes=queue_entry.description,
@@ -797,10 +860,15 @@ def approve_rush_job(request, entry_id):
 
 @staff_member_required
 def reject_rush_job(request, entry_id):
-    """Reject a rush job (remove rush job flag)."""
+    """Reject a rush job with optional custom rejection message."""
     entry = get_object_or_404(QueueEntry, id=entry_id)
 
     if entry.is_rush_job:
+        # Get rejection message from POST data (default to "Insufficient justification")
+        rejection_message = request.POST.get('rejection_message', 'Insufficient justification').strip()
+        if not rejection_message:
+            rejection_message = 'Insufficient justification'
+
         entry.is_rush_job = False
         entry.save()
 
@@ -810,7 +878,18 @@ def reject_rush_job(request, entry_id):
             related_queue_entry=entry
         )
 
-        messages.success(request, f'Rush job appeal for "{entry.title}" has been rejected.')
+        # Send notification to user with rejection message
+        notifications.create_notification(
+            recipient=entry.user,
+            notification_type='queue_cancelled',
+            title=f'Rush Job Appeal Rejected: {entry.title}',
+            message=f'Your rush job appeal for "{entry.title}" has been rejected by {request.user.username}.\n\nReason: {rejection_message}\n\nYour job remains in the queue at its current position.',
+            related_queue_entry=entry,
+            related_machine=entry.assigned_machine,
+            triggering_user=request.user,
+        )
+
+        messages.success(request, f'Rush job appeal for "{entry.title}" has been rejected. User notified.')
     else:
         messages.info(request, 'This entry is not marked as a rush job.')
 
@@ -1128,6 +1207,25 @@ def admin_check_out(request, entry_id):
 
     # Auto-clear checkout reminder and admin_checkout notifications
     auto_clear_notifications(related_queue_entry=queue_entry)
+
+    # Always archive completed measurements
+    try:
+        ArchivedMeasurement.objects.create(
+            user=queue_entry.user,
+            machine=queue_entry.assigned_machine,
+            machine_name=queue_entry.assigned_machine.name if queue_entry.assigned_machine else "Unknown Machine",
+            related_queue_entry=queue_entry,
+            title=queue_entry.title,
+            notes=queue_entry.description,
+            measurement_date=queue_entry.completed_at,
+            archived_at=timezone.now(),
+            status='completed'
+        )
+    except Exception as e:
+        # Don't fail the checkout if archiving fails
+        print(f'Archive creation failed: {str(e)}')
+        import traceback
+        traceback.print_exc()
 
     # Update machine status
     machine = queue_entry.assigned_machine

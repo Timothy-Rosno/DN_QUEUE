@@ -87,7 +87,8 @@
             <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_min_temp.help_text }}</small>
         </div>
 
-        <!-- Max Temperature -->
+        <!-- DEPRECATED: Max Temperature field removed as it was confusing to users -->
+        {% comment %}
         <div style="margin-bottom: 1.5rem;">
             <label for="{{ form.required_max_temp.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
                 {{ form.required_max_temp.label }}
@@ -98,6 +99,7 @@
             {% endif %}
             <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.required_max_temp.help_text }}</small>
         </div>
+        {% endcomment %}
 
         <!-- B-field X -->
         <div style="margin-bottom: 1.5rem;">
