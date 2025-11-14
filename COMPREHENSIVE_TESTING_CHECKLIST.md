@@ -17,7 +17,7 @@ TODO BATCH 1:
 5. OK   Fixed recover-username edge case (multiple usernames per email)
 6. OK   Contact admin for specific profile info changes
 7. OK   Create admin way to make said changes
-8. NOT OK   Check in/check out undo checkin     Issue with 500 errors still. Possible that simple routing will fix this?
+8. NOT OK   Check in/check out undo checkin     Not 500 error, but error banner. Better
 9. OK   Allow admins to edit running entries.
 Extra info: Notifications are set up only for slack and the web version at the moment, not email. 
 Test especially that the web notification works.
@@ -25,47 +25,27 @@ Test especially that the web notification works.
 TODO BATCH 2:
 1. OK   Admin Q routing from normal Q
 2. OK   Redirect to login for unapproved users, not home
-3. NOT OK   Remove Actions column for non-staff in archive  Just has an extra column that's really skinny now lol
+3. OK   Remove Actions column for non-staff in archive  Just has an extra column that's really skinny now lol
 
 TODO BATCH 3:
-1. Remove the Day: Filtration. It's causing a bug with all years
-2. Don't notify about position changes when it's from a delete of one behind it in the queue
+1. OK   Remove the Day: Filtration. It's causing a bug with all years
+2. NOT OK   Don't notify about position changes when it's from a delete of one behind it in the queue
 LEFTOVERS TO TEST:
 1. Check-in/check-out undo checkin button activity
-2. Remove actions column for non-staff in archive
-3. Machine status overview --> remove that random "-->"
 
 TODO BATCH 4:
- 1. Undo checkin is till giving Service Error (500), so it should just route
-  back to the same page at the same scroll value. 2. In /admin-users, make two
-  horizontally scrollable vertical containers similar to current Users area,
-  but scrollable instead of just extending beyond the alloted space,
-  alphabetized per section by username: Unapproved users with Pending or
-  Rejected status, Users with Approved status. Pending can be approved or
-  rejected. Rejected can be approved or deleted. Approved can be Unapproved or
-  Deleted. Make all the buttons the same horizontal and vertical size.
-  Vertical is correct. Make new status flags and buttons as needed. Delete and
-  reject should be the warning/error red button, and the other button types
-  are already correct. 3. When notifying a user about their entry reaching
-  position 1 for a machine, it always needs to send the correct form of the
-  message: On deck and get ready, if the machine is measuring/not idle, On
-  deck and machine available to check in if the machine is idle. 
-  CLAUDE LEFT OFF HERE 4. Remove Max
-  temp from every form that has it, it is just confusing. Comment it out
-  everywhere it exists on the forms so it doesn't show up anywhere. 5. When
-  rejecting a rush job, the admin should be allowed to accept the default
-  "Insufficient justification" message or write a custom response, and the
-  user should receive said rush job rejected notification with message. 6.
-  When making a new machine, its queue entries need to be integrated into the
-  system properly, which right now they are not. 7. When a machine is being
-  deleted, its queue entries that are archived should remain, and there should
-  be a delete anyway confirmation after trying to delete: QUEUE ENTRIES
-  DETECTED --> IT HAS N active QUEUE ENTRIES, ARE YOU SURE YOU WOULD LIKE TO
-  DELETE MACHINE X? YES, RESOTRE BALANCE or NO, SPARE THEM ALL. If none
-  active, just do it. Even if archived. The database isn't set up to handle a
-  new machine ,for some reason. Like the measurement for new machine finished,
-  but it doesn't show up in archive, even though it is completed.
+1. NOT OK   Undo checkin is till giving Service Error (500), so it should just route back to the same page at the same scroll value. 
+2. NOT OK   In /admin-users, make two horizontally scrollable vertical containers similar to current Users area, but scrollable instead of just extending beyond the alloted space, alphabetized per section by username: Unapproved users with Pending or Rejected status, Users with Approved status. Pending can be approved or rejected. Rejected can be approved or deleted. Approved can be Unapproved or Deleted. Make all the buttons the same horizontal and vertical size. Vertical is correct. Make new status flags and buttons as needed. Delete and reject should be the warning/error red button, and the other button types are already correct. 
+3. NOT OK   When notifying a user about their entry reaching position 1 for a machine, it always needs to send the correct form of the message: On deck and get ready, if the machine is measuring/not idle, On deck and machine available to check in if the machine is idle. CLAUDE LEFT OFF HERE 
+4. OK   Remove Max temp from every form that has it, it is just confusing. Comment it out everywhere it exists on the forms so it doesn't show up anywhere. 
+5. NOT OK   When rejecting a rush job, the admin should be allowed to accept the default "Insufficient justification" message or write a custom response, and the user should receive said rush job rejected notification with message. THE CANCEL BUTTON SHOULD BE A "BACK" BUTTON IN THE MODAL DIALOG
+6. NOT OK   When making a new machine, its queue entries need to be integrated into the system properly, which right now they are not. BASICALLY THE YES, SAVE CHANGES BUTTON IN admin-queue edit needs to route back to rush jobs. 
+7. NOT OK   When a machine is being deleted, its queue entries that are archived should remain, and there should be a delete anyway confirmation after trying to delete: QUEUE ENTRIES DETECTED --> IT HAS N active QUEUE ENTRIES, ARE YOU SURE YOU WOULD LIKE TO DELETE MACHINE X? YES, RESOTRE BALANCE or NO, SPARE THEM ALL. If none active, just do it. Even if archived. The database isn't set up to handle a new machine ,for some reason. Like the measurement for new machine finished, but it doesn't show up in archive, even though it is completed. Notify user about their orphaned entries!!!!!!!!
  
+LEFTOVERS:
+Notification links should authenticate based on existing sessions and open that tab if already open. Don't just open a new one and make them log in as that user. They might already be logged in.  :/
+Queue positions don't need to notify if the one in first was already in first. Logic: If already in 1, don't notify. If was after first, notify and why. If is bumped out of first (admin reorder or undo checkin), notify and why. Notification should check machine status when in 1st newly, so that it reflects whether just on deck or whether ready to check in.
+Home page: Details if logged in, otherwise just name, have a field for details with description: GIve a detailed description as to what meassurements you're needin to do. Don't pull up user.
 ### Test User Accounts Needed
 
 Create these accounts for testing:

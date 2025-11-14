@@ -260,25 +260,54 @@
 
                     <!-- Current Usage -->
                     <div class="spec-group">
-                        <h4>Current Usage</h4>
-                        <div class="spec-item">
-                            <span class="spec-label">Current User:</span>
-                            <span class="spec-value">{{ machine.current_user.username|default:"None" }}</span>
-                        </div>
-                        <div class="spec-item">
-                            <span class="spec-label">Est. Available:</span>
-                            <span class="spec-value">
-                                {% if machine.estimated_available_time %}
-                                    {{ machine.estimated_available_time|date:"M d, Y g:i A" }}
-                                {% else %}
-                                    Now
-                                {% endif %}
-                            </span>
-                        </div>
-                        <div class="spec-item">
-                            <span class="spec-label">Queue Count:</span>
-                            <span class="spec-value">{{ machine.queue_count }} entries</span>
-                        </div>
+                        {% if user.is_authenticated %}
+                            <h4>Current Usage</h4>
+                            <div class="spec-item">
+                                <span class="spec-label">Current User:</span>
+                                <span class="spec-value">{{ machine.current_user.username|default:"None" }}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Est. Available:</span>
+                                <span class="spec-value">
+                                    {% if machine.estimated_available_time %}
+                                        {{ machine.estimated_available_time|date:"M d, Y g:i A" }}
+                                    {% else %}
+                                        Now
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Queue Count:</span>
+                                <span class="spec-value">{{ machine.queue_count }} entries</span>
+                            </div>
+                        {% else %}
+                            <h4>Current Usage</h4>
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>Running:</strong>
+                                <!-- <span>{{ item.running_job.user.username }} - {{ item.running_job.title|truncatechars:30 }}</span><br> -->
+                                 <span>{{ item.running_job.title|truncatechars:30 }}</span><br>
+                                <span class="countdown-timer"
+                                    style="font-family: inherit; font-size: 0.85rem; color: #2c3e50;"
+                                    data-end-time="{{ item.running_job.started_at|date:'c' }}"
+                                    data-duration="{{ item.running_job.estimated_duration_hours }}">
+                                    Calculating...
+                                </span>
+
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Est. Available:</span>
+                                <span class="spec-value">
+                                    {% if machine.estimated_available_time %}
+                                        {{ machine.estimated_available_time|date:"M d, Y g:i A" }}
+                                    {% else %}
+                                        Now
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Queue Count:</span>
+                                <span class="spec-value">{{ machine.queue_count }} entries</span>
+                            </div>
                     </div>
 
                     <!-- Location & Description -->
