@@ -673,14 +673,22 @@ def check_and_notify_on_deck_status(machine):
                 return
 
             # User is newly at position 1 - check machine status to determine notification type
-            # Machine must be idle, available (not in maintenance), and online to be truly ready
+            # Machine must be idle, available (not in maintenance), online, and not in cooldown to be truly ready
+            from django.utils import timezone
+
+            # Check if machine is in cooldown (estimated_available_time is in the future)
+            in_cooldown = False
+            if machine.estimated_available_time:
+                in_cooldown = machine.estimated_available_time > timezone.now()
+
             if (machine.current_status == 'idle' and
                 machine.is_available and
-                machine.is_online()):
+                machine.is_online() and
+                not in_cooldown):
                 # Machine is fully ready - user can check in immediately
                 notify_ready_for_check_in(on_deck_entry)
             else:
-                # Machine is busy, unavailable, offline, or in maintenance - user is on deck but must wait
+                # Machine is busy, unavailable, offline, in maintenance, or cooling down - user is on deck but must wait
                 notify_on_deck(on_deck_entry)
     except Exception as e:
         print(f"Error checking ON DECK status: {e}")
