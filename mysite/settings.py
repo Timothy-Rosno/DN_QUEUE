@@ -103,19 +103,27 @@ ASGI_APPLICATION = "mysite.asgi.application"
 REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379')
 
 # Cache Configuration (Django Cache Framework)
-# Configured to gracefully handle Redis unavailability
+# Using local memory cache (fallback from Redis for local development)
 CACHES = {
     'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'SOCKET_CONNECT_TIMEOUT': 5,  # seconds
-            'SOCKET_TIMEOUT': 5,  # seconds
-            'IGNORE_EXCEPTIONS': True,  # Don't crash app if Redis is unavailable
-        }
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
     }
 }
+
+# Original Redis configuration (commented out - requires django_redis package)
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django_redis.cache.RedisCache',
+#         'LOCATION': REDIS_URL,
+#         'OPTIONS': {
+#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+#             'SOCKET_CONNECT_TIMEOUT': 5,  # seconds
+#             'SOCKET_TIMEOUT': 5,  # seconds
+#             'IGNORE_EXCEPTIONS': True,  # Don't crash app if Redis is unavailable
+#         }
+#     }
+# }
 
 CHANNEL_LAYERS = {
     "default": {

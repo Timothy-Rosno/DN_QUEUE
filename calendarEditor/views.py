@@ -791,12 +791,15 @@ def undo_check_in(request, entry_id):
 
         machine = queue_entry.assigned_machine
 
-        # Bump all existing queued entries down by 1 position
+        # Find the entry that was at position 1 (will be bumped to position 2)
         existing_queued = QueueEntry.objects.filter(
             assigned_machine=machine,
             status='queued'
         ).order_by('queue_position')
 
+        was_on_deck = existing_queued.filter(queue_position=1).first()
+
+        # Bump all existing queued entries down by 1 position
         for entry in existing_queued:
             entry.queue_position += 1
             entry.save(update_fields=['queue_position'])
@@ -818,9 +821,12 @@ def undo_check_in(request, entry_id):
         # Auto-clear any running-related notifications
         auto_clear_notifications(related_queue_entry=queue_entry)
 
-        # Send on-deck or ready-for-check-in notification
-        from .notifications import check_and_notify_on_deck_status
-        check_and_notify_on_deck_status(machine)
+        # Notify the person who was bumped from position 1 to position 2
+        if was_on_deck:
+            from .notifications import notify_bumped_from_on_deck
+            notify_bumped_from_on_deck(was_on_deck, reason='measurement undone')
+
+        # DO NOT notify the user who undid their own check-in (they already know)
 
         # Broadcast WebSocket update
         try:
