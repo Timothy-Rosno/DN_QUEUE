@@ -539,26 +539,54 @@ def add_machine(request):
 
 @staff_member_required
 def delete_machine(request, machine_id):
-    """Delete a machine with confirmation if there are active queue entries."""
+    """Delete a machine. Active queue entries are automatically archived as 'orphaned'."""
     if request.method == 'POST':
         machine = get_object_or_404(Machine, id=machine_id)
         machine_name = machine.name
 
-        # Check if machine has any ACTIVE queue entries (queued or running)
-        active_queue_count = QueueEntry.objects.filter(
+        # Find all active queue entries (queued or running) for this machine
+        active_entries = QueueEntry.objects.filter(
             assigned_machine=machine,
             status__in=['queued', 'running']
-        ).count()
+        )
+        active_queue_count = active_entries.count()
 
-        # Check if user confirmed the deletion despite active entries
+        # Check if user confirmed the deletion
         confirmed = request.POST.get('confirmed') == 'true'
 
         if active_queue_count > 0 and not confirmed:
-            # Return to edit page with warning - template will show Thanos modal
-            messages.warning(request, f'Machine "{machine_name}" has {active_queue_count} active queue entries. Confirm deletion to proceed.')
+            # Return to edit page with warning - template will show confirmation modal
+            messages.warning(request, f'Machine "{machine_name}" has {active_queue_count} active queue entries that will be archived as orphaned. Confirm deletion to proceed.')
             return redirect(f'/schedule/admin-machines/edit/{machine_id}/?delete_confirm=1&active_count={active_queue_count}')
 
-        # Before deleting, preserve machine_name in all archived measurements
+        # Archive all active queue entries as 'orphaned' before deleting the machine
+        orphaned_count = 0
+        if active_queue_count > 0:
+            try:
+                for entry in active_entries:
+                    # Create an archived measurement for this orphaned entry
+                    ArchivedMeasurement.objects.create(
+                        user=entry.user,
+                        machine=None,  # Machine FK will be NULL since we're about to delete it
+                        machine_name=machine_name,  # Preserve machine name as string
+                        related_queue_entry=entry,
+                        title=entry.title,
+                        notes=entry.description,
+                        measurement_date=entry.started_at if entry.status == 'running' else entry.submitted_at,
+                        archived_at=timezone.now(),
+                        status='orphaned'  # Mark as orphaned since machine was deleted
+                    )
+
+                    # Update the queue entry status to cancelled (since machine is gone)
+                    entry.status = 'cancelled'
+                    entry.save(update_fields=['status'])
+
+                    orphaned_count += 1
+            except Exception as e:
+                messages.error(request, f'Error archiving queue entries: {str(e)}')
+                return redirect('admin_machines')
+
+        # Before deleting, preserve machine_name in all existing archived measurements
         try:
             archives = ArchivedMeasurement.objects.filter(machine=machine)
             for archive in archives:
@@ -570,7 +598,12 @@ def delete_machine(request, machine_id):
 
         # Delete the machine (archives will have machine FK set to NULL due to SET_NULL)
         machine.delete()
-        messages.success(request, f'Machine "{machine_name}" has been deleted. Archived measurements have been preserved.')
+
+        if orphaned_count > 0:
+            messages.success(request, f'Machine "{machine_name}" has been deleted. {orphaned_count} active queue entries have been archived as orphaned.')
+        else:
+            messages.success(request, f'Machine "{machine_name}" has been deleted.')
+
         return redirect('admin_machines')
 
     # If not POST, redirect back to edit page
@@ -968,8 +1001,8 @@ def queue_next(request, entry_id):
                 current_on_deck.refresh_from_db()  # Get updated position
                 notifications.notify_bumped_from_on_deck(current_on_deck, reason='priority request')
 
-            # Notify the user they're now on deck
-            notifications.notify_on_deck(entry)
+            # Check machine status and notify the user accordingly (on_deck or ready_for_check_in)
+            notifications.check_and_notify_on_deck_status(machine)
 
             messages.success(request, f'"{entry.title}" moved to position 1.')
         else:
@@ -1008,9 +1041,9 @@ def move_queue_up(request, entry_id):
                 entry.save()
                 entry_above.save()
 
-                # If entry moved to position 1, notify them they're on deck
+                # If entry moved to position 1, check machine status and notify accordingly
                 if new_pos == 1:
-                    notifications.notify_on_deck(entry)
+                    notifications.check_and_notify_on_deck_status(machine)
 
                 # If entry_above was bumped from position #1, notify them
                 if was_on_deck:
@@ -1057,8 +1090,8 @@ def move_queue_down(request, entry_id):
                 # If entry was at position 1, they're being bumped
                 if was_on_deck:
                     notifications.notify_bumped_from_on_deck(entry, reason='admin action')
-                    # Notify entry_below they're now on deck
-                    notifications.notify_on_deck(entry_below)
+                    # Check machine status and notify entry_below accordingly
+                    notifications.check_and_notify_on_deck_status(machine)
 
                 messages.success(request, f'"{entry.title}" moved down.')
             else:
@@ -1257,17 +1290,13 @@ def admin_check_out(request, entry_id):
 
     # Reorder queue to ensure consistency (defensive programming)
     # NOTE: reorder_queue() internally calls check_and_notify_on_deck_status()
+    # which will automatically send the appropriate notification (On Deck or Ready for Check-In)
+    # to the next person in queue based on machine status
     from .matching_algorithm import reorder_queue
     reorder_queue(machine)
 
     # Notify the user that an admin checked them out
     notifications.notify_admin_checkout(queue_entry, request.user)
-
-    # Notify next person if machine is available for check-in
-    if next_entry:
-        # If machine is immediately available (no cooldown), notify user they can check in
-        if machine.current_status == 'idle':
-            notifications.notify_ready_for_check_in(next_entry)
 
     # Broadcast WebSocket update
     try:
@@ -1288,6 +1317,101 @@ def admin_check_out(request, entry_id):
         print(f"WebSocket broadcast failed: {e}")
 
     messages.success(request, f'🎉 Job completed! "{queue_entry.title}" by {queue_entry.user.username} is now archived.')
+    return redirect('admin_queue')
+
+
+@staff_member_required
+def admin_undo_check_in(request, entry_id):
+    """
+    Admin override: Undo a check-in to move running entry back to on-deck position (RUNNING → QUEUED at position 1).
+
+    Similar to user undo_check_in but admin can undo any user's job and notifies the user about admin action.
+    """
+    from datetime import timedelta
+    from django.utils import timezone
+    from . import notifications
+
+    if request.method != 'POST':
+        return redirect('admin_queue')
+
+    queue_entry = get_object_or_404(QueueEntry, id=entry_id)
+
+    # Validate entry can be undone
+    if queue_entry.status != 'running':
+        messages.error(request, f'Cannot undo check-in - job status is "{queue_entry.get_status_display()}". Only running jobs can be undone.')
+        return redirect('admin_queue')
+
+    if not queue_entry.assigned_machine:
+        messages.error(request, 'Cannot undo check-in - no machine assigned.')
+        return redirect('admin_queue')
+
+    machine = queue_entry.assigned_machine
+    entry_user = queue_entry.user
+    entry_title = queue_entry.title
+
+    # Bump all existing queued entries down by 1 position
+    existing_queued = QueueEntry.objects.filter(
+        assigned_machine=machine,
+        status='queued'
+    ).order_by('queue_position')
+
+    for entry in existing_queued:
+        entry.queue_position += 1
+        entry.save(update_fields=['queue_position'])
+
+    # Move this entry back to queued status at position 1
+    queue_entry.status = 'queued'
+    queue_entry.queue_position = 1
+    queue_entry.started_at = None
+    queue_entry.reminder_due_at = None
+    queue_entry.reminder_sent = False
+    queue_entry.save()
+
+    # Update machine status to idle
+    machine.current_status = 'idle'
+    machine.current_user = None
+    machine.estimated_available_time = None
+    machine.save()
+
+    # Auto-clear any running-related notifications
+    auto_clear_notifications(related_queue_entry=queue_entry)
+
+    # Notify the user that admin undid their check-in
+    try:
+        notifications.create_notification(
+            recipient=entry_user,
+            notification_type='admin_checkout',  # Reusing admin_checkout type for admin undo
+            title='Check-In Undone by Admin',
+            message=f'Administrator {request.user.username} undid your check-in for "{entry_title}" on {machine.name}. Your measurement has been moved back to position #1 (on deck).',
+            related_queue_entry=queue_entry,
+            related_machine=machine,
+        )
+    except Exception as e:
+        print(f"User notification for admin undo check-in failed: {e}")
+
+    # Send on-deck or ready-for-check-in notification based on machine status
+    notifications.check_and_notify_on_deck_status(machine)
+
+    # Broadcast WebSocket update
+    try:
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            'queue_updates',
+            {
+                'type': 'queue_update',
+                'update_type': 'undo_checkin',
+                'entry_id': queue_entry.id,
+                'user_id': queue_entry.user.id,
+                'machine_id': machine.id,
+                'triggering_user_id': request.user.id,
+            }
+        )
+    except Exception as e:
+        print(f"WebSocket broadcast failed: {e}")
+
+    messages.success(request, f'✅ Check-in undone! "{entry_title}" by {entry_user.username} has been moved back to position #1 (on deck) on {machine.name}.')
     return redirect('admin_queue')
 
 

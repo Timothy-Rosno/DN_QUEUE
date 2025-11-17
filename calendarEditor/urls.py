@@ -76,6 +76,7 @@ urlpatterns = [
     # Admin Check-in/Check-out (admin can start/complete any user's job)
     path('admin-queue/check-in/<int:entry_id>/', admin_views.admin_check_in, name='admin_check_in'),
     path('admin-queue/check-out/<int:entry_id>/', admin_views.admin_check_out, name='admin_check_out'),
+    path('admin-queue/undo-check-in/<int:entry_id>/', admin_views.admin_undo_check_in, name='admin_undo_check_in'),
 
     # Rush Job Actions
     path('admin-rush-jobs/approve/<int:entry_id>/', admin_views.approve_rush_job, name='approve_rush_job'),

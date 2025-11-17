@@ -34,7 +34,7 @@ LEFTOVERS TO TEST:
 1. Check-in/check-out undo checkin button activity
 
 TODO BATCH 4:
-1. NOT OK   Undo checkin is till giving Service Error (500), so it should just route back to the same page at the same scroll value. 
+1. OK   Undo checkin is till giving Service Error (500), so it should just route back to the same page at the same scroll value. 
 2. NOT OK   In /admin-users, make two horizontally scrollable vertical containers similar to current Users area, but scrollable instead of just extending beyond the alloted space, alphabetized per section by username: Unapproved users with Pending or Rejected status, Users with Approved status. Pending can be approved or rejected. Rejected can be approved or deleted. Approved can be Unapproved or Deleted. Make all the buttons the same horizontal and vertical size. Vertical is correct. Make new status flags and buttons as needed. Delete and reject should be the warning/error red button, and the other button types are already correct. 
 3. NOT OK   When notifying a user about their entry reaching position 1 for a machine, it always needs to send the correct form of the message: On deck and get ready, if the machine is measuring/not idle, On deck and machine available to check in if the machine is idle. CLAUDE LEFT OFF HERE 
 4. OK   Remove Max temp from every form that has it, it is just confusing. Comment it out everywhere it exists on the forms so it doesn't show up anywhere. 

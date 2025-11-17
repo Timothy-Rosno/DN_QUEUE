@@ -290,7 +290,7 @@ def get_matching_machines(required_min_temp, required_max_temp=None,
     return machines
 
 
-def reorder_queue(machine):
+def reorder_queue(machine, notify=True):
     """
     Reorder queue positions for a machine after an entry is removed or queue changes.
 
@@ -301,6 +301,8 @@ def reorder_queue(machine):
 
     Args:
         machine: Machine instance whose queue needs reordering
+        notify: If True (default), notify the person at position #1 they're on deck/ready.
+                If False, skip notifications (used for deletions to avoid notifying during cleanup).
     """
     from django.db.models import F
 
@@ -319,10 +321,12 @@ def reorder_queue(machine):
         entry.save()
 
     # Check if there's a new entry at position #1 and notify them they're ON DECK
-    try:
-        notifications.check_and_notify_on_deck_status(machine)
-    except Exception as e:
-        print(f"ON DECK notification failed: {e}")
+    # (unless notify=False, which is used for deletions)
+    if notify:
+        try:
+            notifications.check_and_notify_on_deck_status(machine)
+        except Exception as e:
+            print(f"ON DECK notification failed: {e}")
 
 
 def move_queue_entry_up(entry_id):

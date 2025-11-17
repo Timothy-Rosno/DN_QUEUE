@@ -156,13 +156,20 @@
 
                                 {% elif entry.status == 'running' %}
                                     <!-- Running entry controls -->
-                                    <!-- Left column: Check Out button (matches Start/Move to First layout) -->
+                                    <!-- Left column: Check Out and Undo Check-In buttons -->
                                     <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 auto; min-height: 60px;">
+                                        <!-- Check Out button -->
                                         <button type="button" class="btn btn-success btn-sm checkout-entry-btn"
                                             data-entry-id="{{ entry.id }}"
                                             data-entry-title="{{ entry.title }}"
-                                            style="flex: 1; width: 100%; height: 100%;"
+                                            style="flex: 1; width: 100%;"
                                             title="Check out and finish measurement">Check Out</button>
+
+                                        <!-- Undo Check-In button -->
+                                        <form method="post" action="{% url 'admin_undo_check_in' entry.id %}" style="display: flex; flex: 1;" onsubmit="saveScrollPosition()">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-warning btn-sm" style="flex: 1; width: 100%;" title="Undo check-in and move back to position #1">Undo Check-In</button>
+                                        </form>
                                     </div>
 
                                     <!-- Middle column: spacer to match up/down buttons -->

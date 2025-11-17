@@ -648,6 +648,7 @@ class ArchivedMeasurement(models.Model):
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
         ('archived', 'Archived'),
+        ('orphaned', 'Orphaned (Machine Deleted)'),
     ]
 
     # Core relationships

@@ -174,13 +174,9 @@ class QueueEntryAdmin(admin.ModelAdmin):
             machine.estimated_available_time = None
             machine.save()
 
-        # Reorder queue and notify next person if they're now on-deck
+        # Reorder queue but DON'T notify next person (deletions are cleanup actions)
         if machine:
-            reorder_queue(machine)
-            try:
-                notifications.check_and_notify_on_deck_status(machine)
-            except Exception as e:
-                print(f"On-deck notification failed: {e}")
+            reorder_queue(machine, notify=False)
 
     def delete_queryset(self, request, queryset):
         """Override bulk delete to handle machine status updates."""
@@ -213,13 +209,9 @@ class QueueEntryAdmin(admin.ModelAdmin):
         # Delete all entries
         super().delete_queryset(request, queryset)
 
-        # Reorder queues and notify for all affected machines
+        # Reorder queues but DON'T notify (deletions are cleanup actions)
         for machine in affected_machines:
-            reorder_queue(machine)
-            try:
-                notifications.check_and_notify_on_deck_status(machine)
-            except Exception as e:
-                print(f"On-deck notification failed: {e}")
+            reorder_queue(machine, notify=False)
 
 
 @admin.register(ScheduleEntry)

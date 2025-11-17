@@ -10,11 +10,11 @@
 
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
     <!-- User Stats -->
-    <div class="card" style="border-left: 4px solid #e74c3c; text-align: center;">
+    <!-- <div class="card" style="border-left: 4px solid #e74c3c; text-align: center;">
         <h3 style="margin-top: 0; color: #e74c3c;">Pending Users</h3>
         <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ pending_users }}</p>
         <a href="{% url 'admin_users' %}?status=pending" class="btn" style="margin-top: 0.5rem;"> Review Pending</a>
-    </div>
+    </div> -->
 
     <!-- Total Users -->
     <div class="card" style="border-left: 4px solid #3498db; text-align: center;">
@@ -81,12 +81,14 @@
         <a href="{% url 'admin_render_usage' %}" class="btn" style="margin-top: 0.5rem;">View Usage</a>
     </div>
 
-    <!-- Django Admin Link -->
+    <!-- Django Admin Link (Superuser Only) -->
+    {% if user.is_superuser %}
     <div class="card" style="border-left: 4px solid #34495e; text-align: center;">
         <h3 style="margin-top: 0; color: #34495e;">Django Admin</h3>
         <p style="color: #7f8c8d; margin: 1rem 0;">Access the default Django admin interface for advanced management.</p>
         <a href="/admin/" class="btn">Open Admin</a>
     </div>
+    {% endif %}
 </div>
 
 <script>
