@@ -517,7 +517,7 @@ class Notification(models.Model):
 
         # Admin notifications
         if self.notification_type == 'admin_new_user':
-            return f"{reverse('admin_users')}?status=pending"
+            return reverse('admin_users')
         elif self.notification_type == 'admin_rush_job':
             return reverse('admin_rush_jobs')
 
