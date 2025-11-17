@@ -660,20 +660,7 @@ def check_and_notify_on_deck_status(machine):
                     )
 
         if on_deck_entry:
-            # Check if user already has an active position 1 notification
-            has_existing_notif = Notification.objects.filter(
-                recipient=on_deck_entry.user,
-                related_queue_entry=on_deck_entry,
-                notification_type__in=['on_deck', 'ready_for_check_in'],
-                is_read=False
-            ).exists()
-
-            if has_existing_notif:
-                # User was already at position 1, don't notify again
-                return
-
-            # User is newly at position 1 - check machine status to determine notification type
-            # Machine must be idle, available (not in maintenance), online, and not in cooldown to be truly ready
+            # Determine what notification type the user should receive based on current machine status
             from django.utils import timezone
 
             # Check if machine is in cooldown (estimated_available_time is in the future)
@@ -681,10 +668,34 @@ def check_and_notify_on_deck_status(machine):
             if machine.estimated_available_time:
                 in_cooldown = machine.estimated_available_time > timezone.now()
 
-            if (machine.current_status == 'idle' and
-                machine.is_available and
-                machine.is_online() and
-                not in_cooldown):
+            # Determine the correct notification type based on machine readiness
+            machine_is_ready = (machine.current_status == 'idle' and
+                               machine.is_available and
+                               machine.is_online() and
+                               not in_cooldown)
+
+            correct_notif_type = 'ready_for_check_in' if machine_is_ready else 'on_deck'
+
+            # Check what notification the user currently has
+            existing_notif = Notification.objects.filter(
+                recipient=on_deck_entry.user,
+                related_queue_entry=on_deck_entry,
+                notification_type__in=['on_deck', 'ready_for_check_in'],
+                is_read=False
+            ).first()
+
+            if existing_notif:
+                # User already has a position 1 notification
+                if existing_notif.notification_type == correct_notif_type:
+                    # Same notification type - don't send duplicate
+                    return
+                else:
+                    # Machine status changed! Clear old notification and send new one
+                    # Example: had "on_deck", now machine is ready → send "ready_for_check_in"
+                    existing_notif.delete()
+
+            # Send the appropriate notification based on machine status
+            if machine_is_ready:
                 # Machine is fully ready - user can check in immediately
                 notify_ready_for_check_in(on_deck_entry)
             else:

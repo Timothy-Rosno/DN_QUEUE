@@ -1033,6 +1033,7 @@ def move_queue_up(request, entry_id):
             if entry_above:
                 # Remember if entry_above was at position #1 (they're being bumped)
                 was_on_deck = (entry_above.queue_position == 1)
+                old_pos_above = entry_above.queue_position
 
                 # Swap positions
                 new_pos = current_pos - 1
@@ -1040,6 +1041,10 @@ def move_queue_up(request, entry_id):
                 entry_above.queue_position = current_pos
                 entry.save()
                 entry_above.save()
+
+                # Notify both users about their position changes
+                notifications.notify_queue_position_change(entry, current_pos, new_pos)
+                notifications.notify_queue_position_change(entry_above, old_pos_above, current_pos)
 
                 # If entry moved to position 1, check machine status and notify accordingly
                 if new_pos == 1:
@@ -1080,12 +1085,18 @@ def move_queue_down(request, entry_id):
             if entry_below:
                 # Remember if entry was at position #1 (they're being bumped)
                 was_on_deck = (current_pos == 1)
+                old_pos_below = entry_below.queue_position
 
                 # Swap positions
-                entry.queue_position = current_pos + 1
+                new_pos = current_pos + 1
+                entry.queue_position = new_pos
                 entry_below.queue_position = current_pos
                 entry.save()
                 entry_below.save()
+
+                # Notify both users about their position changes
+                notifications.notify_queue_position_change(entry, current_pos, new_pos)
+                notifications.notify_queue_position_change(entry_below, old_pos_below, current_pos)
 
                 # If entry was at position 1, they're being bumped
                 if was_on_deck:
