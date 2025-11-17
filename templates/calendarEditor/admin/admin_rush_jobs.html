@@ -185,6 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
         useDefaultBtn.style.display = 'none';
         useCustomBtn.style.display = 'none';
         btnYes.style.display = 'inline-block';
+        btnNo.textContent = 'Back';
         rejectionMessageInput.focus();
     });
 
@@ -223,12 +224,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // No button: close modal
+    // No button: back or close modal
     btnNo.addEventListener('click', function() {
-        modal.style.display = 'none';
-        currentEntryId = null;
-        currentEntryTitle = null;
-        usingCustomMessage = false;
+        if (usingCustomMessage) {
+            // If in custom message mode, go back to initial state
+            usingCustomMessage = false;
+            rejectionMessageBox.style.display = 'none';
+            useDefaultBtn.style.display = 'inline-block';
+            useCustomBtn.style.display = 'inline-block';
+            btnYes.style.display = 'none';
+            btnNo.textContent = 'Cancel';
+            rejectionMessageInput.value = 'Insufficient justification';
+        } else {
+            // If at initial state, close modal
+            modal.style.display = 'none';
+            currentEntryId = null;
+            currentEntryTitle = null;
+        }
     });
 
     // Close button: close modal

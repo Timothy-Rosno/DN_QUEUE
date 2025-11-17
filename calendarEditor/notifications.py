@@ -599,11 +599,16 @@ def check_and_notify_on_deck_status(machine):
     Check if there's a queue entry at position #1 for this machine and notify the user.
 
     Notification logic:
+    - If already in position 1 (has active on_deck/ready_for_check_in notification), don't notify again
+    - If newly moved to position 1, check machine status and notify appropriately
     - If machine is idle: Send "Ready for Check-In" notification
     - If machine is not idle (running, cooldown, maintenance): Send "On Deck" notification
+    - If someone was bumped out of position 1, clear their position 1 notifications
 
     This is called after queue reordering or when an entry completes.
     """
+    from .models import Notification
+
     try:
         # Get the entry at position #1
         on_deck_entry = QueueEntry.objects.filter(
@@ -612,8 +617,62 @@ def check_and_notify_on_deck_status(machine):
             queue_position=1
         ).first()
 
+        # Get all queued entries for this machine to find who was bumped
+        all_queued = QueueEntry.objects.filter(
+            assigned_machine=machine,
+            status='queued',
+            queue_position__gt=1
+        )
+
+        # Clear position 1 notifications for anyone who is no longer at position 1
+        for entry in all_queued:
+            # Check if they have active on_deck or ready_for_check_in notifications
+            has_position_1_notif = Notification.objects.filter(
+                recipient=entry.user,
+                related_queue_entry=entry,
+                notification_type__in=['on_deck', 'ready_for_check_in'],
+                is_read=False
+            ).exists()
+
+            if has_position_1_notif:
+                # They were bumped out of position 1 - clear their notifications and notify them
+                auto_clear_notifications(
+                    related_queue_entry=entry,
+                    notification_type='on_deck'
+                )
+                auto_clear_notifications(
+                    related_queue_entry=entry,
+                    notification_type='ready_for_check_in'
+                )
+
+                # Send notification about being bumped out of first position
+                user = entry.user
+                prefs = NotificationPreference.get_or_create_for_user(user)
+
+                if prefs.notify_queue_position_change and prefs.in_app_notifications:
+                    create_notification(
+                        recipient=user,
+                        notification_type='queue_moved',
+                        title=f'Queue Position Changed',
+                        message=f'Your request "{entry.title}" was moved from position #1 to #{entry.queue_position} on {entry.assigned_machine.name} due to queue reordering.',
+                        related_queue_entry=entry,
+                        related_machine=entry.assigned_machine,
+                    )
+
         if on_deck_entry:
-            # Check machine status to determine which notification to send
+            # Check if user already has an active position 1 notification
+            has_existing_notif = Notification.objects.filter(
+                recipient=on_deck_entry.user,
+                related_queue_entry=on_deck_entry,
+                notification_type__in=['on_deck', 'ready_for_check_in'],
+                is_read=False
+            ).exists()
+
+            if has_existing_notif:
+                # User was already at position 1, don't notify again
+                return
+
+            # User is newly at position 1 - check machine status to determine notification type
             if machine.current_status == 'idle':
                 # Machine is available - user can check in immediately
                 notify_ready_for_check_in(on_deck_entry)

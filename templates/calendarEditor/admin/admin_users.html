@@ -26,168 +26,161 @@
     </form>
 </div>
 
-<!-- Two-Section Layout -->
-<div style="display: grid; grid-auto-flow: row; gap: 1rem; margin-top: 1rem;">
+<!-- Two-Section Layout (Vertical) -->
+<div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
     <!-- UNAPPROVED USERS (Pending + Rejected) -->
+    {% if unapproved_users %}
     <div class="card" style="max-height: 600px; overflow-y: auto; display: flex; flex-direction: column;">
-        <h2 style="position: sticky; top: 0; background: white; z-index: 10; padding-bottom: 0.5rem; border-bottom: 2px solid #e74c3c; color: #e74c3c;">
+        <h2 style="position: sticky; top: 0; background: white; z-index: 10; padding: 0.75rem 0; margin: 0; border-bottom: 2px solid #e74c3c; color: #e74c3c;">
             Unapproved Users ({{ unapproved_users|length }})
         </h2>
 
-        {% if unapproved_users %}
-            <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
-                <thead style="position: sticky; top: 60px; background: white; z-index: 9;">
-                    <tr style="border-bottom: 2px solid #ddd; text-align: left;">
-                        <th style="padding: 0.75rem;">Username</th>
-                        <th style="padding: 0.75rem;">Status</th>
-                        <th style="padding: 0.75rem;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user_item in unapproved_users %}
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 0.75rem;">
-                            <div>
-                                <strong>{{ user_item.username }}</strong>
-                                <div style="font-size: 0.85rem; color: #7f8c8d;">{{ user_item.email|default:"—" }}</div>
-                            </div>
-                        </td>
-                        <td style="padding: 0.75rem;">
-                            {% if user_item.profile.status == 'pending' %}
-                                <span style="background-color: #f39c12; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; font-weight: bold;">PENDING</span>
-                            {% elif user_item.profile.status == 'rejected' %}
-                                <span style="background-color: #e74c3c; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; font-weight: bold;">REJECTED</span>
-                            {% endif %}
-                        </td>
-                        <td style="padding: 0.75rem;">
-                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                                <!-- Approve Button (always available for unapproved users) -->
-                                <form method="post" action="{% url 'approve_user' user_item.id %}" style="display: inline;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-success btn-sm">Approve</button>
-                                </form>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+            <thead style="position: sticky; top: 50px; background: white; z-index: 9;">
+                <tr style="border-bottom: 2px solid #ddd; text-align: left;">
+                    <th style="padding: 0.75rem;">Username</th>
+                    <th style="padding: 0.75rem;">Status</th>
+                    <th style="padding: 0.75rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user_item in unapproved_users %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 0.75rem;">
+                        <div>
+                            <strong>{{ user_item.username }}</strong>
+                            <div style="font-size: 0.85rem; color: #7f8c8d;">{{ user_item.email|default:"—" }}</div>
+                        </div>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        {% if user_item.profile.status == 'pending' %}
+                            <span style="background-color: #f39c12; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; font-weight: bold;">PENDING</span>
+                        {% elif user_item.profile.status == 'rejected' %}
+                            <span style="background-color: #e74c3c; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; font-weight: bold;">REJECTED</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                            <!-- Approve Button (always available for unapproved users) -->
+                            <form method="post" action="{% url 'approve_user' user_item.id %}" style="display: inline; margin: 0;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Approve</button>
+                            </form>
 
-                                {% if user_item.profile.status == 'pending' %}
-                                    <!-- Pending: Show Reject button -->
-                                    <form method="post" action="{% url 'reject_user' user_item.id %}" style="display: inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-warning btn-sm">Reject</button>
-                                    </form>
-                                {% elif user_item.profile.status == 'rejected' %}
-                                    <!-- Rejected: Show Delete button -->
-                                    <form method="post" action="{% url 'delete_user' user_item.id %}" class="delete-user-form" data-username="{{ user_item.username }}" style="display: inline;">
-                                        {% csrf_token %}
-                                        <button type="button" class="btn btn-danger btn-sm">Delete</button>
-                                    </form>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p style="color: #7f8c8d; margin-top: 1rem; text-align: center; padding: 2rem 0;">No unapproved users.</p>
-        {% endif %}
+                            {% if user_item.profile.status == 'pending' %}
+                                <!-- Pending: Show Reject button -->
+                                <form method="post" action="{% url 'reject_user' user_item.id %}" style="display: inline; margin: 0;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-warning" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Reject</button>
+                                </form>
+                            {% elif user_item.profile.status == 'rejected' %}
+                                <!-- Rejected: Show Delete button -->
+                                <form method="post" action="{% url 'delete_user' user_item.id %}" class="delete-user-form" data-username="{{ user_item.username }}" style="display: inline; margin: 0;">
+                                    {% csrf_token %}
+                                    <button type="button" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Delete</button>
+                                </form>
+                            {% endif %}
+
+                            <!-- Edit Button -->
+                            <button type="button" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background-color: #3498db; color: white;" onclick="window.location.href='/schedule/admin-users/edit-user-info/{{ user_item.id }}/'">Edit</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+    {% endif %}
 
     <!-- APPROVED USERS -->
+    {% if approved_users %}
     <div class="card" style="max-height: 600px; overflow-y: auto; display: flex; flex-direction: column;">
-        <h2 style="position: sticky; top: 0; background: white; z-index: 10; padding-bottom: 0.5rem; border-bottom: 2px solid #2ecc71; color: #2ecc71;">
+        <h2 style="position: sticky; top: 0; background: white; z-index: 10; padding: 0.75rem 0; margin: 0; border-bottom: 2px solid #2ecc71; color: #2ecc71;">
             Approved Users ({{ approved_users|length }})
         </h2>
 
-        {% if approved_users %}
-            <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
-                <thead style="position: sticky; top: 60px; background: white; z-index: 9;">
-                    <tr style="border-bottom: 2px solid #ddd; text-align: left;">
-                        <th style="padding: 0.75rem;">Username</th>
-                        <th style="padding: 0.75rem;">Status</th>
-                        <th style="padding: 0.75rem;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user_item in approved_users %}
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 0.75rem;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <!-- Promote/Demote button (superuser only) -->
-                                {% if user.is_superuser and not user_item.is_superuser %}
-                                    {% if user_item.is_staff %}
-                                        <form method="post" action="{% url 'demote_from_staff' user_item.id %}" style="display: inline; margin: 0;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Demote to regular user">↓</button>
-                                        </form>
-                                    {% else %}
-                                        <form method="post" action="{% url 'promote_to_staff' user_item.id %}" style="display: inline; margin: 0;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn" style="background-color: #3498db; color: white; padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Promote to staff">↑</button>
-                                        </form>
-                                    {% endif %}
-                                {% endif %}
-
-                                <div>
-                                    <strong>{{ user_item.username }}</strong>
-                                    {% if user_item.is_staff %}
-                                        <span style="background-color: #3498db; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">STAFF</span>
-                                    {% endif %}
-                                    {% if user_item.is_superuser %}
-                                        <span style="background-color: #e74c3c; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">SUPERUSER</span>
-                                    {% endif %}
-                                    <div style="font-size: 0.85rem; color: #7f8c8d;">{{ user_item.email|default:"—" }}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td style="padding: 0.75rem;">
-                            {% if user_item.is_staff or user_item.is_superuser %}
-                                <span style="background-color: #3498db; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; font-weight: bold;">STAFF</span>
-                            {% else %}
-                                <span style="background-color: #2ecc71; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; font-weight: bold;">APPROVED</span>
-                            {% endif %}
-                        </td>
-                        <td style="padding: 0.75rem;">
-                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                                {% if user_item.is_superuser %}
-                                    <!-- Superusers cannot be managed here -->
-                                    <span style="color: #7f8c8d; font-size: 0.9rem;">Django Admin only</span>
-                                {% elif user_item.is_staff %}
-                                    <!-- Staff users (only superusers can manage) -->
-                                    {% if user.is_superuser %}
-                                        <form method="post" action="{% url 'reject_user' user_item.id %}" style="display: inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-warning btn-sm">Unapprove</button>
-                                        </form>
-
-                                        <form method="post" action="{% url 'delete_user' user_item.id %}" class="delete-user-form" data-username="{{ user_item.username }}" style="display: inline;">
-                                            {% csrf_token %}
-                                            <button type="button" class="btn btn-danger btn-sm">Delete</button>
-                                        </form>
-                                    {% else %}
-                                        <!-- Regular staff cannot manage other staff -->
-                                        <span style="color: #7f8c8d; font-size: 0.9rem;">Superuser only</span>
-                                    {% endif %}
+        <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+            <thead style="position: sticky; top: 50px; background: white; z-index: 9;">
+                <tr style="border-bottom: 2px solid #ddd; text-align: left;">
+                    <th style="padding: 0.75rem;">Username</th>
+                    <th style="padding: 0.75rem;">Status</th>
+                    <th style="padding: 0.75rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user_item in approved_users %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 0.75rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <!-- Promote/Demote button (superuser only) -->
+                            {% if user.is_superuser and not user_item.is_superuser %}
+                                {% if user_item.is_staff %}
+                                    <form method="post" action="{% url 'demote_from_staff' user_item.id %}" style="display: inline; margin: 0;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Demote to regular user">↓</button>
+                                    </form>
                                 {% else %}
-                                    <!-- Regular approved users -->
-                                    <form method="post" action="{% url 'reject_user' user_item.id %}" style="display: inline;">
+                                    <form method="post" action="{% url 'promote_to_staff' user_item.id %}" style="display: inline; margin: 0;">
                                         {% csrf_token %}
-                                        <button type="submit" class="btn btn-warning btn-sm">Unapprove</button>
-                                    </form>
-
-                                    <form method="post" action="{% url 'delete_user' user_item.id %}" class="delete-user-form" data-username="{{ user_item.username }}" style="display: inline;">
-                                        {% csrf_token %}
-                                        <button type="button" class="btn btn-danger btn-sm">Delete</button>
+                                        <button type="submit" class="btn" style="background-color: #3498db; color: white; padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Promote to staff">↑</button>
                                     </form>
                                 {% endif %}
+                            {% endif %}
+
+                            <div>
+                                <strong>{{ user_item.username }}</strong>
+                                {% if user_item.is_staff %}
+                                    <span style="background-color: #3498db; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">STAFF</span>
+                                {% endif %}
+                                {% if user_item.is_superuser %}
+                                    <span style="background-color: #e74c3c; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">SUPERUSER</span>
+                                {% endif %}
+                                <div style="font-size: 0.85rem; color: #7f8c8d;">{{ user_item.email|default:"—" }}</div>
                             </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p style="color: #7f8c8d; margin-top: 1rem; text-align: center; padding: 2rem 0;">No approved users.</p>
-        {% endif %}
+                        </div>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        {% if user_item.is_staff or user_item.is_superuser %}
+                            <span style="background-color: #3498db; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; font-weight: bold;">STAFF</span>
+                        {% else %}
+                            <span style="background-color: #2ecc71; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; font-weight: bold;">APPROVED</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                            {% if user_item.is_superuser %}
+                                <!-- Superusers cannot be managed here -->
+                                <span style="color: #7f8c8d; font-size: 0.9rem;">Django Admin only</span>
+                            {% elif user_item.is_staff %}
+                                <!-- Staff users (only superusers can manage) -->
+                                {% if user.is_superuser %}
+                                    <form method="post" action="{% url 'reject_user' user_item.id %}" style="display: inline; margin: 0;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-warning" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Unapprove</button>
+                                    </form>
+
+                                    <button type="button" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background-color: #3498db; color: white;" onclick="window.location.href='/schedule/admin-users/edit-user-info/{{ user_item.id }}/'">Edit</button>
+                                {% else %}
+                                    <!-- Regular staff cannot manage other staff -->
+                                    <span style="color: #7f8c8d; font-size: 0.9rem;">Superuser only</span>
+                                {% endif %}
+                            {% else %}
+                                <!-- Regular approved users -->
+                                <form method="post" action="{% url 'reject_user' user_item.id %}" style="display: inline; margin: 0;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-warning" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Unapprove</button>
+                                </form>
+
+                                <button type="button" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background-color: #3498db; color: white;" onclick="window.location.href='/schedule/admin-users/edit-user-info/{{ user_item.id }}/'">Edit</button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+    {% endif %}
 </div>
 
 <!-- Edit User Information Section -->

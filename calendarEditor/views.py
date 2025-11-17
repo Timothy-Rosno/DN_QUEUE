@@ -819,8 +819,8 @@ def undo_check_in(request, entry_id):
         auto_clear_notifications(related_queue_entry=queue_entry)
 
         # Send on-deck or ready-for-check-in notification
-        from .matching_algorithm import check_and_notify_on_deck_status
-        check_and_notify_on_deck_status(queue_entry)
+        from .notifications import check_and_notify_on_deck_status
+        check_and_notify_on_deck_status(machine)
 
         # Broadcast WebSocket update
         try:

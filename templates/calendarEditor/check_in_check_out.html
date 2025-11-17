@@ -32,9 +32,9 @@
                     {% csrf_token %}
                     <button type="submit" class="btn btn-success btn-lg">Check Out</button>
                 </form>
-                <form method="post" action="{% url 'undo_check_in' entry.id %}" onsubmit="return confirm('Are you sure you want to undo this check-in? This will move your entry back to position #1 in the queue and set the machine back to idle.');">
+                <form method="post" action="{% url 'undo_check_in' entry.id %}" id="undo-form-{{ entry.id }}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-warning" style="font-size: 0.9rem;">Undo Check-In</button>
+                    <button type="button" class="btn btn-warning btn-lg undo-check-in-btn" data-entry-id="{{ entry.id }}" data-entry-title="{{ entry.title }}">Undo Check-In</button>
                 </form>
             </div>
         </div>
@@ -64,9 +64,9 @@
                     {% csrf_token %}
                     <button type="submit" class="btn btn-success btn-lg">Check Out</button>
                 </form>
-                <form method="post" action="{% url 'undo_check_in' entry.id %}" onsubmit="return confirm('Are you sure you want to undo this check-in? This will move your entry back to position #1 in the queue and set the machine back to idle.');">
+                <form method="post" action="{% url 'undo_check_in' entry.id %}" id="undo-form-{{ entry.id }}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-warning" style="font-size: 0.9rem;">Undo Check-In</button>
+                    <button type="button" class="btn btn-warning btn-lg undo-check-in-btn" data-entry-id="{{ entry.id }}" data-entry-title="{{ entry.title }}">Undo Check-In</button>
                 </form>
                 <p style="color: #7f8c8d; font-size: 0.9rem; margin: 0;">
                     Still running… check out if ready
@@ -156,6 +156,21 @@
     <a href="{% url 'my_queue' %}" class="btn btn-secondary">← Back to My Queue</a>
 </div>
 
+<!-- Undo Check-In Confirmation Modal -->
+{% load static %}
+<div id="undoConfirmModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:2rem; border-radius:10px; max-width:500px; width:90%; text-align:center; position:relative;">
+        <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto; margin-bottom: 1rem;">
+        <p id="undoConfirmMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
+        <p style="color: #7f8c8d; margin-bottom:1rem; font-size:0.95rem;">This will move your entry back to position #1 in the queue and set the machine back to idle.</p>
+        <div style="display:flex; justify-content:space-around; gap:1rem;">
+            <button id="undoConfirmYes" class="btn btn-danger">Yes, undo check-in</button>
+            <button id="undoConfirmNo" class="btn btn-secondary">No, keep running</button>
+        </div>
+        <span id="undoConfirmClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
+    </div>
+</div>
+
 <script>
 // Save scroll position before form submission
 document.addEventListener('DOMContentLoaded', function() {
@@ -173,6 +188,58 @@ document.addEventListener('DOMContentLoaded', function() {
         window.scrollTo(0, parseInt(savedPosition));
         sessionStorage.removeItem('checkInCheckOutScrollPosition');
     }
+
+    // Undo check-in confirmation modal
+    const undoModal = document.getElementById('undoConfirmModal');
+    const undoMessage = document.getElementById('undoConfirmMessage');
+    const undoYesBtn = document.getElementById('undoConfirmYes');
+    const undoNoBtn = document.getElementById('undoConfirmNo');
+    const undoCloseBtn = document.getElementById('undoConfirmClose');
+    let currentUndoEntryId = null;
+    let currentUndoEntryTitle = null;
+
+    // Open modal when undo check-in button clicked
+    document.querySelectorAll('.undo-check-in-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentUndoEntryId = this.getAttribute('data-entry-id');
+            currentUndoEntryTitle = this.getAttribute('data-entry-title');
+            undoMessage.textContent = `Undo check-in for "${currentUndoEntryTitle}"?`;
+            undoModal.style.display = 'flex';
+        });
+    });
+
+    // Yes button: submit the form
+    undoYesBtn.addEventListener('click', function() {
+        if (currentUndoEntryId) {
+            const form = document.getElementById(`undo-form-${currentUndoEntryId}`);
+            if (form) {
+                form.submit();
+            }
+        }
+    });
+
+    // No button: close modal
+    undoNoBtn.addEventListener('click', function() {
+        undoModal.style.display = 'none';
+        currentUndoEntryId = null;
+        currentUndoEntryTitle = null;
+    });
+
+    // Close button: close modal
+    undoCloseBtn.addEventListener('click', function() {
+        undoModal.style.display = 'none';
+        currentUndoEntryId = null;
+        currentUndoEntryTitle = null;
+    });
+
+    // Click outside modal: close modal
+    undoModal.addEventListener('click', function(e) {
+        if (e.target === undoModal) {
+            undoModal.style.display = 'none';
+            currentUndoEntryId = null;
+            currentUndoEntryTitle = null;
+        }
+    });
 });
 </script>
 {% endblock %}
