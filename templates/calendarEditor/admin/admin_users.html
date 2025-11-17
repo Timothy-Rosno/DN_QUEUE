@@ -250,6 +250,22 @@ function editSelectedUser() {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Save scroll position before any form submission
+    const forms = document.querySelectorAll('form[method="post"]');
+    forms.forEach(function(form) {
+        form.addEventListener('submit', function() {
+            sessionStorage.setItem('adminUsersScrollPosition', window.scrollY);
+        });
+    });
+
+    // Restore scroll position after page load
+    const savedPosition = sessionStorage.getItem('adminUsersScrollPosition');
+    if (savedPosition) {
+        window.scrollTo(0, parseInt(savedPosition));
+        sessionStorage.removeItem('adminUsersScrollPosition');
+    }
+
+    // Thanos modal handlers
     const modal = document.getElementById('thanosModal');
     const message = document.getElementById('thanosMessage');
     const btnYes = document.getElementById('thanosYes');
@@ -269,7 +285,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Yes button: submit form
     btnYes.addEventListener('click', function() {
-        if(currentForm) currentForm.submit();
+        if(currentForm) {
+            // Save scroll position before submit
+            sessionStorage.setItem('adminUsersScrollPosition', window.scrollY);
+            currentForm.submit();
+        }
     });
 
     // No button: close modal
