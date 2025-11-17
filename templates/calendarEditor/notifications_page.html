@@ -582,9 +582,15 @@
     }
 
     async function clearAllRead() {
-        if (!confirm('Delete all read notifications? This cannot be undone.')) {
-            return;
-        }
+        // Show custom confirmation modal
+        const modal = document.getElementById('clearNotificationsModal');
+        modal.style.display = 'flex';
+    }
+
+    async function confirmClearAllRead() {
+        // Hide modal
+        const modal = document.getElementById('clearNotificationsModal');
+        modal.style.display = 'none';
 
         try {
             await fetch('/schedule/notifications/api/clear-read/', {
@@ -624,5 +630,47 @@
         }
         return cookieValue;
     }
+
+    // Modal event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('clearNotificationsModal');
+        const btnYes = document.getElementById('clearNotificationsYes');
+        const btnNo = document.getElementById('clearNotificationsNo');
+        const btnClose = document.getElementById('clearNotificationsClose');
+
+        // Yes button: confirm clear
+        btnYes.addEventListener('click', confirmClearAllRead);
+
+        // No button: close modal
+        btnNo.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+
+        // Close button: close modal
+        btnClose.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+
+        // Click outside modal: close modal
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    });
 </script>
+
+<!-- Clear All Read Notifications Confirmation Modal -->
+<div id="clearNotificationsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:2rem; border-radius:10px; max-width:500px; width:90%; text-align:center; position:relative;">
+        <h2 style="color:#e74c3c; margin-top:0; margin-bottom:1rem;">Delete All Read Notifications?</h2>
+        <p style="color:#7f8c8d; margin-bottom:1.5rem;">This will permanently delete all read notifications. This action cannot be undone.</p>
+        <div style="display:flex; justify-content:center; gap:1rem;">
+            <button id="clearNotificationsYes" class="btn btn-danger">Delete All Read</button>
+            <button id="clearNotificationsNo" class="btn btn-secondary">Cancel</button>
+        </div>
+        <span id="clearNotificationsClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
+    </div>
+</div>
+
 {% endblock %}

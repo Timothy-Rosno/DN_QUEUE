@@ -286,6 +286,20 @@
             </div>
         </div>
 
+        <!-- Delete Preset Confirmation Modal -->
+        <div id="deletePresetModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+            <div style="background:white; padding:2rem; border-radius:10px; max-width:500px; width:90%; text-align:center; position:relative;">
+                <h2 style="color:#e74c3c; margin-top:0; margin-bottom:1rem;">Delete Preset?</h2>
+                <p id="deletePresetModalText" style="color:#7f8c8d; margin-bottom:1rem; font-size:1rem;"></p>
+                <p style="color:#e67e22; margin-bottom:1.5rem; font-size:0.95rem;">This action cannot be undone.</p>
+                <div style="display:flex; justify-content:center; gap:1rem;">
+                    <button type="button" id="deletePresetModalYes" class="btn btn-danger">Delete Preset</button>
+                    <button type="button" id="deletePresetModalNo" class="btn btn-secondary">Cancel</button>
+                </div>
+                <span id="deletePresetModalClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
+            </div>
+        </div>
+
         <div style="margin-top: 1.5rem;">
             <button type="submit" class="btn" id="submitBtn">Submit Request</button>
             <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
@@ -680,22 +694,38 @@
             const presetId = deleteBtn.dataset.presetId;
             const presetName = deleteBtn.dataset.presetName;
 
-            if (confirm(`Are you sure you want to delete "${presetName}"? This cannot be undone.`)) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = `/schedule/preset/delete/${presetId}/`;
+            // Show custom confirmation modal
+            const modal = document.getElementById('deletePresetModal');
+            const modalText = document.getElementById('deletePresetModalText');
+            modalText.textContent = `Are you sure you want to delete "${presetName}"?`;
 
-                // Add CSRF token
-                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = 'csrfmiddlewaretoken';
-                csrfInput.value = csrfToken;
-                form.appendChild(csrfInput);
+            // Store preset info for confirmation
+            window.pendingDeletePresetId = presetId;
+            modal.style.display = 'flex';
+        }
 
-                document.body.appendChild(form);
-                form.submit();
-            }
+        function confirmDeletePreset() {
+            const presetId = window.pendingDeletePresetId;
+            if (!presetId) return;
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/schedule/preset/delete/${presetId}/`;
+
+            // Add CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+
+            document.body.appendChild(form);
+            form.submit();
+
+            // Hide modal and clear pending
+            document.getElementById('deletePresetModal').style.display = 'none';
+            window.pendingDeletePresetId = null;
         }
 
         // Toggle follow/unfollow preset
@@ -787,6 +817,35 @@
                     modal.style.display = 'none';
                     pendingFollowAction = null;
                     pendingFollowPresetId = null;
+                }
+            });
+
+            // Delete preset modal event handlers
+            const deleteModal = document.getElementById('deletePresetModal');
+            const deleteBtnYes = document.getElementById('deletePresetModalYes');
+            const deleteBtnNo = document.getElementById('deletePresetModalNo');
+            const deleteBtnClose = document.getElementById('deletePresetModalClose');
+
+            // Yes button: confirm delete
+            deleteBtnYes.addEventListener('click', confirmDeletePreset);
+
+            // No button: close modal
+            deleteBtnNo.addEventListener('click', function() {
+                deleteModal.style.display = 'none';
+                window.pendingDeletePresetId = null;
+            });
+
+            // Close icon
+            deleteBtnClose.addEventListener('click', function() {
+                deleteModal.style.display = 'none';
+                window.pendingDeletePresetId = null;
+            });
+
+            // Click outside modal content closes
+            deleteModal.addEventListener('click', function(e) {
+                if (e.target === deleteModal) {
+                    deleteModal.style.display = 'none';
+                    window.pendingDeletePresetId = null;
                 }
             });
         });
