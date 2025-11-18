@@ -360,20 +360,18 @@ def notify_preset_deleted(preset_data, triggering_user):
 def notify_on_deck(queue_entry):
     """
     Notify a user that they're now ON DECK (position #1 in queue).
-    This is a high-priority notification.
+    This is a CRITICAL notification that always sends regardless of user preferences.
     """
     user = queue_entry.user
-    prefs = NotificationPreference.get_or_create_for_user(user)
-
-    if prefs.notify_on_deck and prefs.in_app_notifications:
-        create_notification(
-            recipient=user,
-            notification_type='on_deck',
-            title=f'ON DECK - You\'re Next!',
-            message=f'Your request "{queue_entry.title}" is now #1 in line for {queue_entry.assigned_machine.name}. Get ready!',
-            related_queue_entry=queue_entry,
-            related_machine=queue_entry.assigned_machine,
-        )
+    # Always send this critical notification - it's essential for queue system to work
+    create_notification(
+        recipient=user,
+        notification_type='on_deck',
+        title=f'ON DECK - You\'re Next!',
+        message=f'Your request "{queue_entry.title}" is now #1 in line for {queue_entry.assigned_machine.name}. Get ready!',
+        related_queue_entry=queue_entry,
+        related_machine=queue_entry.assigned_machine,
+    )
 
 
 def notify_bumped_from_on_deck(queue_entry, reason='priority request'):
@@ -399,7 +397,7 @@ def notify_bumped_from_on_deck(queue_entry, reason='priority request'):
         )
 
 
-def notify_ready_for_check_in(queue_entry):
+def notify_ready_for_check_in(queue_entry, bypass_preferences=False):
     """
     Notify user when the machine becomes available and they can check in.
 
@@ -408,20 +406,22 @@ def notify_ready_for_check_in(queue_entry):
     - Machine status changes to 'idle' (becomes available)
     - Previous job completes or is cancelled
 
-    This is a REQUIRED notification (replaces the old job_started confirmation).
+    This is a CRITICAL notification that always sends regardless of user preferences.
+
+    Args:
+        queue_entry: The queue entry at position #1
+        bypass_preferences: Deprecated - notification always sends
     """
     user = queue_entry.user
-    prefs = NotificationPreference.get_or_create_for_user(user)
-
-    if prefs.notify_ready_for_check_in and prefs.in_app_notifications:
-        create_notification(
-            recipient=user,
-            notification_type='ready_for_check_in',
-            title='Ready for Check-In!',
-            message=f'The machine {queue_entry.assigned_machine.name} is now available. You can check in to start your measurement "{queue_entry.title}"!',
-            related_queue_entry=queue_entry,
-            related_machine=queue_entry.assigned_machine,
-        )
+    # Always send this critical notification - it's essential for queue system to work
+    create_notification(
+        recipient=user,
+        notification_type='ready_for_check_in',
+        title='Ready for Check-In!',
+        message=f'The machine {queue_entry.assigned_machine.name} is now available. You can check in to start your measurement "{queue_entry.title}"!',
+        related_queue_entry=queue_entry,
+        related_machine=queue_entry.assigned_machine,
+    )
 
 
 def notify_queue_position_change(queue_entry, old_position, new_position):
