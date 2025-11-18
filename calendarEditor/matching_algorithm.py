@@ -306,6 +306,8 @@ def reorder_queue(machine, notify=True):
     """
     from django.db.models import F
 
+    print(f"[REORDER_QUEUE] Called for machine {machine.name}, notify={notify}")
+
     # Get all queued entries, handling NULLs by ordering them last
     # This ensures we process valid positions first, then fix any corrupted NULL positions
     queued_entries = QueueEntry.objects.filter(
@@ -313,20 +315,27 @@ def reorder_queue(machine, notify=True):
         status='queued'
     ).order_by(F('queue_position').asc(nulls_last=True), 'submitted_at')
 
+    print(f"[REORDER_QUEUE] Found {queued_entries.count()} queued entries")
+
     # Reassign sequential positions to all queued entries
     for index, entry in enumerate(queued_entries, start=1):
         if entry.queue_position != index:
             entry.queue_position = index
         entry.estimated_start_time = entry.calculate_estimated_start_time()
         entry.save()
+        if index == 1:
+            print(f"[REORDER_QUEUE] Position #1: {entry.title} for user {entry.user.username}")
 
     # Check if there's a new entry at position #1 and notify them they're ON DECK
     # (unless notify=False, which is used for deletions)
     if notify:
+        print(f"[REORDER_QUEUE] Calling check_and_notify_on_deck_status")
         try:
             notifications.check_and_notify_on_deck_status(machine)
         except Exception as e:
-            print(f"ON DECK notification failed: {e}")
+            print(f"[REORDER_QUEUE] ERROR in notification: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 def move_queue_entry_up(entry_id):

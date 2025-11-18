@@ -363,8 +363,9 @@ def notify_on_deck(queue_entry):
     This is a CRITICAL notification that always sends regardless of user preferences.
     """
     user = queue_entry.user
+    print(f"[NOTIFY_ON_DECK] Creating notification for user {user.username}")
     # Always send this critical notification - it's essential for queue system to work
-    create_notification(
+    notif = create_notification(
         recipient=user,
         notification_type='on_deck',
         title=f'ON DECK - You\'re Next!',
@@ -372,6 +373,7 @@ def notify_on_deck(queue_entry):
         related_queue_entry=queue_entry,
         related_machine=queue_entry.assigned_machine,
     )
+    print(f"[NOTIFY_ON_DECK] Notification created with ID {notif.id}")
 
 
 def notify_bumped_from_on_deck(queue_entry, reason='priority request'):
@@ -413,8 +415,9 @@ def notify_ready_for_check_in(queue_entry, bypass_preferences=False):
         bypass_preferences: Deprecated - notification always sends
     """
     user = queue_entry.user
+    print(f"[NOTIFY_READY] Creating notification for user {user.username}")
     # Always send this critical notification - it's essential for queue system to work
-    create_notification(
+    notif = create_notification(
         recipient=user,
         notification_type='ready_for_check_in',
         title='Ready for Check-In!',
@@ -422,6 +425,7 @@ def notify_ready_for_check_in(queue_entry, bypass_preferences=False):
         related_queue_entry=queue_entry,
         related_machine=queue_entry.assigned_machine,
     )
+    print(f"[NOTIFY_READY] Notification created with ID {notif.id}")
 
 
 def notify_queue_position_change(queue_entry, old_position, new_position):
@@ -609,6 +613,9 @@ def check_and_notify_on_deck_status(machine):
     """
     from .models import Notification
 
+    print(f"[CHECK_ON_DECK] Called for machine {machine.name}")
+    print(f"[CHECK_ON_DECK] Machine status: {machine.current_status}, is_available: {machine.is_available}")
+
     try:
         # Get the entry at position #1
         on_deck_entry = QueueEntry.objects.filter(
@@ -616,6 +623,11 @@ def check_and_notify_on_deck_status(machine):
             status='queued',
             queue_position=1
         ).first()
+
+        if not on_deck_entry:
+            print(f"[CHECK_ON_DECK] No entry at position #1")
+        else:
+            print(f"[CHECK_ON_DECK] Found position #1: {on_deck_entry.title} for user {on_deck_entry.user.username}")
 
         # Get all queued entries for this machine to find who was bumped
         all_queued = QueueEntry.objects.filter(
@@ -667,14 +679,21 @@ def check_and_notify_on_deck_status(machine):
             in_cooldown = False
             if machine.estimated_available_time:
                 in_cooldown = machine.estimated_available_time > timezone.now()
+                print(f"[CHECK_ON_DECK] Machine in cooldown: {in_cooldown}, available at: {machine.estimated_available_time}")
+            else:
+                print(f"[CHECK_ON_DECK] No cooldown set (estimated_available_time is None)")
 
             # Determine the correct notification type based on machine readiness
+            is_online = machine.is_online()
+            print(f"[CHECK_ON_DECK] Machine checks: status={machine.current_status}, is_available={machine.is_available}, is_online={is_online}, in_cooldown={in_cooldown}")
+
             machine_is_ready = (machine.current_status == 'idle' and
                                machine.is_available and
-                               machine.is_online() and
+                               is_online and
                                not in_cooldown)
 
             correct_notif_type = 'ready_for_check_in' if machine_is_ready else 'on_deck'
+            print(f"[CHECK_ON_DECK] machine_is_ready={machine_is_ready}, will send: {correct_notif_type}")
 
             # Check what notification the user currently has
             existing_notif = Notification.objects.filter(
@@ -685,24 +704,35 @@ def check_and_notify_on_deck_status(machine):
             ).first()
 
             if existing_notif:
+                print(f"[CHECK_ON_DECK] Found existing notification: {existing_notif.notification_type}")
                 # User already has a position 1 notification
                 if existing_notif.notification_type == correct_notif_type:
                     # Same notification type - don't send duplicate
+                    print(f"[CHECK_ON_DECK] Same type as existing, skipping duplicate")
                     return
                 else:
                     # Machine status changed! Clear old notification and send new one
                     # Example: had "on_deck", now machine is ready → send "ready_for_check_in"
+                    print(f"[CHECK_ON_DECK] Deleting old notification and sending new one")
                     existing_notif.delete()
+            else:
+                print(f"[CHECK_ON_DECK] No existing notification found")
 
             # Send the appropriate notification based on machine status
             if machine_is_ready:
                 # Machine is fully ready - user can check in immediately
+                print(f"[CHECK_ON_DECK] Calling notify_ready_for_check_in")
                 notify_ready_for_check_in(on_deck_entry)
+                print(f"[CHECK_ON_DECK] notify_ready_for_check_in completed")
             else:
                 # Machine is busy, unavailable, offline, in maintenance, or cooling down - user is on deck but must wait
+                print(f"[CHECK_ON_DECK] Calling notify_on_deck")
                 notify_on_deck(on_deck_entry)
+                print(f"[CHECK_ON_DECK] notify_on_deck completed")
     except Exception as e:
-        print(f"Error checking ON DECK status: {e}")
+        print(f"[CHECK_ON_DECK] ERROR: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 def get_unread_count(user):
