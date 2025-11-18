@@ -1042,17 +1042,15 @@ def move_queue_up(request, entry_id):
                 entry.save()
                 entry_above.save()
 
-                # Notify both users about their position changes
-                notifications.notify_queue_position_change(entry, current_pos, new_pos)
-                notifications.notify_queue_position_change(entry_above, old_pos_above, current_pos)
-
-                # If entry moved to position 1, check machine status and notify accordingly
-                if new_pos == 1:
-                    notifications.check_and_notify_on_deck_status(machine)
+                # Notify the moved entry with admin-specific notification
+                notifications.notify_admin_moved_entry(entry, request.user, current_pos, new_pos)
 
                 # If entry_above was bumped from position #1, notify them
                 if was_on_deck:
-                    notifications.notify_bumped_from_on_deck(entry_above, reason='admin action')
+                    notifications.notify_bumped_from_on_deck(entry_above, reason='priority request')
+                else:
+                    # Regular position change for entry_above
+                    notifications.notify_queue_position_change(entry_above, old_pos_above, current_pos)
 
                 messages.success(request, f'"{entry.title}" moved up.')
             else:
@@ -1094,15 +1092,16 @@ def move_queue_down(request, entry_id):
                 entry.save()
                 entry_below.save()
 
-                # Notify both users about their position changes
-                notifications.notify_queue_position_change(entry, current_pos, new_pos)
-                notifications.notify_queue_position_change(entry_below, old_pos_below, current_pos)
+                # Notify the moved entry with admin-specific notification
+                notifications.notify_admin_moved_entry(entry, request.user, current_pos, new_pos)
 
-                # If entry was at position 1, they're being bumped
-                if was_on_deck:
-                    notifications.notify_bumped_from_on_deck(entry, reason='admin action')
-                    # Check machine status and notify entry_below accordingly
-                    notifications.check_and_notify_on_deck_status(machine)
+                # If entry_below moved to position #1 (bumping entry from position 1)
+                if current_pos == 1:
+                    # entry_below took position 1, so notify them with admin move notification
+                    notifications.notify_admin_moved_entry(entry_below, request.user, old_pos_below, current_pos)
+                else:
+                    # Regular position change for entry_below
+                    notifications.notify_queue_position_change(entry_below, old_pos_below, current_pos)
 
                 messages.success(request, f'"{entry.title}" moved down.')
             else:

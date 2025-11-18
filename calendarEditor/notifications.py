@@ -621,6 +621,64 @@ def notify_admin_edit_entry(queue_entry, admin_user, changes_summary):
         )
 
 
+def notify_admin_moved_entry(queue_entry, admin_user, old_position, new_position):
+    """
+    Notify user when an admin manually moves their queue entry.
+
+    Special handling for moves TO position 1:
+    - Notifies user they're now On Deck
+    - If machine is ready (idle, available, online, not in cooldown), also tells them they can check in
+
+    Args:
+        queue_entry: The QueueEntry that was moved
+        admin_user: The admin User who moved it
+        old_position: Previous queue position
+        new_position: New queue position
+    """
+    user = queue_entry.user
+    machine = queue_entry.assigned_machine
+
+    # Build the message based on the move
+    if new_position == 1:
+        # Moved TO position 1 - special handling
+        from django.utils import timezone
+
+        # Check if machine is ready for check-in
+        in_cooldown = False
+        if machine.estimated_available_time:
+            in_cooldown = machine.estimated_available_time > timezone.now()
+
+        is_online = machine.is_online()
+        machine_is_ready = (machine.current_status == 'idle' and
+                           machine.is_available and
+                           is_online and
+                           not in_cooldown)
+
+        title = 'Admin Moved You to On Deck!'
+
+        if machine_is_ready:
+            message = f'Administrator {admin_user.username} moved your request "{queue_entry.title}" to position #1 on {machine.name}. The machine is ready - you can check in now!'
+        else:
+            message = f'Administrator {admin_user.username} moved your request "{queue_entry.title}" to position #1 (On Deck) on {machine.name}. Get ready - you\'re next!'
+
+    else:
+        # Regular move notification
+        direction = "up" if new_position < old_position else "down"
+        title = 'Admin Moved Your Queue Entry'
+        message = f'Administrator {admin_user.username} moved your request "{queue_entry.title}" from position #{old_position} to #{new_position} on {machine.name}'
+
+    # Always send this notification (admin action is important)
+    create_notification(
+        recipient=user,
+        notification_type='admin_moved_entry',
+        title=title,
+        message=message,
+        related_queue_entry=queue_entry,
+        related_machine=machine,
+        triggering_user=admin_user,
+    )
+
+
 def check_and_notify_on_deck_status(machine):
     """
     Check if there's a queue entry at position #1 for this machine and notify the user.

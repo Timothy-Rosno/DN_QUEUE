@@ -477,6 +477,7 @@ class Notification(models.Model):
         ('admin_check_in', 'Admin Checked You In'),
         ('admin_checkout', 'Admin Checked You Out'),
         ('admin_edit_entry', 'Admin Edited Your Entry'),
+        ('admin_moved_entry', 'Admin Moved Your Queue Entry'),
         ('account_approved', 'Account Approved'),
         ('account_unapproved', 'Account Unapproved'),
         ('account_promoted', 'Promoted to Staff'),
