@@ -94,6 +94,30 @@ class Machine(models.Model):
     def __str__(self):
         return f"{self.name} ({self.get_current_status_display()})"
 
+    def delete(self, *args, **kwargs):
+        """
+        Custom delete to handle queue entries properly:
+        - Archived entries: Keep as is with machine name preserved
+        - Running/Queued entries: Cancel and preserve machine name
+        """
+        # Get all queue entries for this machine
+        queue_entries = self.queue_entries.all()
+
+        for entry in queue_entries:
+            # Save machine name to text field before deletion
+            if not entry.machine_name_text:
+                entry.machine_name_text = self.name
+
+            # Cancel running or queued entries
+            if entry.status in ['running', 'queued']:
+                entry.status = 'cancelled'
+
+            # Save the entry (assigned_machine will be set to None by SET_NULL)
+            entry.save()
+
+        # Now delete the machine
+        super().delete(*args, **kwargs)
+
     class Meta:
         verbose_name = "Machine"
         verbose_name_plural = "Machines"
@@ -261,6 +285,7 @@ class QueueEntry(models.Model):
 
     # Assignment
     assigned_machine = models.ForeignKey(Machine, on_delete=models.SET_NULL, null=True, blank=True, related_name='queue_entries')
+    machine_name_text = models.CharField(max_length=100, blank=True, help_text="Machine name as text (preserved after machine deletion)")
     queue_position = models.IntegerField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='queued')
 
@@ -287,6 +312,21 @@ class QueueEntry(models.Model):
     def __str__(self):
         machine_name = self.assigned_machine.name if self.assigned_machine else "Unassigned"
         return f"{self.title} - {self.user.username} [{machine_name}] ({self.get_status_display()})"
+
+    def save(self, *args, **kwargs):
+        """Override save to populate machine_name_text when machine is assigned."""
+        if self.assigned_machine and not self.machine_name_text:
+            self.machine_name_text = self.assigned_machine.name
+        super().save(*args, **kwargs)
+
+    def get_machine_display_name(self):
+        """Get machine name for display (handles deleted machines)."""
+        if self.assigned_machine:
+            return self.assigned_machine.name
+        elif self.machine_name_text:
+            return f"{self.machine_name_text} (deleted)"
+        else:
+            return "No machine assigned"
 
     class Meta:
         verbose_name = "Queue Entry"

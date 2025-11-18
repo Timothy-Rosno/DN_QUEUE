@@ -5,13 +5,34 @@ from .models import UserProfile
 from calendarEditor.models import NotificationPreference
 
 class UserRegistrationForm(UserCreationForm):
-    email = forms.EmailField(required=True)
-    first_name = forms.CharField(max_length=30, required=True)
-    last_name = forms.CharField(max_length=30, required=True)
+    email = forms.EmailField(
+        required=True,
+        help_text="Use the email tied to your Slack account."
+    )
+    first_name = forms.CharField(
+        max_length=30,
+        required=True,
+        help_text="(from Slack)"
+    )
+    last_name = forms.CharField(
+        max_length=30,
+        required=False,
+        help_text="(optional -- from Slack)"
+    )
 
     class Meta:
         model = User
         fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
+        help_texts = {
+            'username': 'Slack Username preferred',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Remove username validators to allow spaces and any characters
+        self.fields['username'].validators = []
+        # Update regex validator to allow any characters including spaces
+        self.fields['username'].widget.attrs.pop('pattern', None)
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -35,17 +56,15 @@ class UserProfileForm(forms.ModelForm):
         fields = ('phone_number', 'department', 'notes', 'slack_member_id', 'security_question', 'security_question_custom')
         widgets = {
             'phone_number': forms.TextInput(attrs={
+                'type': 'tel',
                 'maxlength': '15',
-                'placeholder': 'Max 15 characters'
             }),
             'department': forms.TextInput(attrs={
                 'maxlength': '100',
-                'placeholder': 'Max 100 characters'
             }),
             'notes': forms.Textarea(attrs={
                 'rows': 3,
                 'maxlength': '500',
-                'placeholder': 'Max 500 characters'
             }),
             'slack_member_id': forms.TextInput(attrs={
                 'maxlength': '50',
@@ -56,16 +75,29 @@ class UserProfileForm(forms.ModelForm):
                 'autocomplete': 'off'
             }),
         }
+        labels = {
+            'phone_number': 'Phone Number',
+            'department': 'Department/Organization',
+            'notes': 'Notes',
+        }
+        help_texts = {
+            'phone_number': '(Optional)',
+            'department': '(optional)',
+            'notes': '(optional)',
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Make security question required for new registrations
+        # Make security question required for new registrations and force custom question
         if not self.instance.pk:
-            self.fields['security_question'].required = True
+            # Force custom question for new registrations
+            self.fields['security_question'].initial = 'custom'
+            self.fields['security_question'].widget = forms.HiddenInput()
+            self.fields['security_question_custom'].required = True
             self.fields['security_answer'].required = True
-
-        # Set initial visibility for custom question field
-        self.fields['security_question_custom'].required = False
+        else:
+            # For existing profiles, keep the current behavior
+            self.fields['security_question_custom'].required = False
 
     def clean(self):
         cleaned_data = super().clean()

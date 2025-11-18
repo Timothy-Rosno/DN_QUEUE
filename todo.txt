@@ -14,8 +14,8 @@ but now what I want is to remove the auto-logout capability
   will make them sign in to the correct account according to the link. If the
   login info matches the session or device, however that will work, then just
   route them to the correct page since it matches. 
-  
-[ ] [STACKER]   See how PC affects optics (as opposed to jjust PDMS) -- traversal especially.
+
+[X] [STACKER]   See how PC affects optics (as opposed to jjust PDMS) -- traversal especially.
 [ ] [STACKER]   Make faster the cornersearch
 [ ] [STACKER]   Write out full wiring automated test.  <-- moving towards real process. 
 [ ] [STACKER]   Look into image matching -- Image matching next big step. Need ext cat logic for retrieving image masks. (Deterministic process, vs. use convex hull directly on image and image, close enough? Basic segmentation?)
@@ -32,14 +32,9 @@ When you're ready to use PostgreSQL instead of SQLite, you'll need to:
 
 
 Smart Notifications System: (Not written)
-Eventually, have all django admin functionality on MY page. 75%
-Test smart notifications. (Rush job mainly easiest. Check in or out.)
-If a measurement times out or the machine changes from measuring to idle, the measuring user should be notified check out ready. At least it doesn't let multiple measurements run. 
 
 General todo: (Not written)
-All filters should autoapply. Are any not?
-Reload with same scroll value. Is anywhere not?
-All notificatinos should self mark as read if the related task is completed. <-- difficult, also only matters for in-app. Slack will still be user dependent, BUT I can run some poll to check if the user took care of the thing, like checking in, or out, every hour, between 8 am - 8 pm CST.
+All notifications should self-mark in the websocket/app as read if the related task is completed. <-- difficult, also only matters for in-app. Slack will still be user dependent, BUT I can run some poll to check if the user took care of the thing, like checking in, or out, every hour, between 8 am - 8 pm CST.
 Make tooltips for all buttons
 
 

@@ -44,10 +44,17 @@ class QueueEntryForm(forms.ModelForm):
         b_field_y_max = machine_stats['b_field_y_max'] or 1
         b_field_z_max = machine_stats['b_field_z_max'] or 12
 
+        # Calculate step based on smallest temperature precision
+        # If min_temp_min = 0.001, step should be 0.001 (allowing 0.001, 0.002, 0.123, etc.)
+        # If min_temp_min = 0.1, step should be 0.1 (allowing 0.1, 0.2, 1.5, etc.)
+        import decimal
+        decimal_places = abs(decimal.Decimal(str(min_temp_min)).as_tuple().exponent)
+        temp_step = 10 ** (-decimal_places) if decimal_places > 0 else 1
+
         # Override field definitions with dynamic values
         self.fields['required_min_temp'] = forms.FloatField(
             validators=[MinValueValidator(min_temp_min), MaxValueValidator(max_temp_max)],
-            widget=forms.NumberInput(attrs={'min': str(min_temp_min), 'max': str(max_temp_max), 'step': '0.01'}),
+            widget=forms.NumberInput(attrs={'min': str(min_temp_min), 'max': str(max_temp_max), 'step': str(temp_step)}),
             label='Minimum Temperature (K) (ex. 10 mK = 0.01 K)',
             help_text=f'Lowest temperature you need to reach (range: {min_temp_min}-{max_temp_max} K)'
         )
@@ -245,6 +252,11 @@ class QueuePresetForm(forms.ModelForm):
         b_field_y_max = machine_stats['b_field_y_max'] or 1
         b_field_z_max = machine_stats['b_field_z_max'] or 12
 
+        # Calculate step based on smallest temperature precision (same as QueueEntryForm)
+        import decimal
+        decimal_places = abs(decimal.Decimal(str(min_temp_min)).as_tuple().exponent)
+        temp_step = 10 ** (-decimal_places) if decimal_places > 0 else 1
+
         # Override field definitions with dynamic values (all optional for presets)
         self.fields['title'] = forms.CharField(
             max_length=75,
@@ -257,7 +269,7 @@ class QueuePresetForm(forms.ModelForm):
         self.fields['required_min_temp'] = forms.FloatField(
             required=False,
             validators=[MinValueValidator(min_temp_min), MaxValueValidator(max_temp_max)],
-            widget=forms.NumberInput(attrs={'min': str(min_temp_min), 'max': str(max_temp_max), 'step': '0.01'}),
+            widget=forms.NumberInput(attrs={'min': str(min_temp_min), 'max': str(max_temp_max), 'step': str(temp_step)}),
             label='Minimum Temperature (K) (ex. 10 mK = 0.01 K) (optional)',
             help_text=f'Lowest temperature you need to reach (range: {min_temp_min}-{max_temp_max} K) (optional)'
         )
@@ -265,7 +277,7 @@ class QueuePresetForm(forms.ModelForm):
         self.fields['required_max_temp'] = forms.FloatField(
             required=False,
             validators=[MinValueValidator(min_temp_min), MaxValueValidator(max_temp_max)],
-            widget=forms.NumberInput(attrs={'min': str(min_temp_min), 'max': str(max_temp_max), 'step': '0.01'}),
+            widget=forms.NumberInput(attrs={'min': str(min_temp_min), 'max': str(max_temp_max), 'step': str(temp_step)}),
             label='Maximum Temperature (K) (optional)',
             help_text='Leave blank if you only need minimum temperature'
         )

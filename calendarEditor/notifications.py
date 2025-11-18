@@ -158,7 +158,9 @@ def send_slack_dm(user, title, message, notification=None):
                 'channel': slack_member_id,  # DM using member ID
                 'text': slack_text,
                 'unfurl_links': False,
-                'unfurl_media': False
+                'unfurl_media': False,
+                'username': 'QHog',  # Override bot display name
+                'icon_emoji': ':pig2:',  # Optional: Use pig emoji as icon
             },
             timeout=5
         )

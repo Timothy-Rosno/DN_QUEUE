@@ -72,7 +72,7 @@ Create these accounts for testing:
 - [X] Visit homepage without being logged in
 - [X] See welcome message and description
 - [DONE] Click "View Public Queue" link → redirects to `/schedule/queue/` NOT GUARDED BUT SHOULD BE UNLESS WANT QUEUE VISIBLE TO PUBLIC. I THINK NEED LOGIN IS BETTER?
-- [DONE/[TODO]/TESTING] Change text to Login to view queue entries
+- [DONE] Change text to Login to view queue entries
 - [X] Click "View Lab Fridges" link → redirects to `/schedule/fridges/`
 - [X] Click "Login" button → redirects to login page
 - [X] Click "Register" button → redirects to registration page

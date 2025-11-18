@@ -266,6 +266,19 @@
                                 <span class="spec-label">Current User:</span>
                                 <span class="spec-value">{{ machine.current_user.username|default:"None" }}</span>
                             </div>
+                            {% if item.running_job %}
+                                <div style="margin-bottom: 0.5rem;">
+                                    <strong>Running:</strong>
+                                    <!-- <span>{{ item.running_job.user.username }} - {{ item.running_job.title|truncatechars:30 }}</span><br> -->
+                                    <span>{{ item.running_job.title|truncatechars:30 }}</span><br>
+                                    <span class="countdown-timer"
+                                        style="font-family: inherit; font-size: 0.85rem; color: #2c3e50;"
+                                        data-end-time="{{ item.running_job.started_at|date:'c' }}"
+                                        data-duration="{{ item.running_job.estimated_duration_hours }}">
+                                        Calculating...
+                                    </span>
+
+                                </div>
                             <div class="spec-item">
                                 <span class="spec-label">Est. Available:</span>
                                 <span class="spec-value">
@@ -350,8 +363,10 @@
 </div>
 
 <div style="margin-top: 1rem; display: flex; gap: 1rem;">
-    <button onclick="history.back()" class="btn btn-secondary">← Back</button>
-    <a href="{% url 'home' %}" class="btn btn-secondary">← Home Page</a>
+    {% if user.is_authenticated %}
+        <button onclick="history.back()" class="btn btn-secondary">← Back</button>
+    {% endif %}
+        <a href="{% url 'home' %}" class="btn btn-secondary">← Home Page</a>
 </div>
 
 <script>
