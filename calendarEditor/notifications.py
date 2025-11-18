@@ -718,12 +718,15 @@ def check_and_notify_on_deck_status(machine):
             correct_notif_type = 'ready_for_check_in' if machine_is_ready else 'on_deck'
             print(f"[CHECK_ON_DECK] machine_is_ready={machine_is_ready}, will send: {correct_notif_type}")
 
-            # Check what notification the user currently has
+            # Check what notification the user currently has (including recently created ones to prevent duplicates)
+            from datetime import timedelta
+            recent_cutoff = timezone.now() - timedelta(seconds=10)
+
             existing_notif = Notification.objects.filter(
                 recipient=on_deck_entry.user,
                 related_queue_entry=on_deck_entry,
                 notification_type__in=['on_deck', 'ready_for_check_in'],
-                is_read=False
+                created_at__gte=recent_cutoff  # Include notifications created in last 10 seconds
             ).first()
 
             if existing_notif:
