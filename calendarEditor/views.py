@@ -735,6 +735,9 @@ def check_out_job(request, entry_id):
     machine.current_user = None
     machine.save()
 
+    print(f"[USER CHECKOUT] Completed checkout for {queue_entry.title} on {machine.name}")
+    print(f"[USER CHECKOUT] Machine status after checkout: {machine.current_status}, is_available: {machine.is_available}")
+
     # No need to cancel reminder - middleware checks status automatically
     # (Reminder won't send because entry status changed from 'running' to 'completed')
 
@@ -742,6 +745,7 @@ def check_out_job(request, entry_id):
     # NOTE: reorder_queue() internally calls check_and_notify_on_deck_status()
     # which will automatically send the appropriate notification (On Deck or Ready for Check-In)
     # to the person at position #1 based on machine status
+    print(f"[USER CHECKOUT] Calling reorder_queue for {machine.name}")
     from .matching_algorithm import reorder_queue
     reorder_queue(machine)
 

@@ -189,19 +189,29 @@ def create_notification(recipient, notification_type, title, message, **kwargs):
     Returns:
         Notification object
     """
-    notification = Notification.objects.create(
-        recipient=recipient,
-        notification_type=notification_type,
-        title=title,
-        message=message,
-        related_preset=kwargs.get('related_preset'),
-        related_queue_entry=kwargs.get('related_queue_entry'),
-        related_machine=kwargs.get('related_machine'),
-        triggering_user=kwargs.get('triggering_user'),
-    )
+    print(f"[CREATE_NOTIFICATION] Creating notification for {recipient.username}, type={notification_type}")
+
+    try:
+        notification = Notification.objects.create(
+            recipient=recipient,
+            notification_type=notification_type,
+            title=title,
+            message=message,
+            related_preset=kwargs.get('related_preset'),
+            related_queue_entry=kwargs.get('related_queue_entry'),
+            related_machine=kwargs.get('related_machine'),
+            triggering_user=kwargs.get('triggering_user'),
+        )
+        print(f"[CREATE_NOTIFICATION] Notification {notification.id} created in database")
+    except Exception as e:
+        print(f"[CREATE_NOTIFICATION] ERROR creating notification in database: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
     # Send via WebSocket
     try:
+        print(f"[CREATE_NOTIFICATION] Attempting WebSocket send...")
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f'user_{recipient.id}_notifications',
@@ -214,13 +224,26 @@ def create_notification(recipient, notification_type, title, message, **kwargs):
                 'created_at': notification.created_at.isoformat(),
             }
         )
+        print(f"[CREATE_NOTIFICATION] WebSocket send completed")
     except Exception as e:
-        print(f"Failed to send notification via WebSocket: {e}")
+        print(f"[CREATE_NOTIFICATION] WebSocket send failed: {e}")
+        import traceback
+        traceback.print_exc()
 
     # Send via Slack if enabled and user has Slack ID
-    if settings.SLACK_ENABLED:
-        send_slack_dm(recipient, title, message, notification)
+    try:
+        print(f"[CREATE_NOTIFICATION] Attempting Slack send (SLACK_ENABLED={settings.SLACK_ENABLED})...")
+        if settings.SLACK_ENABLED:
+            send_slack_dm(recipient, title, message, notification)
+            print(f"[CREATE_NOTIFICATION] Slack send completed")
+        else:
+            print(f"[CREATE_NOTIFICATION] Slack disabled, skipping")
+    except Exception as e:
+        print(f"[CREATE_NOTIFICATION] Slack send failed: {e}")
+        import traceback
+        traceback.print_exc()
 
+    print(f"[CREATE_NOTIFICATION] Returning notification {notification.id}")
     return notification
 
 
