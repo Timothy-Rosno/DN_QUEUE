@@ -57,17 +57,12 @@
         </div>
 
         <h3 style="margin-top: 2rem; margin-bottom: 0.5rem;">Password Recovery</h3>
-        <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.95rem;">Set up a security question to recover your password if you forget it.</p>
+        <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.95rem;">Create a custom security question to recover your password if you forget it.</p>
+
+        <!-- Hidden field for security_question (always set to 'custom' for new registrations) -->
+        {{ profile_form.security_question }}
 
         <div style="margin-bottom: 1.5rem;">
-            {{ profile_form.security_question.label_tag }}
-            {{ profile_form.security_question }}
-            {% if profile_form.security_question.help_text %}
-                <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">{{ profile_form.security_question.help_text }}</small>
-            {% endif %}
-        </div>
-
-        <div id="custom-question-field" style="margin-bottom: 1.5rem; display: none;">
             {{ profile_form.security_question_custom.label_tag }}
             {{ profile_form.security_question_custom }}
             {% if profile_form.security_question_custom.errors %}
@@ -84,22 +79,8 @@
         </div>
 
         <script>
-        // Show/hide custom question field based on selection
+        // Initialize character counters on page load
         document.addEventListener('DOMContentLoaded', function() {
-            const securityQuestionSelect = document.getElementById('id_security_question');
-            const customQuestionField = document.getElementById('custom-question-field');
-
-            function toggleCustomQuestion() {
-                if (securityQuestionSelect.value === 'custom') {
-                    customQuestionField.style.display = 'block';
-                } else {
-                    customQuestionField.style.display = 'none';
-                }
-            }
-
-            securityQuestionSelect.addEventListener('change', toggleCustomQuestion);
-            toggleCustomQuestion(); // Check initial state
-
             // Character counter functionality for profile fields
             setupCharacterCounter('{{ profile_form.department.id_for_label }}', 'departmentCharCount', 'departmentError', 100);
             setupCharacterCounter('{{ profile_form.notes.id_for_label }}', 'notesCharCount', 'notesError', 500);
