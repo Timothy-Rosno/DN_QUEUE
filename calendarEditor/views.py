@@ -738,16 +738,63 @@ def check_out_job(request, entry_id):
     print(f"[USER CHECKOUT] Completed checkout for {queue_entry.title} on {machine.name}")
     print(f"[USER CHECKOUT] Machine status after checkout: {machine.current_status}, is_available: {machine.is_available}")
 
+    # DIRECTLY notify the next person in line - bypass all complex logic
+    if next_entry:
+        print(f"[USER CHECKOUT] DIRECTLY creating notification for {next_entry.user.username}")
+        try:
+            from .models import Notification
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+
+            # Create notification directly in database
+            notif = Notification.objects.create(
+                recipient=next_entry.user,
+                notification_type='ready_for_check_in',
+                title='Ready for Check-In!',
+                message=f'The machine {machine.name} is now available! You can check in to start your measurement "{next_entry.title}".',
+                related_queue_entry=next_entry,
+                related_machine=machine,
+            )
+            print(f"[USER CHECKOUT] Created notification {notif.id} in database")
+
+            # Send via WebSocket immediately
+            try:
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    f'user_{next_entry.user.id}_notifications',
+                    {
+                        'type': 'notification',
+                        'notification_id': notif.id,
+                        'notification_type': 'ready_for_check_in',
+                        'title': notif.title,
+                        'message': notif.message,
+                        'created_at': notif.created_at.isoformat(),
+                    }
+                )
+                print(f"[USER CHECKOUT] WebSocket sent for notification {notif.id}")
+            except Exception as ws_err:
+                print(f"[USER CHECKOUT] WebSocket failed but notification {notif.id} still in DB: {ws_err}")
+
+            # Send via Slack if enabled (don't wait for it)
+            if settings.SLACK_ENABLED:
+                try:
+                    notifications.send_slack_dm(next_entry.user, notif.title, notif.message, notif)
+                    print(f"[USER CHECKOUT] Slack sent for notification {notif.id}")
+                except Exception as slack_err:
+                    print(f"[USER CHECKOUT] Slack failed but notification {notif.id} still in DB: {slack_err}")
+
+        except Exception as e:
+            print(f"[USER CHECKOUT] ERROR creating notification: {e}")
+            import traceback
+            traceback.print_exc()
+
     # No need to cancel reminder - middleware checks status automatically
     # (Reminder won't send because entry status changed from 'running' to 'completed')
 
-    # Reorder queue and notify the next person
-    # NOTE: reorder_queue() internally calls check_and_notify_on_deck_status()
-    # which will automatically send the appropriate notification (On Deck or Ready for Check-In)
-    # to the person at position #1 based on machine status
+    # Reorder queue (skip notifications since we already sent them)
     print(f"[USER CHECKOUT] Calling reorder_queue for {machine.name}")
     from .matching_algorithm import reorder_queue
-    reorder_queue(machine)
+    reorder_queue(machine, notify=False)
 
     # Broadcast WebSocket update
     try:
