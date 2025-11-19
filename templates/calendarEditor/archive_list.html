@@ -208,7 +208,7 @@
                     {{ archive.machine.name }}
                 </td>
                 <td style="white-space: nowrap; font-size: 0.9rem; text-align: center;">
-                    {% if archive.duration_hours %}
+                    {% if archive.duration_hours is not None and archive.status != 'cancelled' %}
                         {{ archive.duration_hours|floatformat:1 }}h
                     {% else %}
                         —

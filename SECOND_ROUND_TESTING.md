@@ -32,7 +32,7 @@
 
 ### 2. Global Tooltip System (NEW)
 **Files Changed:** `static/css/tooltips.css`, `static/js/tooltips.js`, `templates/base.html`, `home.html`, `fridge_list.html`
-- [BROKEN] /
+- [FIXED] /
 #### Desktop Testing
 - [X] Visit `/` (home page) while logged in
 - [X] Find running measurement with tooltip
@@ -105,9 +105,9 @@
 
 #### Test 2: Cancel Position 1 (New person becomes #1)
 - [X] Admin cancels Position 1 (User A)
-- [BROKEN: No notification received.] User A receives cancellation notification ✓
-- [BROKEN: Double notification received for the pos 1] User C (now position 1) **SHOULD** receive notification (newly in position 1)
-- [BROKEN: Not reflecting either case whenever this is happening, except for when a user checks out like normal or is checked out by admin] Check if notification reflects machine status:
+- [FIXED: No notification received.] User A receives cancellation notification ✓
+- [FIXED: Double notification received for the pos 1] User C (now position 1) **SHOULD** receive notification (newly in position 1)
+- [FIXED: Not reflecting either case whenever this is happening, except for when a user checks out like normal or is checked out by admin] Check if notification reflects machine status:
   - [Works for normal] If machine idle → "Ready for check-in" notification
   - [Works for normal] If machine running → "On deck" notification
 
