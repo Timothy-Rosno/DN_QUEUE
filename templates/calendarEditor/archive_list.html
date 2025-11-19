@@ -214,8 +214,8 @@
                         —
                     {% endif %}
                 </td>
-                <td style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;" title="{{ archive.title }}">
-                    {{ archive.title }}
+                <td style="max-width: 200px; text-align: center;">
+                    <span data-tooltip="{{ archive.title }}" style="display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ archive.title|truncatechars:40 }}</span>
                 </td>
                 <td style="white-space: nowrap; font-size: 0.9rem; text-align: center;">
                     {% if archive.status == 'completed' %}

@@ -162,15 +162,15 @@
 **Issue:** From TODO BATCH 4, item 5
 - [FIXED: Rush jobs is not text wrapping the title and sescription properly always. It will sometimes extend beyong the card's boundary. Bad. It needs to wrap here.]
 - [FIXED: Relatedly, in /check-in-check-out, the title and description tests need to wrap instead of extending beyond the card boundary. This error is also causing the button to potentially appear in the wrong place.]
-- [BROKEN: Relatedly, in the home page and in /fridges, the tool tip containing the measurement description needs to wrap and be inside of the boundary as mentioned somewhere else in this document.]
-- [BROKEN: Relatedly, in archive, under Notes, the description should truncate and have a tooltip with a wrapped version of the description in a way that makes sense.]
+- [FIXED: Relatedly, in the home page and in /fridges, the tool tip containing the measurement description needs to wrap and be inside of the boundary as mentioned somewhere else in this document.]
+- [FIXED: Relatedly, in archive, under Notes, the description should truncate and have a tooltip with a wrapped version of the description in a way that makes sense.]
 
 - [X] Submit rush job as regular user
 - [X] Navigate to `/schedule/admin-rush-jobs/` as admin
 - [X] Click "Reject" button
 - [X] Verify modal appears with:
   - [X] Default message: "Insufficient justification"
-  - [BROKEN: I want the Insufficient justification to be a typehint there so that when clicked, it goes away and the custom message can be written without needing to first delete the suggested message. Otherwise it's working.] Text area to write custom message
+  - [FIXED: I want the Insufficient justification to be a typehint there so that when clicked, it goes away and the custom message can be written without needing to first delete the suggested message. Otherwise it's working.] Text area to write custom message
   - [X] "Reject" button (red/danger)
   - [X] "Back" button (NOT "Cancel")
 - [X] Test default message:
