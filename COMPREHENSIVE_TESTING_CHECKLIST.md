@@ -210,7 +210,7 @@ Create these accounts for testing:
 - [DONE] Edit Last Name → save → see success message NEED TO BAKE EDITABLE
 - [WouldWork] Changes reflected on page after refresh
 - [X] Try blank required fields → see validation error
-- [TODO] Make the slack member ID instructions easier, and make it A PART OF REGISTRATION THAT ISN'T REQUIRED.
+- [DONE] Make the slack member ID instructions easier, and make it A PART OF REGISTRATION THAT ISN'T REQUIRED.
 **Notification Preferences Tab:**
 - [X] See list of notification types
 - [X] Toggle "Queue Position: On Deck" → save → see success
@@ -237,7 +237,7 @@ Create these accounts for testing:
 - [NotAThingButThanks...ItAssignsBasedOnTheAssignmentAlgorithm] Select machine from dropdown
 - [X] Enter job title: "Test Measurement 1"
 - [X] Enter description/notes
-- [TODO] Enter estimated duration: 2 hours DECIDE IF YOU WANT THIS
+- [NOTGOINGTO] Enter estimated duration: 2 hours DECIDE IF YOU WANT THIS I don't
 - [X] Select priority: Normal
 - [X] Submit form
 - [X] See success message
@@ -348,7 +348,7 @@ Create these accounts for testing:
 ### Check-Out Process
 
 **From My Queue Page:**
-- [DONE/[TODO]/TESTING] SHOULD THERE BE AN UNDO CHECK-IN? I FEEL LIKE THAT'S GONNA MAKE IT DIFFICULT...
+- [DONE] SHOULD THERE BE AN UNDO CHECK-IN? I FEEL LIKE THAT'S GONNA MAKE IT DIFFICULT...
 - [X] Find entry with status "Running"
 - [X] Click "Check Out" button
 - [X] See form with optional fields:
@@ -719,7 +719,7 @@ Create these accounts for testing:
   - [X] Pending Approvals (highlighted)
   - [X] Approved Users
   - [X] Rejected Users
-- [TODO] Alphabetize by username PLEASE IT'S KILLING ME
+- [DONE] Alphabetize by username PLEASE IT'S KILLING ME
 
 ### Approve User
 
@@ -733,15 +733,15 @@ Create these accounts for testing:
 ### Reject User
 
 - [X] Create new test account that needs approval
-- [X] In admin panel, click "Reject" button [TODO] NOTE THERE IS NO REJECT BUTTON, just DELETE
+- [X] In admin panel, click "Reject" button [DONE] NOTE THERE IS NO REJECT BUTTON, just DELETE
 - [X] Enter rejection reason: "Test rejection"
 - [X] Submit
 - [X] User moves to "Rejected Users" section
 - [X] User receives notification with reason
 - [X] User still cannot login
-- [TODO] MAKE REJECTED OPTION for button and Status
-- [TODO] In MANAGE USERS, MAKE UNAPPROVE USERS THE TOP SECTION, THEN ACTIVE USERS, THEN REJECTED USERS
-- [TODO] REJECTED USERS CAN BE APPROVED OR DELETED.
+- [DONE] MAKE REJECTED OPTION for button and Status
+- [DONE] In MANAGE USERS, MAKE UNAPPROVE USERS THE TOP SECTION, THEN ACTIVE USERS, THEN REJECTED USERS
+- [DONE] REJECTED USERS CAN BE APPROVED OR DELETED.
 - [TODO] Defend against ddos attack how?
 ### Delete User
 
@@ -775,7 +775,7 @@ Create these accounts for testing:
 - [X] Try to demote your own account
 - [X] Should see error message
 - [X] Action should be blocked
-- [TODO] Thus, REMOVE PENDING USERS PAGE AND FIX THE DIRECT FROM THE LINK OF NOTIFICATION TO ADMINS FOR PENDING USERS NOTIF.
+- [DONE] Thus, REMOVE PENDING USERS PAGE AND FIX THE DIRECT FROM THE LINK OF NOTIFICATION TO ADMINS FOR PENDING USERS NOTIF.
 ---
 
 ## 12. MACHINE MANAGEMENT - ADMIN

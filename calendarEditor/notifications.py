@@ -273,9 +273,14 @@ def notify_preset_created(preset, triggering_user):
             )
 
 
-def notify_preset_edited(preset, triggering_user):
-    """Notify users about preset edits."""
+def notify_preset_edited(preset, triggering_user, changes=None):
+    """Notify users about preset edits with change details."""
     notified_users = set()  # Track who we've notified to avoid duplicates
+
+    # Build the change message suffix
+    change_msg = ""
+    if changes:
+        change_msg = f": {changes}"
 
     if preset.is_public:
         # First, notify users following this specific preset
@@ -287,7 +292,7 @@ def notify_preset_edited(preset, triggering_user):
                     recipient=user,
                     notification_type='preset_edited',
                     title='Followed Preset Updated',
-                    message=f'{triggering_user.username} edited public preset "{preset.display_name}" that you follow',
+                    message=f'{triggering_user.username} changed preset "{preset.display_name}"{change_msg}',
                     related_preset=preset,
                     triggering_user=triggering_user,
                 )
@@ -303,7 +308,7 @@ def notify_preset_edited(preset, triggering_user):
                     recipient=user,
                     notification_type='preset_edited',
                     title='Public Preset Updated',
-                    message=f'{triggering_user.username} edited public preset "{preset.display_name}"',
+                    message=f'{triggering_user.username} changed preset "{preset.display_name}"{change_msg}',
                     related_preset=preset,
                     triggering_user=triggering_user,
                 )
@@ -316,7 +321,7 @@ def notify_preset_edited(preset, triggering_user):
                     recipient=preset.creator,
                     notification_type='preset_edited',
                     title='Your Private Preset Was Edited',
-                    message=f'{triggering_user.username} edited your private preset "{preset.display_name}"',
+                    message=f'{triggering_user.username} changed your private preset "{preset.display_name}"{change_msg}',
                     related_preset=preset,
                     triggering_user=triggering_user,
                 )

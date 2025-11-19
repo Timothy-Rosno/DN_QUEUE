@@ -702,6 +702,7 @@ class ArchivedMeasurement(models.Model):
     measurement_date = models.DateTimeField(default=timezone.now, help_text="Date when the measurement was taken")
     title = models.CharField(max_length=500, help_text="Title of the measurement", validators=[MaxLengthValidator(500)])
     notes = models.TextField(blank=True, help_text="Additional notes about this measurement", validators=[MaxLengthValidator(500)])
+    duration_hours = models.FloatField(null=True, blank=True, help_text="Duration of measurement in hours")
 
     # Preset snapshot - stores the configuration used for this measurement
     preset_snapshot = models.JSONField(null=True, blank=True, help_text="JSON snapshot of the preset/configuration used")

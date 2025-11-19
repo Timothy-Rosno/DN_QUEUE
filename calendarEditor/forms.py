@@ -504,23 +504,26 @@ class ArchivedMeasurementForm(forms.ModelForm):
 
     class Meta:
         model = ArchivedMeasurement
-        fields = ('title', 'notes', 'measurement_date', 'uploaded_file')
+        fields = ('title', 'notes', 'measurement_date', 'duration_hours', 'uploaded_file')
         widgets = {
             'title': forms.TextInput(attrs={'maxlength': '500', 'class': 'char-counter-input'}),
             'notes': forms.Textarea(attrs={'rows': 3, 'maxlength': '500', 'class': 'char-counter-input'}),
             'measurement_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'duration_hours': forms.NumberInput(attrs={'min': '0', 'step': '0.1'}),
             'uploaded_file': forms.FileInput(attrs={'accept': '.csv,.txt,.dat,.xlsx,.pdf,.zip,.png,.jpg'}),
         }
         labels = {
             'title': 'Measurement Title',
             'notes': 'Notes',
             'measurement_date': 'Measurement Date',
+            'duration_hours': 'Duration (hours)',
             'uploaded_file': 'Upload File (optional)',
         }
         help_texts = {
             'title': 'A descriptive title for this archived measurement',
             'notes': 'Additional notes or observations about this measurement',
             'measurement_date': 'Date and time when the measurement was taken',
+            'duration_hours': 'Duration of the measurement in hours (optional)',
             'uploaded_file': 'Upload measurement data file (CSV, TXT, DAT, Excel, PDF, ZIP, images)',
         }
 

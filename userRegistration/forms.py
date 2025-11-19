@@ -34,6 +34,15 @@ class UserRegistrationForm(UserCreationForm):
         # Update regex validator to allow any characters including spaces
         self.fields['username'].widget.attrs.pop('pattern', None)
 
+    def clean_username(self):
+        """Allow any characters in username, including spaces."""
+        username = self.cleaned_data.get('username')
+        # Check if username already exists (case-insensitive to avoid duplicates)
+        from django.contrib.auth.models import User
+        if User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError('A user with that username already exists.')
+        return username
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
@@ -53,13 +62,18 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ('phone_number', 'department', 'notes', 'slack_member_id', 'security_question', 'security_question_custom')
+        fields = ('phone_number', 'organization', 'organization_other', 'department', 'department_other', 'notes', 'slack_member_id', 'security_question', 'security_question_custom')
         widgets = {
             'phone_number': forms.TextInput(attrs={
                 'type': 'tel',
                 'maxlength': '15',
             }),
-            'department': forms.TextInput(attrs={
+            'organization': forms.Select(),
+            'organization_other': forms.TextInput(attrs={
+                'maxlength': '100',
+            }),
+            'department': forms.Select(),
+            'department_other': forms.TextInput(attrs={
                 'maxlength': '100',
             }),
             'notes': forms.Textarea(attrs={
@@ -77,13 +91,15 @@ class UserProfileForm(forms.ModelForm):
         }
         labels = {
             'phone_number': 'Phone Number',
-            'department': 'Department/Organization',
+            'organization': 'Organization',
+            'organization_other': 'Organization Name',
+            'department': 'Department',
+            'department_other': 'Department Name',
             'notes': 'Notes',
         }
         help_texts = {
-            'phone_number': '(Optional)',
-            'department': '(optional)',
-            'notes': '(optional)',
+            'phone_number': 'Optional',
+            'notes': 'Optional',
         }
 
     def __init__(self, *args, **kwargs):
@@ -103,10 +119,22 @@ class UserProfileForm(forms.ModelForm):
         cleaned_data = super().clean()
         security_question = cleaned_data.get('security_question')
         security_question_custom = cleaned_data.get('security_question_custom')
+        organization = cleaned_data.get('organization')
+        organization_other = cleaned_data.get('organization_other')
+        department = cleaned_data.get('department')
+        department_other = cleaned_data.get('department_other')
 
         # If custom question is selected, custom text is required
         if security_question == 'custom' and not security_question_custom:
             self.add_error('security_question_custom', 'Please enter your custom security question.')
+
+        # If "Other" organization is selected, organization_other is required
+        if organization == 'other' and not organization_other:
+            self.add_error('organization_other', 'Please enter your organization name.')
+
+        # If "Other" department is selected, department_other is required
+        if department == 'other' and not department_other:
+            self.add_error('department_other', 'Please enter your department name.')
 
         return cleaned_data
 

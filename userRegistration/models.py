@@ -21,9 +21,27 @@ class UserProfile(models.Model):
         ('approved', 'Approved'),
     ]
 
+    ORGANIZATION_CHOICES = [
+        ('', ''),  # Empty choice for initial state
+        ('uark', 'University of Arkansas, Fayetteville'),
+        ('other', 'Other'),
+    ]
+
+    DEPARTMENT_CHOICES = [
+        ('', ''),  # Empty choice
+        ('physics', 'Physics'),
+        ('materials', 'Materials Science'),
+        ('engineering', 'Engineering'),
+        ('chemistry', 'Chemistry'),
+        ('other', 'Other'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     phone_number = models.CharField(max_length=15, blank=True)
-    department = models.CharField(max_length=100, blank=True)
+    organization = models.CharField(max_length=20, choices=ORGANIZATION_CHOICES, blank=True)
+    organization_other = models.CharField(max_length=100, blank=True, help_text="Custom organization name")
+    department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES, blank=True)
+    department_other = models.CharField(max_length=100, blank=True, help_text="Custom department name")
     notes = models.CharField(max_length=500, blank=True, help_text="Additional information about the user (max 500 characters)")
 
     # New status field (replaces is_approved boolean)

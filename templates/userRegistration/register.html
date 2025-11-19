@@ -21,23 +21,63 @@
                 {{ profile_form.phone_number.label }}
             </label>
             {{ profile_form.phone_number }}
+            {% if profile_form.phone_number.help_text %}
+                <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">{{ profile_form.phone_number.help_text }}</small>
+            {% endif %}
             {% if profile_form.phone_number.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ profile_form.phone_number.errors }}</div>
             {% endif %}
         </div>
 
-        <!-- Department Field -->
+        <!-- Organization Field -->
         <div style="margin-bottom: 1.5rem;">
+            <label for="{{ profile_form.organization.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ profile_form.organization.label }}
+            </label>
+            {{ profile_form.organization }}
+            {% if profile_form.organization.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ profile_form.organization.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Organization Other Field (shown when "Other" is selected) -->
+        <div id="organization-other-field" style="margin-bottom: 1.5rem; display: none;">
+            <label for="{{ profile_form.organization_other.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ profile_form.organization_other.label }}
+            </label>
+            {{ profile_form.organization_other }}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+                <div id="organizationOtherError" style="color: #e74c3c; font-size: 0.9rem; display: none; font-weight: bold;"></div>
+                <small style="color: #7f8c8d;"><span id="organizationOtherCharCount"></span></small>
+            </div>
+            {% if profile_form.organization_other.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ profile_form.organization_other.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Department Field (shown when University of Arkansas is selected) -->
+        <div id="department-field" style="margin-bottom: 1.5rem; display: none;">
             <label for="{{ profile_form.department.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
                 {{ profile_form.department.label }}
             </label>
             {{ profile_form.department }}
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
-                <div id="departmentError" style="color: #e74c3c; font-size: 0.9rem; display: none; font-weight: bold;"></div>
-                <small style="color: #7f8c8d;"><span id="departmentCharCount"></span></small>
-            </div>
             {% if profile_form.department.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ profile_form.department.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Department Other Field (shown when "Other" department is selected) -->
+        <div id="department-other-field" style="margin-bottom: 1.5rem; display: none;">
+            <label for="{{ profile_form.department_other.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ profile_form.department_other.label }}
+            </label>
+            {{ profile_form.department_other }}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+                <div id="departmentOtherError" style="color: #e74c3c; font-size: 0.9rem; display: none; font-weight: bold;"></div>
+                <small style="color: #7f8c8d;"><span id="departmentOtherCharCount"></span></small>
+            </div>
+            {% if profile_form.department_other.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ profile_form.department_other.errors }}</div>
             {% endif %}
         </div>
 
@@ -47,6 +87,9 @@
                 {{ profile_form.notes.label }}
             </label>
             {{ profile_form.notes }}
+            {% if profile_form.notes.help_text %}
+                <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">{{ profile_form.notes.help_text }}</small>
+            {% endif %}
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
                 <div id="notesError" style="color: #e74c3c; font-size: 0.9rem; display: none; font-weight: bold;"></div>
                 <small style="color: #7f8c8d;"><span id="notesCharCount"></span></small>
@@ -79,10 +122,59 @@
         </div>
 
         <script>
-        // Initialize character counters on page load
+        // Initialize character counters and conditional field displays on page load
         document.addEventListener('DOMContentLoaded', function() {
+            const organizationSelect = document.getElementById('{{ profile_form.organization.id_for_label }}');
+            const organizationOtherField = document.getElementById('organization-other-field');
+            const departmentField = document.getElementById('department-field');
+            const departmentSelect = document.getElementById('{{ profile_form.department.id_for_label }}');
+            const departmentOtherField = document.getElementById('department-other-field');
+
+            // Handle organization selection changes
+            function toggleOrganizationFields() {
+                const orgValue = organizationSelect.value;
+
+                // Show/hide organization_other field
+                if (orgValue === 'other') {
+                    organizationOtherField.style.display = 'block';
+                } else {
+                    organizationOtherField.style.display = 'none';
+                }
+
+                // Show/hide department field (only for UArk)
+                if (orgValue === 'uark') {
+                    departmentField.style.display = 'block';
+                } else {
+                    departmentField.style.display = 'none';
+                    // Reset department selection when hiding
+                    departmentSelect.value = '';
+                    departmentOtherField.style.display = 'none';
+                }
+            }
+
+            // Handle department selection changes
+            function toggleDepartmentOtherField() {
+                const deptValue = departmentSelect.value;
+
+                // Show/hide department_other field
+                if (deptValue === 'other') {
+                    departmentOtherField.style.display = 'block';
+                } else {
+                    departmentOtherField.style.display = 'none';
+                }
+            }
+
+            // Add event listeners
+            organizationSelect.addEventListener('change', toggleOrganizationFields);
+            departmentSelect.addEventListener('change', toggleDepartmentOtherField);
+
+            // Initialize on page load
+            toggleOrganizationFields();
+            toggleDepartmentOtherField();
+
             // Character counter functionality for profile fields
-            setupCharacterCounter('{{ profile_form.department.id_for_label }}', 'departmentCharCount', 'departmentError', 100);
+            setupCharacterCounter('{{ profile_form.organization_other.id_for_label }}', 'organizationOtherCharCount', 'organizationOtherError', 100);
+            setupCharacterCounter('{{ profile_form.department_other.id_for_label }}', 'departmentOtherCharCount', 'departmentOtherError', 100);
             setupCharacterCounter('{{ profile_form.notes.id_for_label }}', 'notesCharCount', 'notesError', 500);
         });
 

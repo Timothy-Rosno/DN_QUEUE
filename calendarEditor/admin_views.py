@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -1766,11 +1767,11 @@ def admin_database_management(request):
 admin_archive_management = admin_database_management
 
 
-@staff_member_required
+@login_required
 def admin_export_archive(request):
     """
-    Export all archived measurements to JSON file.
-    Staff/superuser only.
+    Export all archived measurements to CSV or JSON file.
+    Available to all authenticated users.
     """
     import json
     from django.http import HttpResponse
@@ -1793,10 +1794,10 @@ def admin_export_archive(request):
         
         writer = csv.writer(response)
         writer.writerow([
-            'ID', 'User', 'Machine', 'Measurement Date', 
-            'Title', 'Notes', 'Archived At'
+            'ID', 'User', 'Machine', 'Measurement Date',
+            'Title', 'Duration (hours)', 'Notes', 'Archived At'
         ])
-        
+
         for m in measurements:
             writer.writerow([
                 m.id,
@@ -1804,6 +1805,7 @@ def admin_export_archive(request):
                 m.machine.name,
                 m.measurement_date.strftime('%Y-%m-%d %H:%M:%S'),
                 m.title,
+                m.duration_hours if m.duration_hours is not None else '',
                 m.notes,
                 m.archived_at.strftime('%Y-%m-%d %H:%M:%S')
             ])
@@ -1822,6 +1824,7 @@ def admin_export_archive(request):
                 'machine_id': m.machine.id,
                 'measurement_date': m.measurement_date.isoformat(),
                 'title': m.title,
+                'duration_hours': m.duration_hours,
                 'notes': m.notes,
                 'archived_at': m.archived_at.isoformat(),
             })

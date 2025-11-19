@@ -143,9 +143,19 @@ def fridge_list(request):
     """Fridge specifications page showing detailed specs for all machines."""
     from django.db.models import Count, Q
 
-    machines = Machine.objects.all().annotate(
+    machines_qs = Machine.objects.all().annotate(
         queue_count=Count('queue_entries', filter=Q(queue_entries__status='queued'))
     ).order_by('name')
+
+    # Add running_job to each machine
+    machines = []
+    for machine in machines_qs:
+        running_job = QueueEntry.objects.filter(
+            assigned_machine=machine,
+            status='running'
+        ).select_related('user').first()
+        machine.running_job = running_job
+        machines.append(machine)
 
     context = {
         'machines': machines,
@@ -1546,6 +1556,74 @@ def edit_preset_view(request, preset_id):
     if request.method == 'POST':
         form = QueuePresetForm(request.POST, instance=preset)
         if form.is_valid():
+            # Capture original values before saving
+            original_preset = QueuePreset.objects.get(id=preset.id)
+
+            # Detect field changes
+            changed_fields = []
+            field_mapping = {
+                'name': 'Preset Name',
+                'title': 'Device Name',
+                'description': 'Description',
+                'required_min_temp': 'Min Temperature',
+                'required_max_temp': 'Max Temperature',
+                'required_b_field_x': 'B-field X',
+                'required_b_field_y': 'B-field Y',
+                'required_b_field_z': 'B-field Z',
+                'required_b_field_direction': 'B-field Direction',
+                'required_dc_lines': 'DC Lines',
+                'required_rf_lines': 'RF Lines',
+                'required_daughterboard': 'Daughterboard',
+                'requires_optical': 'Optical',
+                'is_public': 'Visibility',
+                'estimated_duration_hours': 'Duration',
+            }
+
+            for field_name, label in field_mapping.items():
+                old_value = getattr(original_preset, field_name)
+                new_value = form.cleaned_data.get(field_name)
+
+                if old_value != new_value:
+                    # Format the change description
+                    if field_name == 'is_public':
+                        old_str = 'Public' if old_value else 'Private'
+                        new_str = 'Public' if new_value else 'Private'
+                        changed_fields.append(f"{label}: {old_str} → {new_str}")
+                    elif field_name == 'requires_optical':
+                        old_str = 'Yes' if old_value else 'No'
+                        new_str = 'Yes' if new_value else 'No'
+                        changed_fields.append(f"{label}: {old_str} → {new_str}")
+                    elif field_name in ['required_min_temp', 'required_max_temp']:
+                        old_str = f"{old_value}K" if old_value is not None else "None"
+                        new_str = f"{new_value}K" if new_value is not None else "None"
+                        changed_fields.append(f"{label}: {old_str} → {new_str}")
+                    elif field_name in ['required_b_field_x', 'required_b_field_y', 'required_b_field_z']:
+                        old_str = f"{old_value}T" if old_value is not None else "0T"
+                        new_str = f"{new_value}T" if new_value is not None else "0T"
+                        changed_fields.append(f"{label}: {old_str} → {new_str}")
+                    elif field_name == 'estimated_duration_hours':
+                        old_str = f"{old_value}h" if old_value is not None else "None"
+                        new_str = f"{new_value}h" if new_value is not None else "None"
+                        changed_fields.append(f"{label}: {old_str} → {new_str}")
+                    else:
+                        old_str = str(old_value) if old_value else "None"
+                        new_str = str(new_value) if new_value else "None"
+                        # Truncate long values
+                        if len(old_str) > 30:
+                            old_str = old_str[:27] + "..."
+                        if len(new_str) > 30:
+                            new_str = new_str[:27] + "..."
+                        changed_fields.append(f"{label}: {old_str} → {new_str}")
+
+            # Create change summary (truncate if too long)
+            if changed_fields:
+                change_summary = "; ".join(changed_fields)
+                if len(change_summary) > 200:
+                    # Show only first few changes if too many
+                    change_summary = "; ".join(changed_fields[:3]) + f" (and {len(changed_fields) - 3} more)"
+            else:
+                change_summary = None
+
             preset = form.save(commit=False)
             preset.last_edited_by = request.user
             preset.save()
@@ -1571,9 +1649,9 @@ def edit_preset_view(request, preset_id):
                 # WebSocket broadcast failed (Redis likely not running) - continue anyway
                 print(f"WebSocket broadcast failed: {e}")
 
-            # Send notifications for preset edit
+            # Send notifications for preset edit with change summary
             try:
-                notifications.notify_preset_edited(preset, request.user)
+                notifications.notify_preset_edited(preset, request.user, changes=change_summary)
             except Exception as e:
                 print(f"Notification generation failed: {e}")
 
@@ -2013,6 +2091,10 @@ def save_to_archive(request, queue_entry_id):
             archive.machine = queue_entry.assigned_machine
             archive.related_queue_entry = queue_entry
 
+            # Set duration from queue entry if not provided in form
+            if not archive.duration_hours and queue_entry.estimated_duration_hours:
+                archive.duration_hours = queue_entry.estimated_duration_hours
+
             # Create preset snapshot from queue entry
             preset_snapshot = {
                 'title': queue_entry.title,
@@ -2039,6 +2121,7 @@ def save_to_archive(request, queue_entry_id):
             'title': queue_entry.title,
             'notes': queue_entry.description,
             'measurement_date': queue_entry.completed_at or timezone.now(),
+            'duration_hours': queue_entry.estimated_duration_hours,
         }
         form = ArchivedMeasurementForm(initial=initial_data)
 
@@ -2163,7 +2246,7 @@ def token_login(request, token):
 
         # Check if token is expired (but not if it's used - tokens are reusable)
         if timezone.now() > login_token.expires_at:
-            messages.error(request, 'This notification link has expired.')
+            messages.error(request, 'Expired link -- more than 24 hours after send.')
             return redirect('login')
 
         intended_user = login_token.user
@@ -2401,7 +2484,7 @@ def export_my_measurements(request):
     writer = csv.writer(response)
     writer.writerow([
         'ID', 'Machine', 'Measurement Date',
-        'Title', 'Notes', 'Archived At'
+        'Title', 'Duration (hours)', 'Notes', 'Archived At'
     ])
 
     for m in measurements:
@@ -2410,6 +2493,7 @@ def export_my_measurements(request):
             m.machine.name,
             m.measurement_date.strftime('%Y-%m-%d %H:%M:%S'),
             m.title,
+            m.duration_hours if m.duration_hours is not None else '',
             m.notes,
             m.archived_at.strftime('%Y-%m-%d %H:%M:%S')
         ])
