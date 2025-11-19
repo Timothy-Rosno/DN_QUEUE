@@ -490,6 +490,10 @@ def edit_machine(request, machine_id):
             machine.description = request.POST.get('description', machine.description)
             machine.location = request.POST.get('location', machine.location)
 
+            # Auto-set unavailable when machine is put in maintenance mode
+            if machine.current_status == 'maintenance':
+                machine.is_available = False
+
             machine.save()
             messages.success(request, f'Machine "{machine.name}" updated successfully.')
             return redirect('admin_machines')
@@ -527,6 +531,9 @@ def add_machine(request):
                 description=request.POST.get('description', ''),
                 location=request.POST.get('location', ''),
             )
+            # Auto-set unavailable when machine is in maintenance mode
+            if machine.current_status == 'maintenance':
+                machine.is_available = False
             machine.save()
             messages.success(request, f'Machine "{machine.name}" created successfully.')
             return redirect('admin_machines')
@@ -654,25 +661,36 @@ def admin_cancel_entry(request, entry_id):
         # Don't fail the cancellation if archiving fails
         print(f'Archive creation failed: {str(e)}')
 
+    # Notify the user that their entry was canceled by admin
+    try:
+        if was_running:
+            notifications.create_notification(
+                recipient=entry_user,
+                notification_type='queue_cancelled',
+                title='Measurement Canceled by Admin',
+                message=f'Administrator {request.user.username} canceled your running measurement "{entry_title}" on {machine_name}.',
+                related_queue_entry=queue_entry,
+                related_machine=machine,
+            )
+        else:
+            # Notify for queued entry cancellation
+            notifications.create_notification(
+                recipient=entry_user,
+                notification_type='queue_cancelled',
+                title='Queue Entry Canceled by Admin',
+                message=f'Administrator {request.user.username} canceled your queue entry "{entry_title}" on {machine_name}.',
+                related_queue_entry=queue_entry,
+                related_machine=machine,
+            )
+    except Exception as e:
+        print(f"User notification for admin-canceled entry failed: {e}")
+
     # If canceling a running measurement, clean up machine status
     if was_running and machine:
         machine.current_status = 'idle'
         machine.current_user = None
         machine.estimated_available_time = None
         machine.save()
-
-        # Notify the user that their running measurement was canceled by admin
-        try:
-            notifications.create_notification(
-                recipient=entry_user,
-                notification_type='queue_cancelled',
-                title='❌ Measurement Canceled by Admin',
-                message=f'Administrator {request.user.username} canceled your running measurement "{entry_title}" on {machine_name}.',
-                related_queue_entry=queue_entry,
-                related_machine=machine,
-            )
-        except Exception as e:
-            print(f"User notification for admin-canceled measurement failed: {e}")
 
     # Reorder the queue for the machine
     if machine:
@@ -1254,6 +1272,12 @@ def admin_check_out(request, entry_id):
 
     # Always archive completed measurements
     try:
+        # Calculate actual duration in hours
+        duration_hours = None
+        if queue_entry.started_at and queue_entry.completed_at:
+            duration_delta = queue_entry.completed_at - queue_entry.started_at
+            duration_hours = round(duration_delta.total_seconds() / 3600, 2)
+
         ArchivedMeasurement.objects.create(
             user=queue_entry.user,
             machine=queue_entry.assigned_machine,
@@ -1263,7 +1287,8 @@ def admin_check_out(request, entry_id):
             notes=queue_entry.description,
             measurement_date=queue_entry.completed_at,
             archived_at=timezone.now(),
-            status='completed'
+            status='completed',
+            duration_hours=duration_hours
         )
     except Exception as e:
         # Don't fail the checkout if archiving fails
@@ -1535,10 +1560,17 @@ def admin_edit_entry(request, entry_id):
     """
     queue_entry = get_object_or_404(QueueEntry, id=entry_id)
 
+    # Get return URL from query parameter (default to admin_queue)
+    return_url = request.GET.get('return_to', 'admin_queue')
+    # Validate return_url to prevent open redirect
+    allowed_returns = ['admin_queue', 'admin_rush_jobs']
+    if return_url not in allowed_returns:
+        return_url = 'admin_queue'
+
     # Allow editing both queued and running entries
     if queue_entry.status not in ['queued', 'running']:
         messages.error(request, f'Cannot edit entry with status "{queue_entry.status}". Only queued and running entries can be edited.')
-        return redirect('admin_queue')
+        return redirect(return_url)
 
     # Store original values for change tracking
     original_values = {
@@ -1648,7 +1680,7 @@ def admin_edit_entry(request, entry_id):
             notifications.notify_admin_edit_entry(edited_entry, request.user, changes_summary)
 
             messages.success(request, f'Queue entry "{edited_entry.title}" updated successfully.')
-            return redirect('admin_queue')
+            return redirect(return_url)
 
         else:
             # Form has validation errors
@@ -1805,10 +1837,12 @@ def admin_export_archive(request):
         ])
 
         for m in measurements:
+            # Use machine_name field as fallback if machine was deleted
+            machine_display = m.machine.name if m.machine else (m.machine_name or 'Deleted Machine')
             writer.writerow([
                 m.id,
                 m.user.username,
-                m.machine.name,
+                machine_display,
                 m.measurement_date.strftime('%Y-%m-%d %H:%M:%S'),
                 m.title,
                 m.duration_hours if m.duration_hours is not None else '',
@@ -1822,12 +1856,15 @@ def admin_export_archive(request):
         # Export as JSON (default)
         data = []
         for m in measurements:
+            # Use machine_name field as fallback if machine was deleted
+            machine_display = m.machine.name if m.machine else (m.machine_name or 'Deleted Machine')
+            machine_id = m.machine.id if m.machine else None
             data.append({
                 'id': m.id,
                 'user': m.user.username,
                 'user_id': m.user.id,
-                'machine': m.machine.name,
-                'machine_id': m.machine.id,
+                'machine': machine_display,
+                'machine_id': machine_id,
                 'measurement_date': m.measurement_date.isoformat(),
                 'title': m.title,
                 'duration_hours': m.duration_hours,

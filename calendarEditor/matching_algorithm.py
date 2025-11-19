@@ -301,7 +301,7 @@ def reorder_queue(machine, notify=True):
 
     Args:
         machine: Machine instance whose queue needs reordering
-        notify: If True (default), notify the person at position #1 they're on deck/ready.
+        notify: If True (default), notify users of position changes and on-deck status.
                 If False, skip notifications (used for deletions to avoid notifying during cleanup).
     """
     from django.db.models import F
@@ -317,18 +317,37 @@ def reorder_queue(machine, notify=True):
 
     print(f"[REORDER_QUEUE] Found {queued_entries.count()} queued entries")
 
+    # Track old positions before reordering
+    old_positions = {}
+    for entry in queued_entries:
+        old_positions[entry.id] = entry.queue_position
+
     # Reassign sequential positions to all queued entries
+    position_changes = []
     for index, entry in enumerate(queued_entries, start=1):
+        old_pos = old_positions.get(entry.id)
         if entry.queue_position != index:
             entry.queue_position = index
+            # Track position change for notification
+            if old_pos and old_pos != index:
+                position_changes.append((entry, old_pos, index))
         entry.estimated_start_time = entry.calculate_estimated_start_time()
         entry.save()
         if index == 1:
             print(f"[REORDER_QUEUE] Position #1: {entry.title} for user {entry.user.username}")
 
-    # Check if there's a new entry at position #1 and notify them they're ON DECK
-    # (unless notify=False, which is used for deletions)
+    # Notify users of position changes (unless notify=False)
     if notify:
+        # Notify users who moved up in the queue (but not position 1, handled separately)
+        for entry, old_pos, new_pos in position_changes:
+            if new_pos != 1:  # Position 1 is handled by check_and_notify_on_deck_status
+                try:
+                    notifications.notify_queue_position_change(entry, old_pos, new_pos)
+                    print(f"[REORDER_QUEUE] Notified {entry.user.username} of position change: {old_pos} -> {new_pos}")
+                except Exception as e:
+                    print(f"[REORDER_QUEUE] Position change notification failed: {e}")
+
+        # Check if there's a new entry at position #1 and notify them they're ON DECK
         print(f"[REORDER_QUEUE] Calling check_and_notify_on_deck_status")
         try:
             notifications.check_and_notify_on_deck_status(machine)

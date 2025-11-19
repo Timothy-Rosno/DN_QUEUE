@@ -385,21 +385,41 @@ def notify_preset_deleted(preset_data, triggering_user):
                 pass
 
 
-def notify_on_deck(queue_entry):
+def notify_on_deck(queue_entry, reason=None):
     """
     Notify a user that they're now ON DECK (position #1 in queue).
     This is a CRITICAL notification that always sends regardless of user preferences.
+
+    Args:
+        queue_entry: The queue entry at position #1
+        reason: Optional reason why machine isn't ready (e.g., 'maintenance', 'running', 'cooldown', 'offline')
     """
     user = queue_entry.user
-    print(f"[NOTIFY_ON_DECK] Creating notification for user {user.username}")
+    machine = queue_entry.assigned_machine
+    print(f"[NOTIFY_ON_DECK] Creating notification for user {user.username}, reason={reason}")
+
+    # Build message based on reason
+    if reason == 'maintenance':
+        message = f'Your request "{queue_entry.title}" is now #1 in line for {machine.name}. The machine is currently in maintenance mode - you will be notified when it becomes available.'
+    elif reason == 'running':
+        message = f'Your request "{queue_entry.title}" is now #1 in line for {machine.name}. The machine is currently running another measurement - you will be notified when it becomes available.'
+    elif reason == 'cooldown':
+        message = f'Your request "{queue_entry.title}" is now #1 in line for {machine.name}. The machine is currently in cooldown - you will be notified when it becomes available.'
+    elif reason == 'offline':
+        message = f'Your request "{queue_entry.title}" is now #1 in line for {machine.name}. The machine is currently offline - you will be notified when it becomes available.'
+    elif reason == 'unavailable':
+        message = f'Your request "{queue_entry.title}" is now #1 in line for {machine.name}. The machine is currently unavailable - you will be notified when it becomes available.'
+    else:
+        message = f'Your request "{queue_entry.title}" is now #1 in line for {machine.name}. Get ready!'
+
     # Always send this critical notification - it's essential for queue system to work
     notif = create_notification(
         recipient=user,
         notification_type='on_deck',
-        title=f'ON DECK - You\'re Next!',
-        message=f'Your request "{queue_entry.title}" is now #1 in line for {queue_entry.assigned_machine.name}. Get ready!',
+        title='ON DECK - You\'re Next!',
+        message=message,
         related_queue_entry=queue_entry,
-        related_machine=queue_entry.assigned_machine,
+        related_machine=machine,
     )
     print(f"[NOTIFY_ON_DECK] Notification created with ID {notif.id}")
 
@@ -781,6 +801,21 @@ def check_and_notify_on_deck_status(machine):
             correct_notif_type = 'ready_for_check_in' if machine_is_ready else 'on_deck'
             print(f"[CHECK_ON_DECK] machine_is_ready={machine_is_ready}, will send: {correct_notif_type}")
 
+            # Determine reason for not being ready (for on_deck notification message)
+            on_deck_reason = None
+            if not machine_is_ready:
+                if machine.current_status == 'maintenance':
+                    on_deck_reason = 'maintenance'
+                elif machine.current_status == 'running':
+                    on_deck_reason = 'running'
+                elif in_cooldown:
+                    on_deck_reason = 'cooldown'
+                elif not is_online:
+                    on_deck_reason = 'offline'
+                elif not machine.is_available:
+                    on_deck_reason = 'unavailable'
+                print(f"[CHECK_ON_DECK] Not ready reason: {on_deck_reason}")
+
             # Check what notification the user currently has (check for any unread position 1 notifications)
             existing_notif = Notification.objects.filter(
                 recipient=on_deck_entry.user,
@@ -812,8 +847,8 @@ def check_and_notify_on_deck_status(machine):
                 print(f"[CHECK_ON_DECK] notify_ready_for_check_in completed")
             else:
                 # Machine is busy, unavailable, offline, in maintenance, or cooling down - user is on deck but must wait
-                print(f"[CHECK_ON_DECK] Calling notify_on_deck")
-                notify_on_deck(on_deck_entry)
+                print(f"[CHECK_ON_DECK] Calling notify_on_deck with reason={on_deck_reason}")
+                notify_on_deck(on_deck_entry, reason=on_deck_reason)
                 print(f"[CHECK_ON_DECK] notify_on_deck completed")
     except Exception as e:
         print(f"[CHECK_ON_DECK] ERROR: {e}")

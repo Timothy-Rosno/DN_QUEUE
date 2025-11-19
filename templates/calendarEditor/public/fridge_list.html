@@ -130,8 +130,6 @@
 </style>
 
 <div class="card">
-    <h1>Fridge Specifications</h1>
-    <p style="color: #7f8c8d; margin-top: 0.5rem;">Detailed specifications for all cryostats or whatever they are. Click on a machine to view full specifications.</p>
     <div style="margin-top: 1rem; display: flex; gap: 1rem;">
         {% if user.is_authenticated %}
             <button onclick="history.back()" class="btn btn-secondary">Back</button>
@@ -141,9 +139,11 @@
 </div>
 
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <!-- <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h2>Available Equipment ({{ machines.count }})</h2>
-    </div>
+    </div> -->
+    <h1>Fridge Specifications</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">Detailed specifications for all cryostats or whatever they are. Click on a machine to view full specifications.</p>
 
     {% if machines %}
         {% for machine in machines %}

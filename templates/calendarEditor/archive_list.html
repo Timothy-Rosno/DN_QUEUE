@@ -226,8 +226,12 @@
                         {{ archive.get_status_display }}
                     {% endif %}
                 </td>
-                <td style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; text-align: center;" title="{{ archive.notes }}">
-                    {{ archive.notes|default:"—" }}
+                <td style="max-width: 200px; font-size: 0.9rem; text-align: center;">
+                    {% if archive.notes %}
+                    <span data-tooltip="{{ archive.notes }}" style="display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ archive.notes|truncatechars:40 }}</span>
+                    {% else %}
+                    —
+                    {% endif %}
                 </td>
                 {% if user.is_staff %}
                     <td style="white-space: nowrap; text-align: center;">

@@ -16,25 +16,29 @@
 <div class="card">
     <h2 style="color: #27ae60;">Ready to Check Out</h2>
     {% for entry in ready_to_check_out %}
-    <div style="border: 2px solid #27ae60; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #eafaf1;">
+    <div style="border: 2px solid #27ae60; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #eafaf1; overflow: hidden;">
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-            <div style="flex: 1;">
-                <h3>{{ entry.title }}</h3>
+            <div style="flex: 1; min-width: 0;">
+                <h3 style="word-wrap: break-word; overflow-wrap: break-word;">{{ entry.title|truncatechars:80 }}</h3>
                 <p><strong>Machine:</strong> {{ entry.assigned_machine.name }}</p>
                 <p><strong>Started:</strong> {{ entry.started_at|date:"M d, Y g:i A" }}</p>
                 <p><strong>Estimated Duration:</strong> {{ entry.estimated_duration_hours }} hours</p>
                 {% if entry.description %}
-                <p><strong>Description:</strong> {{ entry.description|truncatewords:30 }}</p>
+                <p style="word-wrap: break-word; overflow-wrap: break-word;"><strong>Description:</strong> {{ entry.description|truncatewords:30 }}</p>
                 {% endif %}
             </div>
             <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
                 <form method="post" action="{% url 'check_out_job' entry.id %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-success btn-lg">Check Out</button>
+                    <button type="submit" class="btn btn-success btn-lg" style="min-width: 140px;">Check Out</button>
                 </form>
                 <form method="post" action="{% url 'undo_check_in' entry.id %}" id="undo-form-{{ entry.id }}">
                     {% csrf_token %}
-                    <button type="button" class="btn btn-warning btn-lg undo-check-in-btn" data-entry-id="{{ entry.id }}" data-entry-title="{{ entry.title }}">Undo Check-In</button>
+                    {% if entry.assigned_machine.current_status == 'maintenance' %}
+                    <button type="button" class="btn btn-secondary btn-lg" style="min-width: 140px; cursor: not-allowed;" disabled title="Machine is under maintenance">Undo Check-In</button>
+                    {% else %}
+                    <button type="button" class="btn btn-warning btn-lg undo-check-in-btn" style="min-width: 140px;" data-entry-id="{{ entry.id }}" data-entry-title="{{ entry.title }}">Undo Check-In</button>
+                    {% endif %}
                 </form>
             </div>
         </div>
@@ -48,25 +52,29 @@
 <div class="card">
     <h2 style="color: #9b59b6;">Currently Running</h2>
     {% for entry in currently_running %}
-    <div style="border: 2px solid #9b59b6; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #f4ecf7;">
+    <div style="border: 2px solid #9b59b6; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #f4ecf7; overflow: hidden;">
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-            <div style="flex: 1;">
-                <h3>{{ entry.title }}</h3>
+            <div style="flex: 1; min-width: 0;">
+                <h3 style="word-wrap: break-word; overflow-wrap: break-word;">{{ entry.title|truncatechars:80 }}</h3>
                 <p><strong>Machine:</strong> {{ entry.assigned_machine.name }}</p>
                 <p><strong>Started:</strong> {{ entry.started_at|date:"M d, Y g:i A" }}</p>
                 <p><strong>Estimated Duration:</strong> {{ entry.estimated_duration_hours }} hours</p>
                 {% if entry.description %}
-                <p><strong>Description:</strong> {{ entry.description|truncatewords:30 }}</p>
+                <p style="word-wrap: break-word; overflow-wrap: break-word;"><strong>Description:</strong> {{ entry.description|truncatewords:30 }}</p>
                 {% endif %}
             </div>
             <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
                 <form method="post" action="{% url 'check_out_job' entry.id %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-success btn-lg">Check Out</button>
+                    <button type="submit" class="btn btn-success btn-lg" style="min-width: 140px;">Check Out</button>
                 </form>
                 <form method="post" action="{% url 'undo_check_in' entry.id %}" id="undo-form-{{ entry.id }}">
                     {% csrf_token %}
-                    <button type="button" class="btn btn-warning btn-lg undo-check-in-btn" data-entry-id="{{ entry.id }}" data-entry-title="{{ entry.title }}">Undo Check-In</button>
+                    {% if entry.assigned_machine.current_status == 'maintenance' %}
+                    <button type="button" class="btn btn-secondary btn-lg" style="min-width: 140px; cursor: not-allowed;" disabled title="Machine is under maintenance">Undo Check-In</button>
+                    {% else %}
+                    <button type="button" class="btn btn-warning btn-lg undo-check-in-btn" style="min-width: 140px;" data-entry-id="{{ entry.id }}" data-entry-title="{{ entry.title }}">Undo Check-In</button>
+                    {% endif %}
                 </form>
                 <p style="color: #7f8c8d; font-size: 0.9rem; margin: 0;">
                     Still running… check out if ready
@@ -84,14 +92,14 @@
 <div class="card">
     <h2 style="color: #27ae60;">Ready to Check In</h2>
     {% for entry in ready_to_check_in %}
-    <div style="border: 2px solid #27ae60; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #eafaf1;">
+    <div style="border: 2px solid #27ae60; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #eafaf1; overflow: hidden;">
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-            <div style="flex: 1;">
-                <h3>{{ entry.title }}</h3>
+            <div style="flex: 1; min-width: 0;">
+                <h3 style="word-wrap: break-word; overflow-wrap: break-word;">{{ entry.title|truncatechars:80 }}</h3>
                 <p><strong>Machine:</strong> {{ entry.assigned_machine.name }}</p>
                 <p><strong>Estimated Duration:</strong> {{ entry.estimated_duration_hours }} hours</p>
                 {% if entry.description %}
-                <p><strong>Description:</strong> {{ entry.description|truncatewords:30 }}</p>
+                <p style="word-wrap: break-word; overflow-wrap: break-word;"><strong>Description:</strong> {{ entry.description|truncatewords:30 }}</p>
                 {% endif %}
             </div>
             <div>
@@ -109,12 +117,12 @@
 {# ================= On Deck / Waiting for Machine ================= #}
 {% if waiting_entries %}
 <div class="card">
-    <h2 style="color: #f39c12;">⏳ On Deck / Waiting for Machine</h2>
+    <h2 style="color: #f39c12;">On Deck / Waiting for Machine</h2>
     {% for entry in waiting_entries %}
-    <div style="border: 2px solid #f39c12; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #fcf3e4;">
+    <div style="border: 2px solid #f39c12; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #fcf3e4; overflow: hidden;">
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-            <div style="flex: 1;">
-                <h3>{{ entry.title }}</h3>
+            <div style="flex: 1; min-width: 0;">
+                <h3 style="word-wrap: break-word; overflow-wrap: break-word;">{{ entry.title|truncatechars:80 }}</h3>
                 <p><strong>Machine:</strong> {{ entry.assigned_machine.name }}</p>
                 <p><strong>Machine Status:</strong>
                     <span style="color: {% if entry.assigned_machine.current_status == 'cooldown' %}#f39c12{% else %}#e74c3c{% endif %}; font-weight: bold;">
@@ -123,7 +131,7 @@
                 </p>
                 <p><strong>Estimated Duration:</strong> {{ entry.estimated_duration_hours }} hours</p>
                 {% if entry.description %}
-                <p><strong>Description:</strong> {{ entry.description|truncatewords:30 }}</p>
+                <p style="word-wrap: break-word; overflow-wrap: break-word;"><strong>Description:</strong> {{ entry.description|truncatewords:30 }}</p>
                 {% endif %}
             </div>
             <div>
@@ -160,6 +168,8 @@
 {% load static %}
 <div id="undoConfirmModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
     <div style="background:white; padding:2rem; border-radius:10px; max-width:500px; width:90%; text-align:center; position:relative;">
+        {% if user.is_staff %}
+        <!-- Thanos dialog for staff -->
         <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto; margin-bottom: 1rem;">
         <p id="undoConfirmMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
         <p style="color: #7f8c8d; margin-bottom:1rem; font-size:0.95rem;">This will move your entry back to position #1 in the queue and set the machine back to idle.</p>
@@ -167,6 +177,16 @@
             <button id="undoConfirmYes" class="btn btn-danger">Yes, undo check-in</button>
             <button id="undoConfirmNo" class="btn btn-secondary">No, keep running</button>
         </div>
+        {% else %}
+        <!-- Normal dialog for regular users -->
+        <h3 style="margin-top: 0; margin-bottom: 1rem; color: #e67e22;">Undo Check-In?</h3>
+        <p id="undoConfirmMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
+        <p style="color: #7f8c8d; margin-bottom:1rem; font-size:0.95rem;">This will move your entry back to position #1 in the queue and set the machine back to idle.</p>
+        <div style="display:flex; justify-content:space-around; gap:1rem;">
+            <button id="undoConfirmYes" class="btn btn-warning">Yes, undo check-in</button>
+            <button id="undoConfirmNo" class="btn btn-secondary">No, keep running</button>
+        </div>
+        {% endif %}
         <span id="undoConfirmClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
     </div>
 </div>

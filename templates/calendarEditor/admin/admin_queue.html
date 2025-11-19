@@ -80,8 +80,8 @@
                                     <strong style="font-size: 1.2rem;">{{ entry.queue_position|default:"—" }}</strong>
                                 {% endif %}
                             </td>
-                            <td style="padding: 0.75rem;">
-                                <strong>{{ entry.title }}</strong>
+                            <td style="padding: 0.75rem; max-width: 200px;">
+                                <strong><span data-tooltip="Title: {{ entry.title }}{% if entry.description %} | Description: {{ entry.description }}{% endif %}" style="display: inline-block; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ entry.title|truncatechars:30 }}</span></strong>
                                 {% if entry.is_rush_job %}
                                     <span style="background-color: #e67e22; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">RUSH</span>
                                 {% endif %}
@@ -254,7 +254,7 @@
                 {% if data.running_job %}
                 <div style="background-color: white; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; border-left: 4px solid #9b59b6;">
                     <p style="margin: 0; font-weight: bold; color: #9b59b6;">RUNNING</p>
-                    <p style="margin: 0.25rem 0; font-size: 0.95rem;"><strong>{{ data.running_job.title }}</strong></p>
+                    <p style="margin: 0.25rem 0; font-size: 0.95rem;"><strong><span data-tooltip="Description: {{ data.running_job.description|default:'No description' }}">{{ data.running_job.title|truncatechars:25 }}</span></strong></p>
                     <p style="margin: 0; font-size: 0.9rem; color: #7f8c8d;">User: {{ data.running_job.user.username }}</p>
                     <p style="margin: 0; font-size: 0.9rem; color: #7f8c8d;">Started: {{ data.running_job.started_at|date:"M d, g:i A" }}</p>
                     <button type="button" class="btn btn-success btn-sm btn-block checkout-entry-btn"
@@ -267,8 +267,8 @@
                 <!-- On Deck Job -->
                 {% if data.on_deck_job %}
                 <div style="background-color: white; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; border-left: 4px solid #3498db;">
-                    <p style="margin: 0; font-weight: bold; color: #3498db;">🎯 ON DECK (#1)</p>
-                    <p style="margin: 0.25rem 0; font-size: 0.95rem;"><strong>{{ data.on_deck_job.title }}</strong></p>
+                    <p style="margin: 0; font-weight: bold; color: #3498db;">ON DECK (#1)</p>
+                    <p style="margin: 0.25rem 0; font-size: 0.95rem;"><strong><span data-tooltip="Description: {{ data.on_deck_job.description|default:'No description' }}">{{ data.on_deck_job.title|truncatechars:25 }}</span></strong></p>
                     <p style="margin: 0; font-size: 0.9rem; color: #7f8c8d;">User: {{ data.on_deck_job.user.username }}</p>
                     <p style="margin: 0; font-size: 0.9rem; color: #7f8c8d;">Duration: {{ data.on_deck_job.estimated_duration_hours }} hrs</p>
                     {% if not data.running_job %}

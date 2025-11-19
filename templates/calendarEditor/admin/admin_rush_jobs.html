@@ -18,9 +18,9 @@
     {% if rush_jobs_with_machines %}
         {% for item in rush_jobs_with_machines %}
         {% with entry=item.entry matching_machines=item.matching_machines live_temp=item.live_temp display_status=item.display_status %}
-        <div data-machine-id="{{ entry.assigned_machine.id }}" style="border: 1px solid #e67e22; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #fff3cd;">
+        <div data-machine-id="{{ entry.assigned_machine.id }}" style="border: 1px solid #e67e22; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #fff3cd; overflow: hidden;">
             <div style="margin-bottom: 1rem;">
-                <h3 style="margin-top: 0; color: #856404;">Device: {{ entry.title }} -- {{ entry.description|truncatewords:20 }}</h3>
+                <h3 style="margin-top: 0; color: #856404; word-wrap: break-word; overflow-wrap: break-word;">Device: {{ entry.title|truncatechars:50 }} -- {{ entry.description|truncatewords:15 }}</h3>
                 <p style="color: #856404; margin: 0.5rem 0;"><strong>User:</strong> {{ entry.user.username }} | <strong>Submitted:</strong> {{ entry.submitted_at|date:"M d, Y g:i A" }}</p>
                 <p style="color: #856404; margin: 0.5rem 0;">
                     <strong>Machine:</strong> {{ entry.assigned_machine.name }} |
@@ -74,7 +74,7 @@
                     data-entry-title="{{ entry.title }}">
                     Reject Appeal
                 </button>
-                <a href="{% url 'admin_edit_entry' entry.id %}" class="btn btn-secondary">Edit Entry</a>
+                <a href="{% url 'admin_edit_entry' entry.id %}?return_to=admin_rush_jobs" class="btn btn-secondary">Edit Entry</a>
                 <form method="get" action="mailto:{{ entry.user.email }}?subject=Rush Job Request - {{ entry.title }}" style="display: inline;">
                     <button type="submit" class="btn btn-info" onclick="window.location.href='mailto:{{ entry.user.email }}?subject=Rush Job Request - {{ entry.title }}'; return false;">Email User</button>
                 </form>
@@ -100,8 +100,8 @@
         <!-- Rejection Message Input (hidden by default) -->
         <div id="rejectionMessageBox" style="display:none; margin-bottom:1rem; text-align:left;">
             <label for="rejectionMessage" style="display:block; font-weight:bold; margin-bottom:0.5rem;">Enter rejection reason:</label>
-            <textarea id="rejectionMessage" style="width:100%; padding:0.5rem; border:1px solid #ddd; border-radius:4px; min-height:80px; font-family: inherit;">Insufficient justification</textarea>
-            <small style="color:#7f8c8d; display:block; margin-top:0.25rem;">This message will be sent to the user.</small>
+            <textarea id="rejectionMessage" style="width:100%; padding:0.5rem; border:1px solid #ddd; border-radius:4px; min-height:80px; font-family: inherit;" placeholder="Insufficient justification"></textarea>
+            <small style="color:#7f8c8d; display:block; margin-top:0.25rem;">This message will be sent to the user. Leave blank for "Insufficient justification".</small>
         </div>
 
         <!-- Action Buttons -->
@@ -137,9 +137,9 @@ document.addEventListener('DOMContentLoaded', function() {
             currentEntryTitle = this.getAttribute('data-entry-title');
             message.textContent = `Reject rush job appeal for "${currentEntryTitle}"?`;
 
-            // Reset to default message
+            // Reset to empty (placeholder will show)
             usingCustomMessage = false;
-            rejectionMessageInput.value = 'Insufficient justification';
+            rejectionMessageInput.value = '';
             rejectionMessageBox.style.display = 'none';
             useDefaultBtn.style.display = 'inline-block';
             useCustomBtn.style.display = 'inline-block';
@@ -192,11 +192,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Yes button: submit reject form with custom message
     btnYes.addEventListener('click', function() {
         if (currentEntryId) {
-            const customMessage = rejectionMessageInput.value.trim();
-            if (!customMessage) {
-                alert('Please enter a rejection message or click "No" to cancel.');
-                return;
-            }
+            // Use custom message or default to "Insufficient justification"
+            const customMessage = rejectionMessageInput.value.trim() || 'Insufficient justification';
 
             const form = document.createElement('form');
             form.method = 'POST';
@@ -212,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.appendChild(csrfInput);
             }
 
-            // Add custom rejection message
+            // Add rejection message
             const messageInput = document.createElement('input');
             messageInput.type = 'hidden';
             messageInput.name = 'rejection_message';

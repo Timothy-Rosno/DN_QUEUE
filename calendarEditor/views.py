@@ -705,6 +705,12 @@ def check_out_job(request, entry_id):
 
     # Always archive completed measurements
     try:
+        # Calculate actual duration in hours
+        duration_hours = None
+        if queue_entry.started_at and queue_entry.completed_at:
+            duration_delta = queue_entry.completed_at - queue_entry.started_at
+            duration_hours = round(duration_delta.total_seconds() / 3600, 2)
+
         ArchivedMeasurement.objects.create(
             user=queue_entry.user,
             machine=queue_entry.assigned_machine,
@@ -714,7 +720,8 @@ def check_out_job(request, entry_id):
             notes=queue_entry.description,
             measurement_date=queue_entry.completed_at,
             archived_at=timezone.now(),
-            status='completed'
+            status='completed',
+            duration_hours=duration_hours
         )
     except Exception as e:
         # Don't fail the checkout if archiving fails
@@ -851,6 +858,11 @@ def undo_check_in(request, entry_id):
             return redirect('check_in_check_out')
 
         machine = queue_entry.assigned_machine
+
+        # Check if machine is in maintenance mode
+        if machine.current_status == 'maintenance':
+            messages.error(request, f'Cannot undo check-in - {machine.name} is under maintenance. Please contact an administrator.')
+            return redirect('check_in_check_out')
 
         # Find the entry that was at position 1 (will be bumped to position 2)
         existing_queued = QueueEntry.objects.filter(
@@ -2516,9 +2528,11 @@ def export_my_measurements(request):
     ])
 
     for m in measurements:
+        # Use machine_name field as fallback if machine was deleted
+        machine_display = m.machine.name if m.machine else (m.machine_name or 'Deleted Machine')
         writer.writerow([
             m.id,
-            m.machine.name,
+            machine_display,
             m.measurement_date.strftime('%Y-%m-%d %H:%M:%S'),
             m.title,
             m.duration_hours if m.duration_hours is not None else '',

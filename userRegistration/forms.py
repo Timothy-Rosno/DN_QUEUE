@@ -15,17 +15,17 @@ class UserRegistrationForm(UserCreationForm):
     )
     email = forms.EmailField(
         required=True,
-        help_text="Use the email tied to your Slack account."
+        help_text="Use the email tied to your Slack account in the Churchill Lab workspace."
     )
     first_name = forms.CharField(
         max_length=30,
         required=True,
-        help_text="(from Slack)"
+        help_text="from Slack"
     )
     last_name = forms.CharField(
         max_length=30,
         required=False,
-        help_text="(optional -- from Slack)"
+        help_text="optional - from Slack"
     )
 
     class Meta:
@@ -100,8 +100,9 @@ class UserProfileForm(forms.ModelForm):
             'notes': 'Notes',
         }
         help_texts = {
-            'phone_number': 'Optional',
-            'notes': 'Optional',
+            'phone_number': '(Optional)',
+            'department': 'Required',
+            'notes': '(Optional)',
         }
 
     def __init__(self, *args, **kwargs):
