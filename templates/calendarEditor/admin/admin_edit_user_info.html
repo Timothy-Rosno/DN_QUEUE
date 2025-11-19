@@ -12,10 +12,10 @@
 </div>
 
 <div class="card">
-    <h2>User Details</h2>
-
     <form method="post">
         {% csrf_token %}
+
+        <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">Account Information</h3>
 
         <!-- Username -->
         <div style="margin-bottom: 1.5rem;">
@@ -61,21 +61,52 @@
             {% endif %}
         </div>
 
+        <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Profile Information</h3>
+
         <!-- Phone Number -->
         <div style="margin-bottom: 1.5rem;">
             <label for="{{ form.phone_number.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
-                Phone Number
+                {{ form.phone_number.label }}
             </label>
             {{ form.phone_number }}
+            {% if form.phone_number.help_text %}
+                <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">{{ form.phone_number.help_text }}</small>
+            {% endif %}
             {% if form.phone_number.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.phone_number.errors }}</div>
             {% endif %}
         </div>
 
-        <!-- Department -->
+        <!-- Organization -->
         <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.organization.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.organization.label }}
+            </label>
+            {{ form.organization }}
+            {% if form.organization.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.organization.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Organization Other (conditional) -->
+        <div id="organization-other-field" style="margin-bottom: 1.5rem; display: none;">
+            <label for="{{ form.organization_other.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.organization_other.label }}
+            </label>
+            {{ form.organization_other }}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+                <div id="organizationOtherError" style="color: #e74c3c; font-size: 0.9rem; display: none; font-weight: bold;"></div>
+                <small style="color: #7f8c8d;"><span id="organizationOtherCharCount"></span></small>
+            </div>
+            {% if form.organization_other.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.organization_other.errors }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Department (conditional) -->
+        <div id="department-field" style="margin-bottom: 1.5rem; display: none;">
             <label for="{{ form.department.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
-                Department
+                {{ form.department.label }}
             </label>
             {{ form.department }}
             {% if form.department.errors %}
@@ -83,12 +114,34 @@
             {% endif %}
         </div>
 
+        <!-- Department Other (conditional) -->
+        <div id="department-other-field" style="margin-bottom: 1.5rem; display: none;">
+            <label for="{{ form.department_other.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.department_other.label }}
+            </label>
+            {{ form.department_other }}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+                <div id="departmentOtherError" style="color: #e74c3c; font-size: 0.9rem; display: none; font-weight: bold;"></div>
+                <small style="color: #7f8c8d;"><span id="departmentOtherCharCount"></span></small>
+            </div>
+            {% if form.department_other.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.department_other.errors }}</div>
+            {% endif %}
+        </div>
+
         <!-- Notes -->
         <div style="margin-bottom: 1.5rem;">
             <label for="{{ form.notes.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
-                Notes
+                {{ form.notes.label }}
             </label>
             {{ form.notes }}
+            {% if form.notes.help_text %}
+                <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">{{ form.notes.help_text }}</small>
+            {% endif %}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+                <div id="notesError" style="color: #e74c3c; font-size: 0.9rem; display: none; font-weight: bold;"></div>
+                <small style="color: #7f8c8d;"><span id="notesCharCount"></span></small>
+            </div>
             {% if form.notes.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.notes.errors }}</div>
             {% endif %}
@@ -100,13 +153,15 @@
                 Slack Member ID
             </label>
             {{ form.slack_member_id }}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">
+                Optional - Leave blank for automatic lookup
+            </small>
             {% if form.slack_member_id.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.slack_member_id.errors }}</div>
             {% endif %}
-            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">
-                Optional - Leave blank for automatic lookup
-            </small>
         </div>
+
+        <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Security Settings</h3>
 
         <!-- Security Question -->
         <div style="margin-bottom: 1.5rem;">
@@ -136,15 +191,15 @@
                 New Security Answer
             </label>
             {{ form.security_answer }}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">
+                {{ form.security_answer.help_text }}
+            </small>
             {% if form.security_answer.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.security_answer.errors }}</div>
             {% endif %}
-            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">
-                {{ form.security_answer.help_text }}
-            </small>
         </div>
 
-        <div style="margin-top: 1.5rem;">
+        <div style="margin-top: 2rem;">
             <button type="submit" class="btn">Save Changes</button>
             <a href="{% url 'admin_users' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
         </div>
@@ -152,22 +207,118 @@
 </div>
 
 <script>
-// Show/hide custom question field based on security question selection
-const securityQuestionSelect = document.getElementById('{{ form.security_question.id_for_label }}');
-const customQuestionDiv = document.getElementById('customQuestionDiv');
-
-function toggleCustomQuestion() {
-    if (securityQuestionSelect.value === 'custom') {
-        customQuestionDiv.style.display = 'block';
-    } else {
-        customQuestionDiv.style.display = 'none';
-    }
-}
-
-securityQuestionSelect.addEventListener('change', toggleCustomQuestion);
-
 // Initialize on page load
-toggleCustomQuestion();
+document.addEventListener('DOMContentLoaded', function() {
+    const organizationSelect = document.getElementById('{{ form.organization.id_for_label }}');
+    const organizationOtherField = document.getElementById('organization-other-field');
+    const departmentField = document.getElementById('department-field');
+    const departmentSelect = document.getElementById('{{ form.department.id_for_label }}');
+    const departmentOtherField = document.getElementById('department-other-field');
+    const securityQuestionSelect = document.getElementById('{{ form.security_question.id_for_label }}');
+    const customQuestionDiv = document.getElementById('customQuestionDiv');
+
+    // Handle organization selection changes
+    function toggleOrganizationFields() {
+        const orgValue = organizationSelect.value;
+
+        // Show/hide organization_other field
+        if (orgValue === 'other') {
+            organizationOtherField.style.display = 'block';
+        } else {
+            organizationOtherField.style.display = 'none';
+        }
+
+        // Show/hide department field (only for UArk)
+        if (orgValue === 'uark') {
+            departmentField.style.display = 'block';
+        } else {
+            departmentField.style.display = 'none';
+            // Reset department selection when hiding
+            departmentSelect.value = '';
+            departmentOtherField.style.display = 'none';
+        }
+    }
+
+    // Handle department selection changes
+    function toggleDepartmentOtherField() {
+        const deptValue = departmentSelect.value;
+
+        // Show/hide department_other field
+        if (deptValue === 'other') {
+            departmentOtherField.style.display = 'block';
+        } else {
+            departmentOtherField.style.display = 'none';
+        }
+    }
+
+    // Handle security question changes
+    function toggleCustomQuestion() {
+        if (securityQuestionSelect.value === 'custom') {
+            customQuestionDiv.style.display = 'block';
+        } else {
+            customQuestionDiv.style.display = 'none';
+        }
+    }
+
+    // Add event listeners
+    organizationSelect.addEventListener('change', toggleOrganizationFields);
+    departmentSelect.addEventListener('change', toggleDepartmentOtherField);
+    securityQuestionSelect.addEventListener('change', toggleCustomQuestion);
+
+    // Initialize on page load
+    toggleOrganizationFields();
+    toggleDepartmentOtherField();
+    toggleCustomQuestion();
+
+    // Character counter functionality
+    setupCharacterCounter('{{ form.organization_other.id_for_label }}', 'organizationOtherCharCount', 'organizationOtherError', 100);
+    setupCharacterCounter('{{ form.department_other.id_for_label }}', 'departmentOtherCharCount', 'departmentOtherError', 100);
+    setupCharacterCounter('{{ form.notes.id_for_label }}', 'notesCharCount', 'notesError', 500);
+});
+
+// Character counter setup function
+function setupCharacterCounter(fieldId, counterId, errorId, maxLength) {
+    const field = document.getElementById(fieldId);
+    const counter = document.getElementById(counterId);
+    const errorDiv = document.getElementById(errorId);
+
+    if (!field || !counter || !errorDiv) return;
+
+    function updateCounter() {
+        let length = field.value.length;
+
+        // Enforce max length
+        if (length > maxLength) {
+            field.value = field.value.slice(0, maxLength);
+            length = maxLength;
+        }
+
+        const remaining = maxLength - length;
+
+        // Display counter only when near the limit (25 or fewer characters remaining)
+        if (remaining <= 25) {
+            counter.textContent = remaining + " characters remaining";
+            if (remaining <= 10) {
+                counter.style.color = "#e74c3c"; // danger red
+            } else {
+                counter.style.color = "#f39c12"; // warning orange
+            }
+        } else {
+            counter.textContent = "";
+            counter.style.color = "#7f8c8d"; // normal gray
+        }
+
+        // Clear any error messages
+        errorDiv.style.display = "none";
+    }
+
+    // Initialize counter on page load
+    updateCounter();
+
+    // Update on input
+    field.addEventListener("input", updateCounter);
+    field.addEventListener("keyup", updateCounter);
+}
 </script>
 
 {% endblock %}

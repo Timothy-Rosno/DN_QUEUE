@@ -48,7 +48,11 @@ class UserRegistrationForm(UserCreationForm):
         user.email = self.cleaned_data['email']
         user.first_name = self.cleaned_data['first_name']
         user.last_name = self.cleaned_data['last_name']
+
         if commit:
+            # Bypass username validators to allow ANY character (including spaces, special chars, etc.)
+            from django.contrib.auth.models import User
+            User._meta.get_field('username').validators = []
             user.save()
         return user
 
@@ -313,18 +317,40 @@ class AdminEditUserForm(forms.Form):
     phone_number = forms.CharField(
         max_length=15,
         required=False,
-        label='Phone Number'
+        label='Phone Number',
+        widget=forms.TextInput(attrs={'type': 'tel', 'maxlength': '15'}),
+        help_text='Optional'
     )
-    department = forms.CharField(
+    organization = forms.ChoiceField(
+        choices=UserProfile.ORGANIZATION_CHOICES,
+        required=False,
+        label='Organization',
+        widget=forms.Select()
+    )
+    organization_other = forms.CharField(
         max_length=100,
         required=False,
-        label='Department'
+        label='Organization Name',
+        widget=forms.TextInput(attrs={'maxlength': '100'})
+    )
+    department = forms.ChoiceField(
+        choices=UserProfile.DEPARTMENT_CHOICES,
+        required=False,
+        label='Department',
+        widget=forms.Select()
+    )
+    department_other = forms.CharField(
+        max_length=100,
+        required=False,
+        label='Department Name',
+        widget=forms.TextInput(attrs={'maxlength': '100'})
     )
     notes = forms.CharField(
         max_length=500,
         required=False,
-        widget=forms.Textarea(attrs={'rows': 3}),
-        label='Notes'
+        widget=forms.Textarea(attrs={'rows': 3, 'maxlength': '500'}),
+        label='Notes',
+        help_text='Optional'
     )
     slack_member_id = forms.CharField(
         max_length=50,
@@ -363,7 +389,10 @@ class AdminEditUserForm(forms.Form):
             if hasattr(user_instance, 'profile'):
                 profile = user_instance.profile
                 self.fields['phone_number'].initial = profile.phone_number
+                self.fields['organization'].initial = profile.organization
+                self.fields['organization_other'].initial = profile.organization_other
                 self.fields['department'].initial = profile.department
+                self.fields['department_other'].initial = profile.department_other
                 self.fields['notes'].initial = profile.notes
                 self.fields['slack_member_id'].initial = profile.slack_member_id
                 self.fields['security_question'].initial = profile.security_question
@@ -380,9 +409,21 @@ class AdminEditUserForm(forms.Form):
         cleaned_data = super().clean()
         security_question = cleaned_data.get('security_question')
         security_question_custom = cleaned_data.get('security_question_custom')
+        organization = cleaned_data.get('organization')
+        organization_other = cleaned_data.get('organization_other')
+        department = cleaned_data.get('department')
+        department_other = cleaned_data.get('department_other')
 
         # If custom question is selected, custom text is required
         if security_question == 'custom' and not security_question_custom:
             self.add_error('security_question_custom', 'Please enter a custom security question.')
+
+        # If "Other" organization is selected, organization_other is required
+        if organization == 'other' and not organization_other:
+            self.add_error('organization_other', 'Please enter the organization name.')
+
+        # If "Other" department is selected, department_other is required
+        if department == 'other' and not department_other:
+            self.add_error('department_other', 'Please enter the department name.')
 
         return cleaned_data
