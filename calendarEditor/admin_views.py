@@ -585,6 +585,18 @@ def delete_machine(request, machine_id):
                         status='orphaned'  # Mark as orphaned since machine was deleted
                     )
 
+                    # Notify the user that their entry was orphaned
+                    try:
+                        notifications.create_notification(
+                            recipient=entry.user,
+                            notification_type='queue_cancelled',
+                            title='Entry Orphaned - Machine Deleted',
+                            message=f'Your {"running measurement" if entry.status == "running" else "queue entry"} "{entry.title}" on {machine_name} has been orphaned because the machine was deleted by an administrator.',
+                            related_queue_entry=entry,
+                        )
+                    except Exception as notif_error:
+                        print(f"Failed to notify user about orphaned entry: {notif_error}")
+
                     # Update the queue entry status to cancelled (since machine is gone)
                     entry.status = 'cancelled'
                     entry.save(update_fields=['status'])

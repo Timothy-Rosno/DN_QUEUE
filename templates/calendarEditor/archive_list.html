@@ -204,8 +204,12 @@
                 <td style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;" title="{{ archive.user.username }}">
                     {{ archive.user.username }}
                 </td>
-                <td style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;" title="{{ archive.machine.name }}">
-                    {{ archive.machine.name }}
+                <td style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;" title="{% if archive.machine %}{{ archive.machine.name }}{% else %}{{ archive.machine_name|default:'Unknown' }}{% endif %}">
+                    {% if archive.machine %}
+                        {{ archive.machine.name }}
+                    {% else %}
+                        {{ archive.machine_name|default:"Unknown" }}
+                    {% endif %}
                 </td>
                 <td style="white-space: nowrap; font-size: 0.9rem; text-align: center;">
                     {% if archive.duration_hours is not None and archive.status != 'cancelled' %}
@@ -219,9 +223,19 @@
                 </td>
                 <td style="white-space: nowrap; font-size: 0.9rem; text-align: center;">
                     {% if archive.status == 'completed' %}
-                        <span style="color: #27ae60; font-weight: bold;">Completed</span>
+                        {% if not archive.machine %}
+                            <span data-tooltip="Machine was deleted" style="color: #27ae60; font-weight: bold;">Completed</span>
+                        {% else %}
+                            <span style="color: #27ae60; font-weight: bold;">Completed</span>
+                        {% endif %}
                     {% elif archive.status == 'cancelled' %}
-                        <span style="color: #e74c3c; font-weight: bold;">Cancelled</span>
+                        {% if not archive.machine %}
+                            <span data-tooltip="Machine was deleted" style="color: #e74c3c; font-weight: bold;">Cancelled</span>
+                        {% else %}
+                            <span style="color: #e74c3c; font-weight: bold;">Cancelled</span>
+                        {% endif %}
+                    {% elif archive.status == 'orphaned' %}
+                        <span data-tooltip="Machine was deleted" style="color: #f39c12; font-weight: bold;">Orphaned</span>
                     {% else %}
                         {{ archive.get_status_display }}
                     {% endif %}
