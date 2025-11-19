@@ -666,18 +666,8 @@ def notify_admin_moved_entry(queue_entry, admin_user, old_position, new_position
     # Build the message based on the move
     if new_position == 1:
         # Moved TO position 1 - special handling
-        from django.utils import timezone
-
-        # Check if machine is ready for check-in
-        in_cooldown = False
-        if machine.estimated_available_time:
-            in_cooldown = machine.estimated_available_time > timezone.now()
-
-        is_online = machine.is_online()
-        machine_is_ready = (machine.current_status == 'idle' and
-                           machine.is_available and
-                           is_online and
-                           not in_cooldown)
+        # Simple: if machine is idle, they can check in
+        machine_is_ready = (machine.current_status == 'idle')
 
         title = 'Admin Moved You to On Deck!'
 
@@ -778,25 +768,11 @@ def check_and_notify_on_deck_status(machine):
                     )
 
         if on_deck_entry:
-            # Determine what notification type the user should receive based on current machine status
-            from django.utils import timezone
+            # Simple logic: if machine is idle, user can check in. Otherwise, they're on deck.
+            # (If machine is unavailable, nothing should be assigned to it anyway)
+            print(f"[CHECK_ON_DECK] Machine status: {machine.current_status}")
 
-            # Check if machine is in cooldown (estimated_available_time is in the future)
-            in_cooldown = False
-            if machine.estimated_available_time:
-                in_cooldown = machine.estimated_available_time > timezone.now()
-                print(f"[CHECK_ON_DECK] Machine in cooldown: {in_cooldown}, available at: {machine.estimated_available_time}")
-            else:
-                print(f"[CHECK_ON_DECK] No cooldown set (estimated_available_time is None)")
-
-            # Determine the correct notification type based on machine readiness
-            is_online = machine.is_online()
-            print(f"[CHECK_ON_DECK] Machine checks: status={machine.current_status}, is_available={machine.is_available}, is_online={is_online}, in_cooldown={in_cooldown}")
-
-            machine_is_ready = (machine.current_status == 'idle' and
-                               machine.is_available and
-                               is_online and
-                               not in_cooldown)
+            machine_is_ready = (machine.current_status == 'idle')
 
             correct_notif_type = 'ready_for_check_in' if machine_is_ready else 'on_deck'
             print(f"[CHECK_ON_DECK] machine_is_ready={machine_is_ready}, will send: {correct_notif_type}")
@@ -808,12 +784,8 @@ def check_and_notify_on_deck_status(machine):
                     on_deck_reason = 'maintenance'
                 elif machine.current_status == 'running':
                     on_deck_reason = 'running'
-                elif in_cooldown:
+                elif machine.current_status == 'cooldown':
                     on_deck_reason = 'cooldown'
-                elif not is_online:
-                    on_deck_reason = 'disconnected'
-                elif not machine.is_available:
-                    on_deck_reason = 'unavailable'
                 print(f"[CHECK_ON_DECK] Not ready reason: {on_deck_reason}")
 
             # Check what notification the user currently has (check for any unread position 1 notifications)
