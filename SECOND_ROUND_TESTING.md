@@ -40,12 +40,12 @@
 - [X] Tooltip shows full description (not truncated)
 - [X] Tooltip has nice styling (dark background, arrow, readable)
 - [X] Move mouse away → tooltip disappears
-- [BROKEN: When the thing is clicked, the tooltip doesn't go away until clicked again on desktop. On mobile, it never goes away, but I want it to go away when scrolling away or tap somewhere else.] Click for tooltip
+- [FIXED: When the thing is clicked, the tooltip doesn't go away until clicked again on desktop. On mobile, it never goes away, but I want it to go away when scrolling away or tap somewhere else.] Click for tooltip
 #### Mobile/Tablet Testing
 - [X] Open site on mobile device or use browser dev tools (responsive mode)
 - [X] **Tap** on measurement title with tooltip
 - [X] Tooltip appears and stays visible
-- [BROKEN: When the thing is clicked, the tooltip doesn't go away until clicked again on desktop. On mobile, I want it to go away also when scrolling away, not just tapping somewhere else.] Tap measurement again → tooltip disappears. 
+- [FIXED: When the thing is clicked, the tooltip doesn't go away until clicked again on desktop. On mobile, I want it to go away also when scrolling away, not just tapping somewhere else.] Tap measurement again → tooltip disappears. 
 - [X] Tap outside tooltip → tooltip disappears
 - [X] Test on `/schedule/fridges/` page as well
 
@@ -55,13 +55,13 @@
 - [X] Home page - "Currently Running:" yellow box
 - [X] Fridge list - "Running:" in details (authenticated)
 - [X] Fridge list - "Running:" in details (unauthenticated)
-- [BROKEN: Tooltip needs to be displayed over top and within the card or window that it's in. Right now it can extend beyond the frame but it's underneath so it's not entirely visible everywhere.] Tooltip text display perfectly.
+- [FIXED: Tooltip needs to be displayed over top and within the card or window that it's in. Right now it can extend beyond the frame but it's underneath so it's not entirely visible everywhere.] Tooltip text display perfectly.
 #### Tooltip Content Validation
 - [X] Create queue entry with 50+ character description
 - [X] Check in to start measurement
 - [X] Verify tooltip shows FULL description (not truncated like title)
-- [BROKEN] Test with very long description (200+ chars) → tooltip should wrap properly
-- [BROKEN: Can we also add tool tip for the on deck description in both the home page and the fridge specs and the admin queue locations, the same way? But also, I need it to say Description: and then the description.]
+- [FIXED] Test with very long description (200+ chars) → tooltip should wrap properly
+- [FIXED: Can we also add tool tip for the on deck description in both the home page and the fridge specs and the admin queue locations, the same way? But also, I need it to say Description: and then the description.]
 
 ---
 
@@ -99,9 +99,9 @@
 
 #### Test 1: Cancel Position 2 (A stays in position 1)
 - [X] Admin cancels Position 2 (User B)
-- [BROKEN: No notification received] User B receives cancellation notification ✓
+- [FIXED: No notification received] User B receives cancellation notification ✓
 - [X] User A should **NOT** receive "you're in position 1" notification (already there)
-- [BROKEN: No notification received about the moving to pos N because a measurement ahead of them was cancelled.] User C receives "you moved to position 2" notification ✓
+- [FIXED: No notification received about the moving to pos N because a measurement ahead of them was cancelled.] User C receives "you moved to position 2" notification ✓
 
 #### Test 2: Cancel Position 1 (New person becomes #1)
 - [X] Admin cancels Position 1 (User A)

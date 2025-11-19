@@ -415,9 +415,19 @@ async function updateMachineTemperatures() {
             // Update status badges if they exist
             const statusBadges = document.querySelectorAll(`[data-machine-id="${machine.id}"] .status-badge`);
             statusBadges.forEach(badge => {
-                const statusClass = machine.is_online ? 'status-connected' : 'status-disconnected';
+                // Use full display status from API (e.g., "Connected - Idle", "Disconnected - Measuring")
+                const displayStatus = machine.status || (machine.is_online ? 'Connected' : 'Disconnected');
+
+                // Determine CSS class based on connection status
+                let statusClass = 'status-disconnected';
+                if (displayStatus.includes('Connected')) {
+                    statusClass = 'status-connected';
+                } else if (displayStatus.includes('Maintenance')) {
+                    statusClass = 'status-maintenance';
+                }
+
                 badge.className = 'status-badge ' + statusClass;
-                badge.textContent = machine.is_online ? 'Connected' : 'Disconnected';
+                badge.textContent = displayStatus;
             });
         });
 

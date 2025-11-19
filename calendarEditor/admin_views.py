@@ -696,6 +696,14 @@ def admin_cancel_entry(request, entry_id):
     if machine:
         reorder_queue(machine)
 
+        # If a running measurement was cancelled, notify position 1 they can now check in
+        # (reorder_queue won't do this because position 1 didn't change)
+        if was_running:
+            try:
+                notifications.check_and_notify_on_deck_status(machine)
+            except Exception as e:
+                print(f"On-deck notification after cancel failed: {e}")
+
     messages.success(request, f'Entry "{entry_title}" has been canceled and archived.')
     return redirect('admin_queue')
 
@@ -866,6 +874,7 @@ def approve_rush_job(request, entry_id):
     if entry.is_rush_job and entry.status == 'queued' and entry.assigned_machine:
         # Move to position 1 (queue next)
         machine = entry.assigned_machine
+        old_position = entry.queue_position
 
         # Find who is currently at position #1 (they will be bumped)
         current_on_deck = QueueEntry.objects.filter(
@@ -897,11 +906,11 @@ def approve_rush_job(request, entry_id):
 
         # Notify the person who was bumped from position #1
         if current_on_deck:
-            current_on_deck.refresh_from_db()  # Get updated position
+            current_on_deck.refresh_from_db()
             notifications.notify_bumped_from_on_deck(current_on_deck, reason='rush job')
 
-        # Notify the rush job user they're now on deck
-        notifications.notify_on_deck(entry)
+        # Notify the rush job user they've been moved to position 1
+        notifications.notify_admin_moved_entry(entry, request.user, old_position, 1)
 
         messages.success(request, f'Rush job "{entry.title}" approved and moved to position 1 on {machine.name}.')
     else:
@@ -993,6 +1002,7 @@ def queue_next(request, entry_id):
 
         if entry.status == 'queued' and entry.assigned_machine:
             machine = entry.assigned_machine
+            old_position = entry.queue_position
 
             # Find who is currently at position #1 (they will be bumped)
             current_on_deck = QueueEntry.objects.filter(
@@ -1017,11 +1027,11 @@ def queue_next(request, entry_id):
 
             # Notify the person who was bumped from position #1
             if current_on_deck:
-                current_on_deck.refresh_from_db()  # Get updated position
+                current_on_deck.refresh_from_db()
                 notifications.notify_bumped_from_on_deck(current_on_deck, reason='priority request')
 
-            # Check machine status and notify the user accordingly (on_deck or ready_for_check_in)
-            notifications.check_and_notify_on_deck_status(machine)
+            # Notify the moved entry with admin-specific notification
+            notifications.notify_admin_moved_entry(entry, request.user, old_position, 1)
 
             messages.success(request, f'"{entry.title}" moved to position 1.')
         else:
@@ -1050,10 +1060,6 @@ def move_queue_up(request, entry_id):
             ).first()
 
             if entry_above:
-                # Remember if entry_above was at position #1 (they're being bumped)
-                was_on_deck = (entry_above.queue_position == 1)
-                old_pos_above = entry_above.queue_position
-
                 # Swap positions
                 new_pos = current_pos - 1
                 entry.queue_position = new_pos
@@ -1061,15 +1067,8 @@ def move_queue_up(request, entry_id):
                 entry.save()
                 entry_above.save()
 
-                # Notify the moved entry with admin-specific notification
+                # Notify only the moved entry with admin-specific notification
                 notifications.notify_admin_moved_entry(entry, request.user, current_pos, new_pos)
-
-                # If entry_above was bumped from position #1, notify them
-                if was_on_deck:
-                    notifications.notify_bumped_from_on_deck(entry_above, reason='priority request')
-                else:
-                    # Regular position change for entry_above
-                    notifications.notify_queue_position_change(entry_above, old_pos_above, current_pos)
 
                 messages.success(request, f'"{entry.title}" moved up.')
             else:
@@ -1100,10 +1099,6 @@ def move_queue_down(request, entry_id):
             ).first()
 
             if entry_below:
-                # Remember if entry was at position #1 (they're being bumped)
-                was_on_deck = (current_pos == 1)
-                old_pos_below = entry_below.queue_position
-
                 # Swap positions
                 new_pos = current_pos + 1
                 entry.queue_position = new_pos
@@ -1111,16 +1106,8 @@ def move_queue_down(request, entry_id):
                 entry.save()
                 entry_below.save()
 
-                # Notify the moved entry with admin-specific notification
+                # Notify only the moved entry with admin-specific notification
                 notifications.notify_admin_moved_entry(entry, request.user, current_pos, new_pos)
-
-                # If entry_below moved to position #1 (bumping entry from position 1)
-                if current_pos == 1:
-                    # entry_below took position 1, so notify them with admin move notification
-                    notifications.notify_admin_moved_entry(entry_below, request.user, old_pos_below, current_pos)
-                else:
-                    # Regular position change for entry_below
-                    notifications.notify_queue_position_change(entry_below, old_pos_below, current_pos)
 
                 messages.success(request, f'"{entry.title}" moved down.')
             else:
