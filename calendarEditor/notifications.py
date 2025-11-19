@@ -392,7 +392,7 @@ def notify_on_deck(queue_entry, reason=None):
 
     Args:
         queue_entry: The queue entry at position #1
-        reason: Optional reason why machine isn't ready (e.g., 'maintenance', 'running', 'cooldown', 'offline')
+        reason: Optional reason why machine isn't ready (e.g., 'maintenance', 'running', 'cooldown', 'disconnected')
     """
     user = queue_entry.user
     machine = queue_entry.assigned_machine
@@ -405,8 +405,8 @@ def notify_on_deck(queue_entry, reason=None):
         message = f'Your request "{queue_entry.title}" is now #1 in line for {machine.name}. The machine is currently running another measurement - you will be notified when it becomes available.'
     elif reason == 'cooldown':
         message = f'Your request "{queue_entry.title}" is now #1 in line for {machine.name}. The machine is currently in cooldown - you will be notified when it becomes available.'
-    elif reason == 'offline':
-        message = f'Your request "{queue_entry.title}" is now #1 in line for {machine.name}. The machine is currently offline - you will be notified when it becomes available.'
+    elif reason == 'disconnected':
+        message = f'Your request "{queue_entry.title}" is now #1 in line for {machine.name}. The machine is currently disconnected - you will be notified when it becomes available.'
     elif reason == 'unavailable':
         message = f'Your request "{queue_entry.title}" is now #1 in line for {machine.name}. The machine is currently unavailable - you will be notified when it becomes available.'
     else:
@@ -811,7 +811,7 @@ def check_and_notify_on_deck_status(machine):
                 elif in_cooldown:
                     on_deck_reason = 'cooldown'
                 elif not is_online:
-                    on_deck_reason = 'offline'
+                    on_deck_reason = 'disconnected'
                 elif not machine.is_available:
                     on_deck_reason = 'unavailable'
                 print(f"[CHECK_ON_DECK] Not ready reason: {on_deck_reason}")

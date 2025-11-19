@@ -319,11 +319,15 @@ def reorder_queue(machine, notify=True):
 
     # Track old positions before reordering
     old_positions = {}
+    old_position_1_entry_id = None
     for entry in queued_entries:
         old_positions[entry.id] = entry.queue_position
+        if entry.queue_position == 1:
+            old_position_1_entry_id = entry.id
 
     # Reassign sequential positions to all queued entries
     position_changes = []
+    new_position_1_entry_id = None
     for index, entry in enumerate(queued_entries, start=1):
         old_pos = old_positions.get(entry.id)
         if entry.queue_position != index:
@@ -334,6 +338,7 @@ def reorder_queue(machine, notify=True):
         entry.estimated_start_time = entry.calculate_estimated_start_time()
         entry.save()
         if index == 1:
+            new_position_1_entry_id = entry.id
             print(f"[REORDER_QUEUE] Position #1: {entry.title} for user {entry.user.username}")
 
     # Notify users of position changes (unless notify=False)
@@ -347,14 +352,20 @@ def reorder_queue(machine, notify=True):
                 except Exception as e:
                     print(f"[REORDER_QUEUE] Position change notification failed: {e}")
 
-        # Check if there's a new entry at position #1 and notify them they're ON DECK
-        print(f"[REORDER_QUEUE] Calling check_and_notify_on_deck_status")
-        try:
-            notifications.check_and_notify_on_deck_status(machine)
-        except Exception as e:
-            print(f"[REORDER_QUEUE] ERROR in notification: {e}")
-            import traceback
-            traceback.print_exc()
+        # Only notify position 1 if it actually changed (new user at position 1)
+        # This prevents notifying position 1 when someone behind them is deleted
+        position_1_changed = (new_position_1_entry_id != old_position_1_entry_id)
+
+        if position_1_changed and new_position_1_entry_id is not None:
+            print(f"[REORDER_QUEUE] Position #1 changed, calling check_and_notify_on_deck_status")
+            try:
+                notifications.check_and_notify_on_deck_status(machine)
+            except Exception as e:
+                print(f"[REORDER_QUEUE] ERROR in notification: {e}")
+                import traceback
+                traceback.print_exc()
+        else:
+            print(f"[REORDER_QUEUE] Position #1 unchanged (id={new_position_1_entry_id}), skipping on-deck notification")
 
 
 def move_queue_entry_up(entry_id):

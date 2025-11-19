@@ -108,6 +108,9 @@
     .status-running { background-color: #d4edda; color: #155724; }
     .status-cooldown { background-color: #fff3cd; color: #856404; }
     .status-maintenance { background-color: #f8d7da; color: #721c24; }
+    .status-connected { background-color: #d4edda; color: #155724; }
+    .status-disconnected { background-color: #f8d7da; color: #721c24; }
+    /* Legacy class names for backwards compatibility */
     .status-online { background-color: #d4edda; color: #155724; }
     .status-offline { background-color: #f8d7da; color: #721c24; }
     .status-connected-measuring { background-color: #5cb85c; color: white; }
@@ -412,9 +415,9 @@ async function updateMachineTemperatures() {
             // Update status badges if they exist
             const statusBadges = document.querySelectorAll(`[data-machine-id="${machine.id}"] .status-badge`);
             statusBadges.forEach(badge => {
-                const statusClass = machine.is_online ? 'status-online' : 'status-offline';
+                const statusClass = machine.is_online ? 'status-connected' : 'status-disconnected';
                 badge.className = 'status-badge ' + statusClass;
-                badge.textContent = machine.is_online ? 'Online' : 'Offline';
+                badge.textContent = machine.is_online ? 'Connected' : 'Disconnected';
             });
         });
 
