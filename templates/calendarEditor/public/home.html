@@ -169,7 +169,7 @@
                             {% if item.running_job %}
                             <div style="margin-bottom: 0.5rem;">
                                 <strong>Running:</strong>
-                                <span>{{ item.running_job.user.username }} - {{ item.running_job.title|truncatechars:30 }}</span><br>
+                                <span data-tooltip="{{ item.running_job.description }}">{{ item.running_job.user.username }} - {{ item.running_job.title|truncatechars:30 }}</span><br>
                                 <span class="countdown-timer"
                                     style="font-family: inherit; font-size: 0.85rem; color: #2c3e50;"
                                     data-end-time="{{ item.running_job.started_at|date:'c' }}"
@@ -205,8 +205,7 @@
                             {% if item.running_job %}
                             <div style="margin-bottom: 0.5rem;">
                                 <strong>Running:</strong>
-                                <!-- <span>{{ item.running_job.user.username }} - {{ item.running_job.title|truncatechars:30 }}</span><br> -->
-                                 <span>{{ item.running_job.title|truncatechars:30 }}</span><br>
+                                <span data-tooltip="{{ item.running_job.description }}">{{ item.running_job.title|truncatechars:30 }}</span><br>
                                 <span class="countdown-timer"
                                     style="font-family: inherit; font-size: 0.85rem; color: #2c3e50;"
                                     data-end-time="{{ item.running_job.started_at|date:'c' }}"
@@ -342,7 +341,7 @@
             <div style="flex: 1;">
                 <strong style="color: #856404;">▶️ Currently Running:</strong>
                 <div style="margin-top: 0.25rem;">
-                    <strong>{{ data.running_entry.title }}</strong> ({{ data.running_entry.user.username }})
+                    <strong data-tooltip="{{ data.running_entry.description }}">{{ data.running_entry.title }}</strong> ({{ data.running_entry.user.username }})
                 </div>
                 <div style="color: #856404; font-size: 0.9rem; margin-top: 0.25rem;">
                     Started: {{ data.running_entry.started_at|date:"M d, g:i A" }}

@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.core.validators import MaxLengthValidator
+from django.core.validators import MaxLengthValidator, MinLengthValidator
 from datetime import timedelta, datetime
 import os
 import secrets
@@ -255,7 +255,7 @@ class QueueEntry(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='queue_entries')
     title = models.CharField(max_length=75, help_text="Experiment title/name")
-    description = models.TextField(blank=True, help_text="Experiment description", validators=[MaxLengthValidator(500)])
+    description = models.TextField(help_text="Experiment description", validators=[MinLengthValidator(50), MaxLengthValidator(500)])
 
     # User requirements
     required_min_temp = models.FloatField(help_text="Required minimum temperature (Kelvin)")
@@ -575,6 +575,10 @@ class Notification(models.Model):
         # ON DECK, Ready for Check-In, Checkout Reminder, Machine Status Changed, Admin Check-In, Admin Checkout - go to check-in/check-out page
         elif self.notification_type in ['on_deck', 'ready_for_check_in', 'checkout_reminder', 'machine_status_changed', 'admin_check_in', 'admin_checkout']:
             return reverse('check_in_check_out')
+
+        # Account approval - go to home page
+        elif self.notification_type == 'account_approved':
+            return reverse('home')
 
         # Default fallback
         return reverse('my_queue')

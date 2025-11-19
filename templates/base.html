@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -406,6 +407,9 @@
             font-weight: bold;
         }
     </style>
+
+    <!-- Global Tooltip System -->
+    <link rel="stylesheet" href="{% static 'css/tooltips.css' %}">
 </head>
 <body>
     <nav>
@@ -826,5 +830,8 @@
         // Update temperatures every 10 seconds (just the text values, NOT the page)
         setInterval(updateMachineStatus, 10000);
     </script>
+
+    <!-- Global Tooltip System -->
+    <script src="{% static 'js/tooltips.js' %}"></script>
 </body>
 </html>

@@ -1988,6 +1988,8 @@ def notification_clear_read_api(request):
 @login_required
 def archive_list(request):
     """Display archive of completed measurements with filters."""
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
     # Get all archived measurements (all users can see all archives)
     archives = ArchivedMeasurement.objects.all()
 
@@ -2026,8 +2028,34 @@ def archive_list(request):
     # Get users for filter (admin only)
     users = User.objects.all().order_by('username') if request.user.is_staff else None
 
+    # Pagination
+    per_page = request.GET.get('per_page', '25')  # Default to 25 entries per page
+    try:
+        per_page = int(per_page)
+        if per_page not in [10, 25, 50, 100]:
+            per_page = 25
+    except (ValueError, TypeError):
+        per_page = 25
+
+    # Order archives by date (newest first)
+    archives_ordered = archives.order_by('-measurement_date')
+
+    # Create paginator
+    paginator = Paginator(archives_ordered, per_page)
+    page_number = request.GET.get('page', 1)
+
+    try:
+        page_obj = paginator.get_page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.get_page(1)
+    except EmptyPage:
+        page_obj = paginator.get_page(paginator.num_pages)
+
     context = {
-        'archives': archives.order_by('-measurement_date'),
+        'archives': page_obj,
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'per_page': per_page,
         'machines': machines,
         'users': users,
         'available_years': available_years,

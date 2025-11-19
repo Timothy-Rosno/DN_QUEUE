@@ -137,6 +137,27 @@
     </form>
 </div>
 
+<!-- Pagination Info and Controls -->
+{% if archives %}
+<div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div style="display: flex; gap: 1rem; align-items: center;">
+        <span style="color: #7f8c8d; font-size: 0.9rem;">
+            Showing {{ archives.start_index }}-{{ archives.end_index }} of {{ paginator.count }} entries
+        </span>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label for="perPageSelect" style="color: #7f8c8d; font-size: 0.9rem; margin: 0;">Show:</label>
+            <select id="perPageSelect" onchange="changePerPage(this.value)" style="padding: 0.25rem 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;">
+                <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+            </select>
+            <span style="color: #7f8c8d; font-size: 0.9rem;">per page</span>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Archive Table -->
 <div class="table-container">
     {% if user.is_staff and archives %}
@@ -232,13 +253,90 @@
     {% endif %}
 </div>
 
+<!-- Pagination Controls -->
+{% if archives and paginator.num_pages > 1 %}
+<div style="margin-top: 1.5rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+    <!-- Previous Button -->
+    {% if page_obj.has_previous %}
+        <a href="?{% if selected_year %}year={{ selected_year }}&{% endif %}{% if selected_month %}month={{ selected_month }}&{% endif %}{% if selected_day %}day={{ selected_day }}&{% endif %}{% if selected_machine %}machine={{ selected_machine }}&{% endif %}{% if selected_user %}user={{ selected_user }}&{% endif %}per_page={{ per_page }}&page={{ page_obj.previous_page_number }}"
+           class="btn btn-secondary" style="padding: 0.5rem 1rem;">← Previous</a>
+    {% else %}
+        <button class="btn btn-secondary" disabled style="padding: 0.5rem 1rem; opacity: 0.5; cursor: not-allowed;">← Previous</button>
+    {% endif %}
+
+    <!-- Page Numbers -->
+    <div style="display: flex; gap: 0.25rem;">
+        {% if page_obj.number > 3 %}
+            <a href="?{% if selected_year %}year={{ selected_year }}&{% endif %}{% if selected_month %}month={{ selected_month }}&{% endif %}{% if selected_day %}day={{ selected_day }}&{% endif %}{% if selected_machine %}machine={{ selected_machine }}&{% endif %}{% if selected_user %}user={{ selected_user }}&{% endif %}per_page={{ per_page }}&page=1"
+               style="padding: 0.5rem 0.75rem; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #2c3e50; background: white;">1</a>
+            {% if page_obj.number > 4 %}
+                <span style="padding: 0.5rem 0.75rem;">...</span>
+            {% endif %}
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                {% if num == page_obj.number %}
+                    <span style="padding: 0.5rem 0.75rem; border: 1px solid #3498db; border-radius: 4px; background: #3498db; color: white; font-weight: bold;">{{ num }}</span>
+                {% else %}
+                    <a href="?{% if selected_year %}year={{ selected_year }}&{% endif %}{% if selected_month %}month={{ selected_month }}&{% endif %}{% if selected_day %}day={{ selected_day }}&{% endif %}{% if selected_machine %}machine={{ selected_machine }}&{% endif %}{% if selected_user %}user={{ selected_user }}&{% endif %}per_page={{ per_page }}&page={{ num }}"
+                       style="padding: 0.5rem 0.75rem; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #2c3e50; background: white;">{{ num }}</a>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.number < paginator.num_pages|add:'-2' %}
+            {% if page_obj.number < paginator.num_pages|add:'-3' %}
+                <span style="padding: 0.5rem 0.75rem;">...</span>
+            {% endif %}
+            <a href="?{% if selected_year %}year={{ selected_year }}&{% endif %}{% if selected_month %}month={{ selected_month }}&{% endif %}{% if selected_day %}day={{ selected_day }}&{% endif %}{% if selected_machine %}machine={{ selected_machine }}&{% endif %}{% if selected_user %}user={{ selected_user }}&{% endif %}per_page={{ per_page }}&page={{ paginator.num_pages }}"
+               style="padding: 0.5rem 0.75rem; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #2c3e50; background: white;">{{ paginator.num_pages }}</a>
+        {% endif %}
+    </div>
+
+    <!-- Next Button -->
+    {% if page_obj.has_next %}
+        <a href="?{% if selected_year %}year={{ selected_year }}&{% endif %}{% if selected_month %}month={{ selected_month }}&{% endif %}{% if selected_day %}day={{ selected_day }}&{% endif %}{% if selected_machine %}machine={{ selected_machine }}&{% endif %}{% if selected_user %}user={{ selected_user }}&{% endif %}per_page={{ per_page }}&page={{ page_obj.next_page_number }}"
+           class="btn btn-secondary" style="padding: 0.5rem 1rem;">Next →</a>
+    {% else %}
+        <button class="btn btn-secondary" disabled style="padding: 0.5rem 1rem; opacity: 0.5; cursor: not-allowed;">Next →</button>
+    {% endif %}
+</div>
+{% endif %}
+
 <script>
 function applyFilters() {
-    document.getElementById('filterForm').submit();
+    // Add per_page to the form if not already present
+    const form = document.getElementById('filterForm');
+    const perPageSelect = document.getElementById('perPageSelect');
+
+    if (perPageSelect && !form.querySelector('input[name="per_page"]')) {
+        const perPageInput = document.createElement('input');
+        perPageInput.type = 'hidden';
+        perPageInput.name = 'per_page';
+        perPageInput.value = perPageSelect.value;
+        form.appendChild(perPageInput);
+    }
+
+    form.submit();
 }
 
 function resetFilters() {
     window.location.href = '{% url "archive_list" %}';
+}
+
+function changePerPage(perPageValue) {
+    // Get current URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // Update per_page parameter
+    urlParams.set('per_page', perPageValue);
+
+    // Reset to page 1 when changing per_page
+    urlParams.set('page', '1');
+
+    // Redirect with new parameters
+    window.location.href = '{% url "archive_list" %}?' + urlParams.toString();
 }
 
 function toggleSelectAll() {

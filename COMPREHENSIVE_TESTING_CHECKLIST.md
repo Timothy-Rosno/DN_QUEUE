@@ -815,7 +815,7 @@ Create these accounts for testing:
 - [X] See success message
 - [X] Changes reflected in machine list
 - [X] Changes reflected in public pages (queue, fridges)
-- [TODO] FIX BORDER/FITTING OF THE CONTENT FOR admin-queue page. Rn if page small it extends beyond the blue border instead of just making the things scrollable within the blue border, you know?
+- [DONE] FIX BORDER/FITTING OF THE CONTENT FOR admin-queue page. Rn if page small it extends beyond the blue border instead of just making the things scrollable within the blue border, you know?
 ### Delete Machine
 
 **Test Cannot Delete with Active Queue Entries:**
@@ -831,7 +831,7 @@ Create these accounts for testing:
 - [X] Confirm deletion
 - [X] Machine removed from list
 - [X] Machine no longer appears in dropdowns
-- [TODO] QUEUE ENTRIES DETECTED --> IT HAS N active QUEUE ENTRIES, ARE YOU SURE YOU WOULD LIKE TO DELETE MACHINE X? YES, RESOTRE BALANCE or NO, SPARE THEM ALL. If none active, just do it. Even if archived. The database isn't set up to handle a new machine ,for some reason. Like the measurement for new machine finished, but it doesn't show up in archive, even though it is completed.
+- [TESTING] QUEUE ENTRIES DETECTED --> IT HAS N active QUEUE ENTRIES, ARE YOU SURE YOU WOULD LIKE TO DELETE MACHINE X? YES, RESOTRE BALANCE or NO, SPARE THEM ALL. If none active, just do it. Even if archived. The database isn't set up to handle a new machine ,for some reason. Like the measurement for new machine finished, but it doesn't show up in archive, even though it is completed.
 
 ### Temperature Updates (If temperature gateway configured)
 
@@ -878,13 +878,13 @@ Create these accounts for testing:
 - [X] User receives notification about changes
 - [DONE] Figure out what can be changed about a running entry: Name, notes, etc.
 ### Cancel Queue Entry (Admin)
-- [TODO] Don't notify about position changes when it's from a delete of one behind it in the queue
+- [DONE] Don't notify about position changes when it's from a delete of one behind it in the queue
 - [X] Click "Cancel" on any entry
-- [ ] Enter cancellation reason: "Admin test cancellation"
-- [ ] Submit
-- [ ] Entry removed from queue
-- [ ] User receives notification with reason
-- [TODO] Details if logged in, otherwise just name, have a field for details with description: GIve a detailed description as to what meassurements you're needin to do. Don't pull up user.
+- [X] Enter cancellation reason: "Admin test cancellation"
+- [X] Submit
+- [X] Entry removed from queue
+- [X] User receives notification with reason
+- [DONE] Details if logged in, otherwise just name, have a field for details with description: GIve a detailed description as to what meassurements you're needin to do. Don't pull up user.
 ### Move Entry Up in Queue
 
 - [X] Find entry at position #5 or higher
@@ -946,8 +946,8 @@ Create these accounts for testing:
 ## 14. RUSH JOB REVIEW - ADMIN
 
 ### View Rush Job Requests (`/schedule/admin-rush-jobs/`)
-- [TODO] Send the correct notification when moved into first by admin: Machine ready vs just on deck
-- [TODO] REMOVE MAX TEMP, JUST COMMENT IT OUT from every form, IT"S CONFUSING
+- [X] Send the correct notification when moved into first by admin: Machine ready vs just on deck
+- [X] REMOVE MAX TEMP, JUST COMMENT IT OUT from every form, IT"S CONFUSING
 - [X] See list of pending rush job requests
 - [X] Each request shows:
   - [X] User
@@ -972,10 +972,10 @@ Create these accounts for testing:
 
 - [X] Have test_user2 submit rush job request
 - [X] Click "Reject" button
-- [TODO] Enter rejection reason: "Insufficient justification"
+- [X] Enter rejection reason: "Insufficient justification"
 - [X] Submit
 - [X] Entry remains in queue at regular position (not rushed)
-- [TODO] User receives "Rush job rejected" notification with reason
+- [X] User receives "Rush job rejected" notification with reason
 - [X] Request disappears from pending list
 
 ---

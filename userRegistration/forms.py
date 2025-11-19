@@ -5,6 +5,14 @@ from .models import UserProfile
 from calendarEditor.models import NotificationPreference
 
 class UserRegistrationForm(UserCreationForm):
+    # Override username field to allow ANY characters (no validators)
+    username = forms.CharField(
+        max_length=150,
+        required=True,
+        label='Username',
+        help_text='Slack Username preferred',
+        validators=[],  # NO validators - allow ANY character
+    )
     email = forms.EmailField(
         required=True,
         help_text="Use the email tied to your Slack account."
@@ -23,16 +31,6 @@ class UserRegistrationForm(UserCreationForm):
     class Meta:
         model = User
         fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
-        help_texts = {
-            'username': 'Slack Username preferred',
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Remove username validators to allow spaces and any characters
-        self.fields['username'].validators = []
-        # Update regex validator to allow any characters including spaces
-        self.fields['username'].widget.attrs.pop('pattern', None)
 
     def clean_username(self):
         """Allow any characters in username, including spaces."""
@@ -323,7 +321,7 @@ class AdminEditUserForm(forms.Form):
     )
     organization = forms.ChoiceField(
         choices=UserProfile.ORGANIZATION_CHOICES,
-        required=False,
+        required=True,
         label='Organization',
         widget=forms.Select()
     )

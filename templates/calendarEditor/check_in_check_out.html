@@ -144,7 +144,7 @@
 {% if not ready_to_check_out and not currently_running and not ready_to_check_in and not waiting_entries %}
 <div class="card">
     <p style="color: #7f8c8d; text-align: center; padding: 2rem;">
-        You have no active measurements or entries ready for check-in.
+        You have no queue entries ready for check-in or active measurements available for check-out.
     </p>
     <div style="text-align: center; margin-top: 1rem;">
         <a href="{% url 'submit_queue' %}" class="btn">Submit New Request</a>

@@ -1506,9 +1506,15 @@ def admin_presets(request):
                 private_presets[username] = []
             private_presets[username].append(preset)
 
-    # Sort usernames alphabetically for display
-    public_presets = dict(sorted(public_presets.items()))
-    private_presets = dict(sorted(private_presets.items()))
+    # Sort usernames alphabetically for display (case-insensitive)
+    # Also sort presets within each user group by name (case-insensitive)
+    public_presets = dict(sorted(public_presets.items(), key=lambda x: x[0].lower()))
+    for username in public_presets:
+        public_presets[username] = sorted(public_presets[username], key=lambda p: p.name.lower())
+
+    private_presets = dict(sorted(private_presets.items(), key=lambda x: x[0].lower()))
+    for username in private_presets:
+        private_presets[username] = sorted(private_presets[username], key=lambda p: p.name.lower())
 
     context = {
         'public_presets': public_presets,

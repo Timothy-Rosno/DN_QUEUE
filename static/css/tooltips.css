@@ -1,0 +1,80 @@
+/* Global Tooltip System
+ * Add data-tooltip="your text" to any element to enable tooltips
+ * Works on both hover (desktop) and click/tap (mobile)
+ */
+
+.has-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.tooltip-content {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    background-color: #2c3e50;
+    color: white;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    border-radius: 6px;
+    white-space: normal;
+    max-width: 300px;
+    min-width: 150px;
+    text-align: left;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+/* Arrow */
+.tooltip-content::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #2c3e50;
+}
+
+/* Show tooltip on hover (desktop) */
+.has-tooltip:hover .tooltip-content {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Show tooltip when active class is added (mobile tap) */
+.has-tooltip.tooltip-active .tooltip-content {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Alternative positioning if tooltip would go off-screen */
+.tooltip-content.tooltip-bottom {
+    bottom: auto;
+    top: 100%;
+    margin-top: 8px;
+    margin-bottom: 0;
+}
+
+.tooltip-content.tooltip-bottom::after {
+    top: auto;
+    bottom: 100%;
+    border-top-color: transparent;
+    border-bottom-color: #2c3e50;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .tooltip-content {
+        max-width: 250px;
+        font-size: 0.85rem;
+        padding: 6px 10px;
+    }
+}

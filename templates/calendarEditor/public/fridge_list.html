@@ -133,8 +133,10 @@
     <h1>Fridge Specifications</h1>
     <p style="color: #7f8c8d; margin-top: 0.5rem;">Detailed specifications for all cryostats or whatever they are. Click on a machine to view full specifications.</p>
     <div style="margin-top: 1rem; display: flex; gap: 1rem;">
-        <button onclick="history.back()" class="btn btn-secondary">← Back</button>
-        <a href="{% url 'home' %}" class="btn btn-secondary">← Home Page</a>
+        {% if user.is_authenticated %}
+            <button onclick="history.back()" class="btn btn-secondary">Back</button>
+        {% endif %}
+        <a href="{% url 'home' %}" class="btn btn-secondary">Home Page</a>
     </div>
 </div>
 
@@ -242,7 +244,7 @@
                         </div>
                         <div class="spec-item">
                             <span class="spec-label">Status:</span>
-                            <span class="spec-value machine-status" style="font-weight: bold; {% if machine.get_display_status == 'Online' %}color: #155724;{% elif machine.get_display_status == 'Offline - Maintenance' %}color: #721c24;{% else %}color: #856404;{% endif %}">
+                            <span class="status-badge machine-status status-{{ machine.get_display_status|lower|cut:' ' }}">
                                 {{ machine.get_display_status }}
                             </span>
                         </div>
@@ -268,16 +270,14 @@
                             </div>
                             {% if machine.running_job %}
                                 <div style="margin-bottom: 0.5rem;">
-                                    <strong>Running:</strong>
-                                    <!-- <span>{{ machine.running_job.user.username }} - {{ machine.running_job.title|truncatechars:30 }}</span><br> -->
-                                    <span>{{ machine.running_job.title|truncatechars:30 }}</span><br>
+                                    <strong>Running:</strong><br>
+                                    <span data-tooltip="{{ machine.running_job.description }}">{{ machine.running_job.user.username }} - {{ machine.running_job.title|truncatechars:30 }}</span><br>
                                     <span class="countdown-timer"
                                         style="font-family: inherit; font-size: 0.85rem; color: #2c3e50;"
                                         data-end-time="{{ machine.running_job.started_at|date:'c' }}"
                                         data-duration="{{ machine.running_job.estimated_duration_hours }}">
                                         Calculating...
                                     </span>
-
                                 </div>
                             {% endif %}
                             <div class="spec-item">
@@ -296,18 +296,18 @@
                             </div>
                         {% else %}
                             <h4>Current Usage</h4>
-                            <div style="margin-bottom: 0.5rem;">
-                                <strong>Running:</strong>
-                                <!-- <span>{{ machine.running_job.user.username }} - {{ machine.running_job.title|truncatechars:30 }}</span><br> -->
-                                 <span>{{ machine.running_job.title|truncatechars:30 }}</span><br>
-                                <span class="countdown-timer"
-                                    style="font-family: inherit; font-size: 0.85rem; color: #2c3e50;"
-                                    data-end-time="{{ machine.running_job.started_at|date:'c' }}"
-                                    data-duration="{{ machine.running_job.estimated_duration_hours }}">
-                                    Calculating...
-                                </span>
-
-                            </div>
+                            {% if machine.running_job %}
+                                <div style="margin-bottom: 0.5rem;">
+                                    <strong>Running:</strong><br>
+                                    <span data-tooltip="{{ machine.running_job.description }}">{{ machine.running_job.title|truncatechars:30 }}</span><br>
+                                    <span class="countdown-timer"
+                                        style="font-family: inherit; font-size: 0.85rem; color: #2c3e50;"
+                                        data-end-time="{{ machine.running_job.started_at|date:'c' }}"
+                                        data-duration="{{ machine.running_job.estimated_duration_hours }}">
+                                        Calculating...
+                                    </span>
+                                </div>
+                            {% endif %}
                             <div class="spec-item">
                                 <span class="spec-label">Est. Available:</span>
                                 <span class="spec-value">
@@ -365,9 +365,9 @@
 
 <div style="margin-top: 1rem; display: flex; gap: 1rem;">
     {% if user.is_authenticated %}
-        <button onclick="history.back()" class="btn btn-secondary">← Back</button>
+        <button onclick="history.back()" class="btn btn-secondary">Back</button>
     {% endif %}
-        <a href="{% url 'home' %}" class="btn btn-secondary">← Home Page</a>
+        <a href="{% url 'home' %}" class="btn btn-secondary">Home Page</a>
 </div>
 
 <script>
@@ -436,6 +436,63 @@ document.addEventListener('DOMContentLoaded', function() {
 window.addEventListener('beforeunload', function() {
     if (temperaturePollingInterval) {
         clearInterval(temperaturePollingInterval);
+    }
+});
+
+// Countdown timer functionality for running jobs
+let countdownInterval = null;
+
+function updateCountdownTimers() {
+    const timers = document.querySelectorAll('.countdown-timer');
+
+    timers.forEach(timer => {
+        const startTime = timer.getAttribute('data-end-time');
+        const durationHours = parseFloat(timer.getAttribute('data-duration'));
+
+        if (!startTime || !durationHours) {
+            timer.textContent = 'N/A';
+            return;
+        }
+
+        const start = new Date(startTime);
+        const now = new Date();
+        const endTime = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
+        const remaining = endTime - now;
+
+        if (remaining <= 0) {
+            timer.textContent = 'Completed';
+            timer.style.color = '#27ae60';
+        } else {
+            const hours = Math.floor(remaining / (1000 * 60 * 60));
+            const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+            if (hours > 0) {
+                timer.textContent = `${hours}h ${minutes}m remaining`;
+            } else if (minutes > 0) {
+                timer.textContent = `${minutes}m ${seconds}s remaining`;
+            } else {
+                timer.textContent = `${seconds}s remaining`;
+            }
+
+            timer.style.color = '#2c3e50';
+        }
+    });
+}
+
+// Start countdown timer updates
+document.addEventListener('DOMContentLoaded', function() {
+    // Initial update for countdown timers
+    updateCountdownTimers();
+
+    // Update countdown every second
+    countdownInterval = setInterval(updateCountdownTimers, 1000);
+});
+
+// Stop countdown when user leaves page
+window.addEventListener('beforeunload', function() {
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
     }
 });
 </script>

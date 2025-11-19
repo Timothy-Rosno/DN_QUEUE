@@ -121,7 +121,7 @@ class QueueEntryForm(forms.ModelForm):
                   'is_rush_job')
         widgets = {
             'title': forms.TextInput(attrs={'maxlength': '500', 'class': 'char-counter-input'}),
-            'description': forms.Textarea(attrs={'rows': 3, 'maxlength': '500', 'class': 'char-counter-input'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'minlength': '50', 'maxlength': '500', 'class': 'char-counter-input'}),
             'special_requirements': forms.Textarea(attrs={'rows': 3, 'maxlength': '500', 'class': 'char-counter-input'}),
         }
         labels = {
@@ -133,7 +133,7 @@ class QueueEntryForm(forms.ModelForm):
         }
         help_texts = {
             'title': 'Name of the device being measured (minimum 3 characters)',
-            'description': 'Detailed description of the measurement (minimum 15 characters)',
+            'description': 'Detailed description of the measurement (minimum 50 characters). Example: 2D sweep from -10V to +10V applied bias, temperature sweep 0.01 K to 10 K',
             'required_b_field_direction': 'Required B-field direction',
             'requires_optical': 'Check if your experiment requires optical measurement capabilities (not yet implemented for machine matching)',
             'is_rush_job': 'Check to request priority review and potential queue reordering by admins',
@@ -147,10 +147,12 @@ class QueueEntryForm(forms.ModelForm):
         return title
 
     def clean_description(self):
-        """Validate description (Measurement Description) has minimum 15 characters."""
+        """Validate description (Measurement Description) has minimum 50 characters."""
         description = self.cleaned_data.get('description')
-        if description and len(description) < 15:
-            raise forms.ValidationError("Not long enough.")
+        if not description:
+            raise forms.ValidationError("This field is required.")
+        if len(description) < 50:
+            raise forms.ValidationError("Not long enough (minimum 50 characters).")
         return description
 
     def clean(self):
