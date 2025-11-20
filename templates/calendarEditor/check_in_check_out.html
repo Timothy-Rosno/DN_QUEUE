@@ -44,14 +44,14 @@
             <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
                 <form method="post" action="{% url 'check_out_job' entry.id %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-success btn-lg" style="width: 160px; height: 44px;">Check Out</button>
+                    <button type="submit" class="btn btn-success btn-lg" style="width: 150px;">Check Out</button>
                 </form>
                 <form method="post" action="{% url 'undo_check_in' entry.id %}" id="undo-form-{{ entry.id }}">
                     {% csrf_token %}
                     {% if entry.assigned_machine.current_status == 'maintenance' %}
-                    <button type="button" class="btn btn-secondary btn-lg" style="width: 160px; height: 44px; cursor: not-allowed;" disabled title="Machine is under maintenance">Undo Check-In</button>
+                    <button type="button" class="btn btn-secondary btn-lg" style="width: 150px; cursor: not-allowed;" disabled title="Machine is under maintenance">Undo Check-In</button>
                     {% else %}
-                    <button type="button" class="btn btn-warning btn-lg undo-check-in-btn" style="width: 160px; height: 44px;" data-entry-id="{{ entry.id }}" data-entry-title="{{ entry.title }}">Undo Check-In</button>
+                    <button type="button" class="btn btn-warning btn-lg undo-check-in-btn" style="width: 150px;" data-entry-id="{{ entry.id }}" data-entry-title="{{ entry.title }}">Undo Check-In</button>
                     {% endif %}
                 </form>
             </div>
@@ -80,14 +80,14 @@
             <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
                 <form method="post" action="{% url 'check_out_job' entry.id %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-success btn-lg" style="width: 160px; height: 44px;">Check Out</button>
+                    <button type="submit" class="btn btn-success btn-lg" style="width: 150px;">Check Out</button>
                 </form>
                 <form method="post" action="{% url 'undo_check_in' entry.id %}" id="undo-form-{{ entry.id }}">
                     {% csrf_token %}
                     {% if entry.assigned_machine.current_status == 'maintenance' %}
-                    <button type="button" class="btn btn-secondary btn-lg" style="width: 160px; height: 44px; cursor: not-allowed;" disabled title="Machine is under maintenance">Undo Check-In</button>
+                    <button type="button" class="btn btn-secondary btn-lg" style="width: 150px; cursor: not-allowed;" disabled title="Machine is under maintenance">Undo Check-In</button>
                     {% else %}
-                    <button type="button" class="btn btn-warning btn-lg undo-check-in-btn" style="width: 160px; height: 44px;" data-entry-id="{{ entry.id }}" data-entry-title="{{ entry.title }}">Undo Check-In</button>
+                    <button type="button" class="btn btn-warning btn-lg undo-check-in-btn" style="width: 150px;" data-entry-id="{{ entry.id }}" data-entry-title="{{ entry.title }}">Undo Check-In</button>
                     {% endif %}
                 </form>
                 <p style="color: #7f8c8d; font-size: 0.9rem; margin: 0;">
