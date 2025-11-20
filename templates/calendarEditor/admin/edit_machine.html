@@ -401,6 +401,14 @@ document.addEventListener('DOMContentLoaded', function() {
         statusSelect.addEventListener('change', function() {
             updateAvailabilityState();
         });
+
+        // Re-enable checkbox before form submission so value is sent
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                availableCheckbox.disabled = false;
+            });
+        }
     }
 });
 </script>
