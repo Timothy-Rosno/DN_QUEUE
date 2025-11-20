@@ -266,7 +266,7 @@
 - [X] Verify countdown shows: "Xh Ym remaining" (NOT "Calculating...")
 - [X] Wait 1 minute → countdown updates in real-time
 - [X] Navigate to `/schedule/fridges/`
-- [BROKEN: On first load for a split second, the status shows as DIsconnected - measuring or whatever. Then it updates the display to Offline. It should be the same Disconnected - Idle or Connected - Measuring as in the home page and not be overwritten by the online/offline stuff in either place. If there are alternative instructions elsewhere for this task, use this and ignore the others.] Status fix
+- [BROKEN: In /fridges, for a split second after loading, the status shows the Disconnected - measuring or whatever more bold. Then the formatting updates to make the colors different. It should keep the colors in the original formatting and not change them to the pale background with red text or whatever. Match the colors and text of the status in the home page.] Status fix
 - [It feels like maybe it's not calculating based on the measurement time] Expand machine details → verify countdown works there too
 - [X] Test when measurement completes:
   - [X] Countdown should show "Completed" (in green color)

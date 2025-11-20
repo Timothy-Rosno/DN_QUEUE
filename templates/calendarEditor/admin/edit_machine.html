@@ -373,6 +373,29 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Link status and availability fields
+    const statusSelect = document.getElementById('current_status');
+    const availableCheckbox = document.getElementById('is_available');
+
+    if (statusSelect && availableCheckbox) {
+        // When status changes, update availability
+        statusSelect.addEventListener('change', function() {
+            if (this.value === 'idle') {
+                availableCheckbox.checked = true;
+            } else {
+                // maintenance, cooldown, running → uncheck availability
+                availableCheckbox.checked = false;
+            }
+        });
+
+        // When availability is checked, set status to idle
+        availableCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                statusSelect.value = 'idle';
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

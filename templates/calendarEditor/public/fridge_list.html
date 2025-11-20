@@ -421,15 +421,10 @@ async function updateMachineTemperatures() {
                 // Use full display status from API (e.g., "Connected - Idle", "Disconnected - Measuring")
                 const displayStatus = machine.status || (machine.is_online ? 'Connected' : 'Disconnected');
 
-                // Determine CSS class based on connection status
-                let statusClass = 'status-disconnected';
-                if (displayStatus.includes('Connected')) {
-                    statusClass = 'status-connected';
-                } else if (displayStatus.includes('Maintenance')) {
-                    statusClass = 'status-maintenance';
-                }
+                // Convert display status to CSS class name (e.g., "Connected - Idle" -> "status-connected-idle")
+                const statusClass = 'status-' + displayStatus.toLowerCase().replace(/ /g, '');
 
-                badge.className = 'status-badge ' + statusClass;
+                badge.className = 'status-badge machine-status ' + statusClass;
                 badge.textContent = displayStatus;
             });
         });
