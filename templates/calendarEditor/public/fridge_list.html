@@ -178,7 +178,7 @@
                 </div>
                 <div class="machine-header-right">
                     {% if user.is_staff %}
-                    <a href="{% url 'edit_machine' machine.id %}" class="btn btn-sm" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="event.stopPropagation()">Edit</a>
+                    <a href="{% url 'edit_machine' machine.id %}" class="btn btn-sm" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="event.stopPropagation()">Edit/Delete</a>
                     {% endif %}
                     <span class="expand-icon" id="icon-{{ machine.id }}">▼</span>
                 </div>

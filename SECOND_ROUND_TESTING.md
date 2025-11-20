@@ -266,7 +266,7 @@
 - [X] Verify countdown shows: "Xh Ym remaining" (NOT "Calculating...")
 - [X] Wait 1 minute → countdown updates in real-time
 - [X] Navigate to `/schedule/fridges/`
-- [BROKEN: In /fridges, for a split second after loading, the status shows the Disconnected - measuring or whatever more bold. Then the formatting updates to make the colors different. It should keep the colors in the original formatting and not change them to the pale background with red text or whatever. Match the colors and text of the status in the home page.] Status fix
+- [FIXED: In /fridges, for a split second after loading, the status shows the Disconnected - measuring or whatever more bold. Then the formatting updates to make the colors different. It should keep the colors in the original formatting and not change them to the pale background with red text or whatever. Match the colors and text of the status in the home page.] Status fix
 - [It feels like maybe it's not calculating based on the measurement time] Expand machine details → verify countdown works there too
 - [X] Test when measurement completes:
   - [X] Countdown should show "Completed" (in green color)
@@ -297,7 +297,7 @@
 - [X] Move entry to position 1
 - [X] User receives: **"On Deck"** notification
 - [BROKEN: Not stated. Just an on deck, get ready notification.] Message explains machine in maintenance
-- [BROKEN: The undo check in button for a measurement that was already running when a machine is put in maintenance by admin needs to be disabled. And it needs to NOT change the machine status from maintenance to idle, even if the request gets through. The machine status should change to (Dis)Connected - Maintenance in the home page, fridges page, and admin machine pages, and relevant queue locations.
+- [BROKEN: The undo check in button for a measurement that was already running when a machine is put in maintenance by admin needs to be disabled. And it needs to NOT change the machine status from maintenance to idle, even if the request gets through. The machine status should change to (Dis)Connected - Maintenance in the home page, fridges page, and admin machine pages, and relevant queue locations.]
 - [BROKEN: Maybe the solution is just make the machine unavailable when it is in maintenance, so when the admin selects maintenance, also deselect the is available. That should be an easy script to put in.]
 #### Scenario D: Machine in Cooldown
 - [TODO] Machine has estimated_available_time in future
