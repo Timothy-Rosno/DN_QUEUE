@@ -178,7 +178,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const errorDiv = document.getElementById('cloudBackupsError');
 
     fetch('{% url "admin_list_github_backups" %}')
-        .then(response => response.json())
+        .then(response => {
+            // Check if response is OK before parsing JSON
+            if (!response.ok) {
+                // If redirected to login page (HTML response), show auth error
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Session expired or authentication required. Please refresh the page.');
+                }
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.error) {
                 errorDiv.innerHTML = `<strong style="color: #e74c3c;">Error:</strong> ${data.error}`;
@@ -243,6 +253,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.85rem; background: #2ecc71;">
                                 Download
                             </a>
+                            <button type="button"
+                               class="btn restore-cloud-btn"
+                               data-filename="${backup.name}"
+                               data-date="${dateStr}"
+                               style="padding: 0.3rem 0.6rem; font-size: 0.85rem; background: #e67e22; margin-left: 0.5rem;">
+                                Restore
+                            </button>
                         </td>
                     </tr>
                 `;
@@ -253,11 +270,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     </table>
                 </div>
                 <p style="color: #7f8c8d; margin-top: 1rem; font-size: 0.9rem;">
-                    Last ${data.backups.length} backups shown. Download and use Import/Restore above to restore from a cloud backup.
+                    Last ${data.backups.length} backups shown. Click "Restore" to restore directly from a cloud backup.
                 </p>
             `;
 
             container.innerHTML = html;
+
+            // Add event listeners to restore buttons
+            container.querySelectorAll('.restore-cloud-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const filename = this.dataset.filename;
+                    const dateStr = this.dataset.date;
+                    openCloudRestoreModal(filename, dateStr);
+                });
+            });
         })
         .catch(error => {
             errorDiv.innerHTML = `<strong style="color: #e74c3c;">Network Error:</strong> ${error.message}`;
@@ -626,5 +652,154 @@ document.addEventListener('DOMContentLoaded', function() {
         <span id="importClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
     </div>
 </div>
+
+<!-- Cloud Restore Confirmation Modal -->
+<div id="cloudRestoreModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:2rem; border-radius:10px; max-width:500px; width:90%; text-align:center; position:relative;">
+        <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto;">
+        <p id="cloudRestoreMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1.1rem; color: #e67e22;"></p>
+
+        <div style="margin-bottom: 1rem; text-align: left;">
+            <label for="cloudRestoreMode" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                Restore Mode:
+            </label>
+            <select id="cloudRestoreMode" style="width: 100%; padding: 0.5rem; border: 2px solid #e67e22; border-radius: 5px;">
+                <option value="merge">Merge - Keep existing data, add new records (safer)</option>
+                <option value="replace">Replace - Clear database and restore (WARNING: destructive)</option>
+            </select>
+        </div>
+
+        <label for="cloudRestoreConfirmation" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+            Type <code style="background: #ecf0f1; padding: 2px 6px; border-radius: 3px;">CONFIRM RESTORE</code>:
+        </label>
+        <input
+            type="text"
+            id="cloudRestoreConfirmation"
+            style="width: 100%; max-width: 300px; padding: 0.5rem; border: 2px solid #e67e22; border-radius: 5px; font-family: monospace; margin-bottom: 1rem;"
+            placeholder="CONFIRM RESTORE"
+        >
+        <div id="cloudRestoreError" style="color: #e74c3c; font-size: 0.9rem; margin-bottom: 1rem; display: none;"></div>
+
+        <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.9rem;">
+            <strong>Note:</strong> All users will be notified about this restore.
+        </p>
+
+        <div style="display:flex; justify-content:space-around; gap:1rem;">
+            <button id="cloudRestoreYes" class="btn" style="background: #e67e22;">Yes, restore from cloud</button>
+            <button id="cloudRestoreNo" class="btn" style="background: #95a5a6;">No, cancel</button>
+        </div>
+        <span id="cloudRestoreClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
+    </div>
+</div>
+
+<script>
+// Cloud Restore Modal Handlers
+let pendingCloudRestoreFilename = null;
+
+function openCloudRestoreModal(filename, dateStr) {
+    const modal = document.getElementById('cloudRestoreModal');
+    const message = document.getElementById('cloudRestoreMessage');
+    const confirmInput = document.getElementById('cloudRestoreConfirmation');
+    const errorDiv = document.getElementById('cloudRestoreError');
+
+    pendingCloudRestoreFilename = filename;
+    message.innerHTML = `Restore database from cloud backup:<br><strong>${dateStr}</strong>`;
+    confirmInput.value = '';
+    errorDiv.style.display = 'none';
+    modal.style.display = 'flex';
+    confirmInput.focus();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('cloudRestoreModal');
+    const confirmInput = document.getElementById('cloudRestoreConfirmation');
+    const errorDiv = document.getElementById('cloudRestoreError');
+    const modeSelect = document.getElementById('cloudRestoreMode');
+    const btnYes = document.getElementById('cloudRestoreYes');
+    const btnNo = document.getElementById('cloudRestoreNo');
+    const btnClose = document.getElementById('cloudRestoreClose');
+
+    // Close modal
+    function closeCloudRestoreModal() {
+        modal.style.display = 'none';
+        confirmInput.value = '';
+        errorDiv.style.display = 'none';
+        pendingCloudRestoreFilename = null;
+    }
+
+    btnNo.addEventListener('click', closeCloudRestoreModal);
+    btnClose.addEventListener('click', closeCloudRestoreModal);
+
+    // Close on background click
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeCloudRestoreModal();
+        }
+    });
+
+    // Yes button: Confirm and restore from cloud
+    btnYes.addEventListener('click', function() {
+        const confirmation = confirmInput.value.trim();
+
+        if (confirmation !== 'CONFIRM RESTORE') {
+            errorDiv.textContent = 'Incorrect confirmation text. Please type exactly "CONFIRM RESTORE".';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        if (!pendingCloudRestoreFilename) {
+            errorDiv.textContent = 'No backup file selected.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        // Disable button to prevent double-click
+        btnYes.disabled = true;
+        btnYes.textContent = 'Restoring...';
+
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('import_mode', modeSelect.value);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        // Submit restore request via AJAX
+        const restoreUrl = `/schedule/admin/github-backups/restore/${encodeURIComponent(pendingCloudRestoreFilename)}/`;
+
+        fetch(restoreUrl, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeCloudRestoreModal();
+                alert(`Success: ${data.message}\n\nAll users have been notified.`);
+                window.location.reload();
+            } else {
+                errorDiv.textContent = data.error || 'Unknown error occurred';
+                errorDiv.style.display = 'block';
+                btnYes.disabled = false;
+                btnYes.textContent = 'Yes, restore from cloud';
+            }
+        })
+        .catch(error => {
+            errorDiv.textContent = 'Network error: ' + error.message;
+            errorDiv.style.display = 'block';
+            btnYes.disabled = false;
+            btnYes.textContent = 'Yes, restore from cloud';
+        });
+    });
+
+    // Allow Enter key to confirm
+    confirmInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            btnYes.click();
+        }
+    });
+});
+</script>
 
 {% endblock %}

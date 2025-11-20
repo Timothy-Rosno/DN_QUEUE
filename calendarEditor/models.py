@@ -526,6 +526,8 @@ class Notification(models.Model):
         # Admin-specific notifications
         ('admin_new_user', 'New User Signup'),
         ('admin_rush_job', 'Rush Job Submitted'),
+        # Database management notifications
+        ('database_restored', 'Database Restored'),
     ]
 
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')

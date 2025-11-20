@@ -720,6 +720,11 @@
                         editPresetBtn.style.display = 'none';
                         deletePresetBtn.style.display = 'none';
                     }
+
+                    // Update submit button validation after preset fields are loaded
+                    if (window.updateSubmitButtons) {
+                        window.updateSubmitButtons();
+                    }
                 })
                 .catch(error => {
                     console.error('Error loading preset:', error);
@@ -1476,6 +1481,9 @@
                     tooltipBottom.innerHTML = '';
                 }
             }
+
+            // Expose globally so it can be called after preset loading
+            window.updateSubmitButtons = updateSubmitButtons;
 
             // Add event listeners for real-time validation
             titleField.addEventListener('input', updateSubmitButtons);

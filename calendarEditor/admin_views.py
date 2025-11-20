@@ -2129,6 +2129,228 @@ def admin_download_github_backup(request, filename):
 
 
 @staff_member_required
+@require_http_methods(["POST"])
+def admin_restore_github_backup(request, filename):
+    """
+    Restore database directly from a GitHub cloud backup.
+    Downloads the backup from GitHub and performs the restore.
+    Supports both Replace and Merge modes.
+    """
+    from django.core import serializers
+    from django.db import transaction
+    from django.http import JsonResponse
+    from django.conf import settings
+    from django.contrib.auth.models import User
+    import requests
+    import json
+
+    # Check if this is AJAX request
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    # Get import mode
+    import_mode = request.POST.get('import_mode', 'merge')
+
+    # Get GitHub settings
+    github_token = settings.GITHUB_TOKEN
+    github_repo = settings.GITHUB_REPO
+
+    if not github_token or not github_repo:
+        error_msg = 'GitHub integration not configured'
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+        return redirect('admin_database_management')
+
+    # Validate filename to prevent path traversal
+    if '/' in filename or '..' in filename:
+        error_msg = 'Invalid filename'
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+        return redirect('admin_database_management')
+
+    # Fetch file content from GitHub
+    api_url = f'https://api.github.com/repos/{github_repo}/contents/backups/{filename}?ref=database-backups'
+    headers = {
+        'Authorization': f'token {github_token}',
+        'Accept': 'application/vnd.github.v3.raw'
+    }
+
+    try:
+        response = requests.get(api_url, headers=headers, timeout=60)
+
+        if response.status_code == 404:
+            error_msg = 'Backup file not found in GitHub'
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': error_msg})
+            messages.error(request, error_msg)
+            return redirect('admin_database_management')
+
+        if response.status_code != 200:
+            error_msg = f'GitHub API error: {response.status_code}'
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': error_msg})
+            messages.error(request, error_msg)
+            return redirect('admin_database_management')
+
+        # Parse JSON backup
+        backup_data = json.loads(response.content.decode('utf-8'))
+
+        # Validate backup structure
+        if 'export_type' not in backup_data or backup_data['export_type'] != 'full_database_backup':
+            error_msg = 'Invalid backup file format. Expected full database backup.'
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': error_msg})
+            messages.error(request, error_msg)
+            return redirect('admin_database_management')
+
+        if 'models' not in backup_data:
+            error_msg = 'Invalid backup file structure. Missing models data.'
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': error_msg})
+            messages.error(request, error_msg)
+            return redirect('admin_database_management')
+
+        # Extract backup date from filename for notification
+        # Format: database_backup_2024-01-15_06-30-00.json
+        backup_date = filename
+        match = __import__('re').match(r'database_backup_(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})\.json', filename)
+        if match:
+            backup_date = f"{match.group(1)} {match.group(2)}:{match.group(3)}"
+
+        # Models to restore (in dependency order)
+        models_order = [
+            'auth.User',
+            'userRegistration.UserProfile',
+            'calendarEditor.Machine',
+            'calendarEditor.QueuePreset',
+            'calendarEditor.QueueEntry',
+            'calendarEditor.ArchivedMeasurement',
+            'calendarEditor.NotificationPreference',
+            'calendarEditor.Notification',
+        ]
+
+        restored_counts = {}
+        skipped_counts = {}
+
+        with transaction.atomic():
+            # REPLACE MODE: Clear all data first
+            if import_mode == 'replace':
+                for model_name in reversed(models_order):
+                    if model_name in backup_data['models']:
+                        model_label = model_name.split('.')
+                        app_label, model_class_name = model_label[0], model_label[1]
+
+                        from django.apps import apps
+                        try:
+                            model_class = apps.get_model(app_label, model_class_name)
+                            if model_name == 'auth.User':
+                                model_class.objects.filter(is_superuser=False).delete()
+                            else:
+                                model_class.objects.all().delete()
+                        except Exception as e:
+                            print(f"Warning: Could not clear {model_name}: {e}")
+
+            # Restore models in correct order
+            for model_name in models_order:
+                if model_name not in backup_data['models']:
+                    continue
+
+                model_data = backup_data['models'][model_name]
+
+                if isinstance(model_data, dict) and 'error' in model_data:
+                    continue
+
+                restored_count = 0
+                skipped_count = 0
+
+                try:
+                    for obj_data in model_data:
+                        try:
+                            if import_mode == 'merge':
+                                obj_pk = obj_data.get('pk')
+                                model_label = model_name.split('.')
+                                app_label, model_class_name = model_label[0], model_label[1]
+
+                                from django.apps import apps
+                                model_class = apps.get_model(app_label, model_class_name)
+
+                                if model_class.objects.filter(pk=obj_pk).exists():
+                                    skipped_count += 1
+                                    continue
+
+                            for deserialized_obj in serializers.deserialize('json', json.dumps([obj_data])):
+                                deserialized_obj.save()
+                                restored_count += 1
+
+                        except Exception as e:
+                            print(f"Error restoring object from {model_name}: {e}")
+                            skipped_count += 1
+                            continue
+
+                    restored_counts[model_name] = restored_count
+                    if skipped_count > 0:
+                        skipped_counts[model_name] = skipped_count
+
+                except Exception as e:
+                    error_msg = f'Error restoring {model_name}: {str(e)}'
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'error': error_msg})
+                    messages.error(request, error_msg)
+                    return redirect('admin_database_management')
+
+        # Prepare success message
+        total_restored = sum(restored_counts.values())
+        total_skipped = sum(skipped_counts.values())
+
+        success_msg = f'Database restore completed. '
+        if import_mode == 'replace':
+            success_msg += f'Restored {total_restored} records in replace mode.'
+        else:
+            success_msg += f'Restored {total_restored} records, skipped {total_skipped} existing records.'
+
+        # Notify ALL users about the restore
+        admin_name = request.user.get_full_name() or request.user.username
+        all_users = User.objects.filter(is_active=True)
+
+        for user in all_users:
+            notifications.create_notification(
+                recipient=user,
+                notification_type='database_restored',
+                title='Database Restored',
+                message=f'Database backup from {backup_date} was restored by {admin_name}. Your queue entries and data may have been updated.'
+            )
+
+        if is_ajax:
+            return JsonResponse({
+                'success': True,
+                'message': success_msg,
+                'restored': restored_counts,
+                'skipped': skipped_counts
+            })
+
+        messages.success(request, success_msg)
+
+    except requests.exceptions.Timeout:
+        error_msg = 'Download from GitHub timed out'
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+    except json.JSONDecodeError:
+        error_msg = 'Invalid JSON in backup file'
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+    except Exception as e:
+        error_msg = f'Error restoring database: {str(e)}'
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+
+    return redirect('admin_database_management')
+
+
+@staff_member_required
 def admin_clear_archive_with_backup(request):
     """
     Automatically download backup before clearing archive.
@@ -2419,13 +2641,26 @@ def admin_import_database(request):
         else:
             success_msg += f'Restored {total_restored} records, skipped {total_skipped} existing records.'
 
-        # Send notification to user
-        notifications.create_notification(
-            recipient=request.user,
-            notification_type='admin_action',
-            title='Database Restored',
-            message=f'Database backup was restored by {request.user.username}. Mode: {import_mode}. {success_msg}'
-        )
+        # Extract backup date from filename if available
+        import re
+        backup_filename = backup_file.name
+        backup_date = 'uploaded file'
+        match = re.match(r'database_backup_(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})\.json', backup_filename)
+        if match:
+            backup_date = f"{match.group(1)} {match.group(2)}:{match.group(3)}"
+
+        # Notify ALL users about the restore
+        from django.contrib.auth.models import User
+        admin_name = request.user.get_full_name() or request.user.username
+        all_users = User.objects.filter(is_active=True)
+
+        for user in all_users:
+            notifications.create_notification(
+                recipient=user,
+                notification_type='database_restored',
+                title='Database Restored',
+                message=f'Database backup from {backup_date} was restored by {admin_name}. Your queue entries and data may have been updated.'
+            )
 
         if is_ajax:
             return JsonResponse({
