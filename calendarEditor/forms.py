@@ -133,7 +133,7 @@ class QueueEntryForm(forms.ModelForm):
         }
         help_texts = {
             'title': 'Name of the device being measured (minimum 3 characters)',
-            'description': 'Detailed description of the measurement (minimum 50 characters). Example: 2D sweep from -10V to +10V applied bias, temperature sweep 0.01 K to 10 K',
+            'description': 'Detailed description of the measurement (minimum 50 characters). Things to include: Type of device (JJ, hall bar, etc.), Sweep information, Is this the first test of this device, Is this a crazy new test, etc.',
             'required_b_field_direction': 'Required B-field direction',
             'requires_optical': 'Check if your experiment requires optical measurement capabilities (not yet implemented for machine matching)',
             'is_rush_job': 'Check to request priority review and potential queue reordering by admins',
