@@ -737,7 +737,13 @@ def check_out_job(request, entry_id):
         queue_position=1
     ).first()
 
-    if next_entry:
+    # Check if machine is unavailable (disconnected)
+    if not machine.is_online():
+        # Machine is disconnected - set to maintenance
+        machine.current_status = 'maintenance'
+        machine.is_available = False
+        machine.estimated_available_time = None
+    elif next_entry:
         # Machine status becomes idle, but may have cooldown time
         machine.current_status = 'idle'
         if machine.cooldown_hours > 0:
@@ -756,7 +762,8 @@ def check_out_job(request, entry_id):
     print(f"[USER CHECKOUT] Machine status after checkout: {machine.current_status}, is_available: {machine.is_available}")
 
     # DIRECTLY notify the next person in line - bypass all complex logic
-    if next_entry:
+    # Only notify if machine is online (not in maintenance due to disconnection)
+    if next_entry and machine.is_online():
         print(f"[USER CHECKOUT] DIRECTLY creating notification for {next_entry.user.username}")
         try:
             from .models import Notification
@@ -895,9 +902,17 @@ def undo_check_in(request, entry_id):
         auto_clear_notifications(related_queue_entry=queue_entry)
 
         # Notify the person who was bumped from position 1 to position 2
+        from .notifications import notify_bumped_from_on_deck, notify_queue_position_change
         if was_on_deck:
-            from .notifications import notify_bumped_from_on_deck
+            was_on_deck.refresh_from_db()  # Refresh to get updated queue_position
             notify_bumped_from_on_deck(was_on_deck, reason='measurement undone')
+
+        # Notify other users who were pushed back in the queue (if they have the preference enabled)
+        for entry in existing_queued:
+            if was_on_deck is None or entry.id != was_on_deck.id:  # Skip the one already notified above
+                entry.refresh_from_db()
+                old_position = entry.queue_position - 1  # They were at position-1 before the bump
+                notify_queue_position_change(entry, old_position, entry.queue_position)
 
         # DO NOT notify the user who undid their own check-in (they already know)
 
