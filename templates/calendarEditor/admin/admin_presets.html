@@ -135,10 +135,7 @@
                         <td style="white-space: nowrap;">
                             {% if preset.creator_username == current_user.username %}
                                 <a href="{% url 'edit_preset' preset.id %}?from_admin=true" class="btn btn-sm" style="background-color: #3498db; color: white;">Edit</a>
-                                <form method="post" action="{% url 'delete_preset' preset.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this preset? This cannot be undone.');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-danger delete-preset-btn" data-preset-id="{{ preset.id }}" data-preset-name="{{ preset.name }}">Delete</button>
                             {% else %}
                                 <a href="{% url 'view_preset' preset.id %}?from_admin=true" class="btn btn-sm" style="background-color: #7f8c8d; color: white;">View</a>
                             {% endif %}
@@ -161,7 +158,7 @@
 <div id="thanosModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
     <div style="background:white; padding:2rem; border-radius:10px; max-width:400px; width:90%; text-align:center; position:relative;">
         <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto;">
-        <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
+        <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-wrap: break-word;"></p>
         <div style="display:flex; justify-content:space-around; gap:1rem;">
             <button id="thanosYes" class="btn btn-danger">Yes, snap it immediately</button>
             <button id="thanosNo" class="btn btn-secondary">No, spare its variables</button>

@@ -171,7 +171,7 @@
         {% if user.is_staff %}
         <!-- Thanos dialog for staff -->
         <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto; margin-bottom: 1rem;">
-        <p id="undoConfirmMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
+        <p id="undoConfirmMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-wrap: break-word;"></p>
         <p style="color: #7f8c8d; margin-bottom:1rem; font-size:0.95rem;">This will move your entry back to position #1 in the queue and set the machine back to idle.</p>
         <div style="display:flex; justify-content:space-around; gap:1rem;">
             <button id="undoConfirmYes" class="btn btn-danger">Yes, undo check-in</button>
@@ -180,7 +180,7 @@
         {% else %}
         <!-- Normal dialog for regular users -->
         <h3 style="margin-top: 0; margin-bottom: 1rem; color: #e67e22;">Undo Check-In?</h3>
-        <p id="undoConfirmMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
+        <p id="undoConfirmMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-wrap: break-word;"></p>
         <p style="color: #7f8c8d; margin-bottom:1rem; font-size:0.95rem;">This will move your entry back to position #1 in the queue and set the machine back to idle.</p>
         <div style="display:flex; justify-content:space-around; gap:1rem;">
             <button id="undoConfirmYes" class="btn btn-warning">Yes, undo check-in</button>

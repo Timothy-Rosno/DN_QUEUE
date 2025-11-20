@@ -217,7 +217,7 @@
 <div id="thanosModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
     <div style="background:white; padding:2rem; border-radius:10px; max-width:400px; width:90%; text-align:center; position:relative;">
         <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto;">
-        <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
+        <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-wrap: break-word;"></p>
         <div style="display:flex; justify-content:space-around; gap:1rem;">
             <button id="thanosYes" class="btn btn-danger">Yes, snap immediately</button>
             <button id="thanosNo" class="btn btn-secondary">No, spare their life</button>

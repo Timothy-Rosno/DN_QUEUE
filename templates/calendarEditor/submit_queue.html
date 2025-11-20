@@ -238,13 +238,13 @@
             <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.is_rush_job.help_text }}</small>
 
             <!-- Display current rush job explanation if exists -->
-            <div id="rushJobExplanationDisplay" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
-                <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div>
+            <div id="rushJobExplanationDisplay" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; overflow: hidden;">
+                <div style="display: flex; justify-content: space-between; align-items: start; gap: 0.5rem;">
+                    <div style="flex: 1; min-width: 0; overflow: hidden;">
                         <strong style="color: #856404;">Explanation for Hugh:</strong>
-                        <p id="rushJobExplanationText" style="margin: 0.5rem 0 0 0; color: #856404;"></p>
+                        <p id="rushJobExplanationText" style="margin: 0.5rem 0 0 0; color: #856404; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-wrap: break-word;"></p>
                     </div>
-                    <button type="button" id="editRushJobBtn" style="background: none; border: none; color: #856404; cursor: pointer; font-size: 0.9rem; text-decoration: underline;">Edit</button>
+                    <button type="button" id="editRushJobBtn" style="background: none; border: none; color: #856404; cursor: pointer; font-size: 0.9rem; text-decoration: underline; flex-shrink: 0;">Edit</button>
                 </div>
             </div>
         </div>

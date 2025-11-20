@@ -48,9 +48,9 @@
                 </form>
             </div>
 
-            <div style="background-color: white; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+            <div style="background-color: white; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; overflow: hidden;">
                 <strong style="display: block; margin-bottom: 0.5rem;">Explanation for Hugh:</strong>
-                <p style="margin: 0; white-space: pre-wrap;">{{ entry.special_requirements|default:"No explanation provided." }}</p>
+                <p style="margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; word-wrap: break-word;" data-tooltip="{{ entry.special_requirements|default:'No explanation provided.' }}">{{ entry.special_requirements|default:"No explanation provided." }}</p>
             </div>
 
             <div style="background-color: white; padding: 1rem; border-radius: 4px;">
@@ -95,7 +95,7 @@
 <div id="thanosModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
     <div style="background:white; padding:2rem; border-radius:10px; max-width:500px; width:90%; text-align:center; position:relative;">
         <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto; margin-bottom: 1rem;">
-        <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem;"></p>
+        <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-wrap: break-word;"></p>
 
         <!-- Rejection Message Input (hidden by default) -->
         <div id="rejectionMessageBox" style="display:none; margin-bottom:1rem; text-align:left;">

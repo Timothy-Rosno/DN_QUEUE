@@ -199,15 +199,15 @@
 - [X] Click "NO, CANCEL" → machine not deleted
 - [X] Click "YES, DELETE" → machine deleted
 - [X] Check affected users:
-  - [BROKEN: Was not received.] Users with entries receive "orphaned entry" notification
-  - [BROKEN: Was not received] Notification explains machine was deleted
-  - [BROKEN: Machine name in archive shows as blank. Status should be showing Orphaned, with tool tip Machine was deleted. Instead it shows Orphaned (Machine Deleted).] Entries show machine name as "[DELETED] MachineName"
+  - [FIXED: Was not received.] Users with entries receive "orphaned entry" notification
+  - [FIXED: Was not received] Notification explains machine was deleted
+  - [FIXED: Machine name in archive shows as blank. Status should be showing Orphaned, with tool tip Machine was deleted. Instead it shows Orphaned (Machine Deleted).] Entries show machine name as "[DELETED] MachineName"
 
 #### Test Scenario 2: Machine with Only Archived Entries
 - [X] Create machine, complete 1 measurement (archived)
 - [X] No active queue entries
 - [X] Click "Delete" → should delete immediately (no warning)
-- [BROKEN: Name field is shown as empty. Status needs to add a tooltip to Completed or Cancelled: Machine was deleted.] Verify archive still shows machine name correctly
+- [FIXED: Name field is shown as empty. Status needs to add a tooltip to Completed or Cancelled: Machine was deleted.] Verify archive still shows machine name correctly
 
 #### Test Scenario 3: New Machine Entry Not Showing in Archive
 **Bug to fix:** "The database isn't set up to handle a new machine"
@@ -235,11 +235,11 @@
 
 - [X] Navigate to `/schedule/archive/` as **regular user** (non-staff)
 - [X] Verify "Export All Measurements" button exists
-- [BROKEN] Click button → CSV downloads
+- [FIXED] Click button → CSV downloads
 - [N/A] Open CSV → contains ALL measurements (not just user's)
 - [N/A] Verify columns include:
   - [N/A] ID, Machine, Date, Title, Notes, Duration, Archived At
-  - [BROKEN: Not tracking Duration for new measurements] **Duration field should be populated** (from recent migration)
+  - [FIXED: Not tracking Duration for new measurements] **Duration field should be populated** (from recent migration)
 
 ---
 
@@ -282,7 +282,7 @@
 - [X] Set machine status to "idle"
 - [X] Set machine as available (not in maintenance)
 - [X] Move entry to position 1
-- [BROKEN: User received the ON DECk notification instead of Ready for Check in notification.] User receives: **"Ready for Check-In"** notification
+- [FIXED: User received the ON DECk notification instead of Ready for Check in notification.] User receives: **"Ready for Check-In"** notification
 - [X] Notification is marked CRITICAL (cannot disable)
 - [X] Includes check-in link
 
@@ -341,11 +341,11 @@
 - [X] Navigate to `/schedule/admin-queue/`
 - [X] Click "Edit" on any entry
 - [X] Make changes → click "Save Changes"
-- [BROKEN: When editing from rush job, it goes back to admin-queue when edited or cancelled.]  **Should route to:** `/schedule/admin-rush-jobs/` (if was rush job) OR stay on admin-queue
-- [BROKEN: When editing an entry, the machine reassignment is wacked out. If it can stay on the same machine, it should. If it can't, then a clearer message as to what it can be assigned to because of the changes made should be given. But right now, it's not selecting properly, since it wanted to move one from one it was fine on to another one it was fine on, but it should have stayed with the original. Also in that field, the checkboxes need to match the checkbox formatting in other pages, like submit queue entry form.]
-- [BROKEN: Machine reassignment is not being applied. It finds the correct ones that it CAN be switched to, but it doesn't switch the assignement from the rush job page like it should be doing.]
-- [BROKEN: When admins are reordering the queue, the moved from N to N is just saying moved from 1 to N, instead of (what it is now - 1) to (what it is now).]
-- [BROKEN: The entries are taking up more horizontal space than allotted in the blue boundary for the card. Make them horizontall scrollable cards and collapsable (with just the machine and (N entries) visible), collapsed by default. Finally, the buttons need to be of uniform size as following: Edit/Cancel/Start/Check Out/Undo Check-In match vertically in size. Check Out/Undo Check-in, Waiting, Move to First need to all be the same horizontal size, even if not all of them are being displyed in a card, so that the machine cards have consistent and aligned button locations. Up and down arrows will thus be the same correct size and location to make all the buttons aligned correctly and pretty. Right now they are all text-dependent to make them the size they are, but they need to be as long as they need to be to fit the text and match the ones they need to match. Title needs to truncate to a specific char value to stop the entries from being too long horizontally, but it shouldn't need to text-wrap more than 3 lines, since we can take up more space horizontally if it scrolls horizontally. Finally, the running entry should have the grayed out version of up and down arrows. Thank you.]
+- [FIXED: When editing from rush job, it goes back to admin-queue when edited or cancelled.]  **Should route to:** `/schedule/admin-rush-jobs/` (if was rush job) OR stay on admin-queue
+- [FIXED: When editing an entry, the machine reassignment is wacked out. If it can stay on the same machine, it should. If it can't, then a clearer message as to what it can be assigned to because of the changes made should be given. But right now, it's not selecting properly, since it wanted to move one from one it was fine on to another one it was fine on, but it should have stayed with the original. Also in that field, the checkboxes need to match the checkbox formatting in other pages, like submit queue entry form.]
+- [FIXED: Machine reassignment is not being applied. It finds the correct ones that it CAN be switched to, but it doesn't switch the assignement from the rush job page like it should be doing.]
+- [FIXED: When admins are reordering the queue, the moved from N to N is just saying moved from 1 to N, instead of (what it is now - 1) to (what it is now).]
+- [FIXED: The entries are taking up more horizontal space than allotted in the blue boundary for the card. Make them horizontall scrollable cards and collapsable (with just the machine and (N entries) visible), collapsed by default. Finally, the buttons need to be of uniform size as following: Edit/Cancel/Start/Check Out/Undo Check-In match vertically in size. Check Out/Undo Check-in, Waiting, Move to First need to all be the same horizontal size, even if not all of them are being displyed in a card, so that the machine cards have consistent and aligned button locations. Up and down arrows will thus be the same correct size and location to make all the buttons aligned correctly and pretty. Right now they are all text-dependent to make them the size they are, but they need to be as long as they need to be to fit the text and match the ones they need to match. Title needs to truncate to a specific char value to stop the entries from being too long horizontally, but it shouldn't need to text-wrap more than 3 lines, since we can take up more space horizontally if it scrolls horizontally. Finally, the running entry should have the grayed out version of up and down arrows. Thank you.]
 
 ---
 
@@ -372,7 +372,7 @@
 - [X] **Should:** Show error banner "Entry no longer exists" + reload page
 - [No it worked just fine] **Currently:** May show 500 error or crash
 - [It worked just fine] **Fix:** Add try/except in save logic
-- [BROKEN: QUEUE ENTRIED SHOULD NEVER BE DELETED OUTRIGHT. THEY SHOULD JUST BE ARCHIVED AS CANCELLED. Not currently what is happening.]
+- [FIXED: QUEUE ENTRIED SHOULD NEVER BE DELETED OUTRIGHT. THEY SHOULD JUST BE ARCHIVED AS CANCELLED. Not currently what is happening.]
 
 ---
 
