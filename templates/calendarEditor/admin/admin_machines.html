@@ -171,6 +171,7 @@
                         {% if machine.location %}
                         <span>{{ machine.location }}</span>
                         {% endif %}
+                        <a href="{% url 'edit_machine' machine.id %}" class="btn btn-sm" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="event.stopPropagation()">Edit/Delete</a>
                     </div>
                 </div>
                 <div class="machine-header-right">
