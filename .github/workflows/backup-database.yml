@@ -1,11 +1,11 @@
 name: Backup Database
 
-# Runs weekly on Sunday at midnight UTC
+# Runs daily at 12:30 AM Central Time (06:30 UTC)
 # Exports full database and commits to database-backups branch
 on:
   schedule:
-    # Runs every Sunday at 00:00 UTC
-    - cron: '0 0 * * 0'
+    # Runs daily at 06:30 UTC (12:30 AM Central Time)
+    - cron: '30 6 * * *'
 
   # Allow manual triggering for testing
   workflow_dispatch:

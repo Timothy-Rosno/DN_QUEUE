@@ -2013,6 +2013,122 @@ def api_export_database_backup(request):
 
 
 @staff_member_required
+def admin_list_github_backups(request):
+    """
+    List available database backups from GitHub repository.
+    Fetches from the database-backups branch.
+    """
+    from django.http import JsonResponse
+    from django.conf import settings
+    import requests
+
+    github_token = settings.GITHUB_TOKEN
+    github_repo = settings.GITHUB_REPO
+
+    if not github_token or not github_repo:
+        return JsonResponse({
+            'error': 'GitHub integration not configured. Set GITHUB_TOKEN and GITHUB_REPO environment variables.'
+        }, status=500)
+
+    # Fetch contents of backups directory from database-backups branch
+    api_url = f'https://api.github.com/repos/{github_repo}/contents/backups?ref=database-backups'
+    headers = {
+        'Authorization': f'token {github_token}',
+        'Accept': 'application/vnd.github.v3+json'
+    }
+
+    try:
+        response = requests.get(api_url, headers=headers, timeout=10)
+
+        if response.status_code == 404:
+            return JsonResponse({
+                'backups': [],
+                'message': 'No backups found. The database-backups branch may not exist yet.'
+            })
+
+        if response.status_code != 200:
+            return JsonResponse({
+                'error': f'GitHub API error: {response.status_code}'
+            }, status=response.status_code)
+
+        files = response.json()
+
+        # Filter for JSON backup files and sort by name (newest first)
+        backups = []
+        for f in files:
+            if f['name'].endswith('.json') and f['name'].startswith('database_backup_'):
+                backups.append({
+                    'name': f['name'],
+                    'size': f['size'],
+                    'download_url': f['download_url'],
+                    'sha': f['sha']
+                })
+
+        # Sort by filename (which includes timestamp) - newest first
+        backups.sort(key=lambda x: x['name'], reverse=True)
+
+        return JsonResponse({'backups': backups})
+
+    except requests.exceptions.Timeout:
+        return JsonResponse({'error': 'GitHub API request timed out'}, status=504)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@staff_member_required
+def admin_download_github_backup(request, filename):
+    """
+    Download a specific backup file from GitHub.
+    """
+    from django.http import HttpResponse, JsonResponse
+    from django.conf import settings
+    import requests
+
+    github_token = settings.GITHUB_TOKEN
+    github_repo = settings.GITHUB_REPO
+
+    if not github_token or not github_repo:
+        return JsonResponse({
+            'error': 'GitHub integration not configured'
+        }, status=500)
+
+    # Validate filename to prevent path traversal
+    if '/' in filename or '..' in filename:
+        return JsonResponse({'error': 'Invalid filename'}, status=400)
+
+    # Fetch file content from GitHub
+    api_url = f'https://api.github.com/repos/{github_repo}/contents/backups/{filename}?ref=database-backups'
+    headers = {
+        'Authorization': f'token {github_token}',
+        'Accept': 'application/vnd.github.v3.raw'
+    }
+
+    try:
+        response = requests.get(api_url, headers=headers, timeout=30)
+
+        if response.status_code == 404:
+            return JsonResponse({'error': 'Backup file not found'}, status=404)
+
+        if response.status_code != 200:
+            return JsonResponse({
+                'error': f'GitHub API error: {response.status_code}'
+            }, status=response.status_code)
+
+        # Return as downloadable file
+        http_response = HttpResponse(
+            response.content,
+            content_type='application/json'
+        )
+        http_response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return http_response
+
+    except requests.exceptions.Timeout:
+        return JsonResponse({'error': 'Download timed out'}, status=504)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@staff_member_required
 def admin_clear_archive_with_backup(request):
     """
     Automatically download backup before clearing archive.

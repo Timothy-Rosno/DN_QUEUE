@@ -158,6 +158,115 @@
     </p>
 </div>
 
+<!-- Cloud Backups (GitHub) -->
+<div class="card" style="border-left: 4px solid #2ecc71;">
+    <h2 style="margin-top: 0; color: #2ecc71;">Cloud Backups</h2>
+    <p style="color: #7f8c8d;">Automated nightly backups stored in GitHub. These run daily at 12:30 AM Central.</p>
+
+    <div id="cloudBackupsContainer" style="margin-top: 1rem;">
+        <p style="color: #7f8c8d;"><em>Loading cloud backups...</em></p>
+    </div>
+
+    <div id="cloudBackupsError" style="display: none; background: #fee; border-left: 4px solid #e74c3c; padding: 1rem; margin-top: 1rem;">
+    </div>
+</div>
+
+<script>
+// Load cloud backups from GitHub
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('cloudBackupsContainer');
+    const errorDiv = document.getElementById('cloudBackupsError');
+
+    fetch('{% url "admin_list_github_backups" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                errorDiv.innerHTML = `<strong style="color: #e74c3c;">Error:</strong> ${data.error}`;
+                errorDiv.style.display = 'block';
+                container.innerHTML = '';
+                return;
+            }
+
+            if (data.message) {
+                container.innerHTML = `<p style="color: #7f8c8d;">${data.message}</p>`;
+                return;
+            }
+
+            if (!data.backups || data.backups.length === 0) {
+                container.innerHTML = '<p style="color: #7f8c8d;">No cloud backups found yet. Backups run nightly at 12:30 AM Central.</p>';
+                return;
+            }
+
+            // Build table of backups
+            let html = `
+                <div class="table-container">
+                    <table class="styled-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left;">Backup Date</th>
+                                <th style="text-align: center;">Size</th>
+                                <th style="text-align: center;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            data.backups.forEach(backup => {
+                // Parse date from filename: database_backup_2024-01-15_06-30-00.json
+                const match = backup.name.match(/database_backup_(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})\.json/);
+                let dateStr = backup.name;
+                if (match) {
+                    const date = new Date(`${match[1]}T${match[2]}:${match[3]}:${match[4]}Z`);
+                    dateStr = date.toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                }
+
+                // Format size
+                const sizeKB = (backup.size / 1024).toFixed(1);
+                const sizeStr = backup.size > 1024 * 1024
+                    ? `${(backup.size / 1024 / 1024).toFixed(2)} MB`
+                    : `${sizeKB} KB`;
+
+                const downloadUrl = `/schedule/admin/github-backups/download/${encodeURIComponent(backup.name)}/`;
+                html += `
+                    <tr>
+                        <td style="text-align: left;">${dateStr}</td>
+                        <td style="text-align: center;">${sizeStr}</td>
+                        <td style="text-align: center;">
+                            <a href="${downloadUrl}"
+                               class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.85rem; background: #2ecc71;">
+                                Download
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+                <p style="color: #7f8c8d; margin-top: 1rem; font-size: 0.9rem;">
+                    Last ${data.backups.length} backups shown. Download and use Import/Restore above to restore from a cloud backup.
+                </p>
+            `;
+
+            container.innerHTML = html;
+        })
+        .catch(error => {
+            errorDiv.innerHTML = `<strong style="color: #e74c3c;">Network Error:</strong> ${error.message}`;
+            errorDiv.style.display = 'block';
+            container.innerHTML = '';
+        });
+});
+</script>
+
 <!-- Export Archive Measurements -->
 <div class="card" style="border-left: 4px solid #3498db;">
     <h2 style="margin-top: 0; color: #3498db;">Export Archived Measurements</h2>

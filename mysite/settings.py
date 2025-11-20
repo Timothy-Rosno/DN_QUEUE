@@ -31,6 +31,10 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-kf#!#6nzs&(x*=bjel79=
 # API key for automated database backups (GitHub Actions, etc.)
 BACKUP_API_KEY = os.environ.get('BACKUP_API_KEY', None)
 
+# GitHub Configuration for accessing cloud backups
+GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
+GITHUB_REPO = os.environ.get('GITHUB_REPO', '')  # Format: 'username/repo'
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 

@@ -64,6 +64,10 @@ urlpatterns = [
     # API endpoint for automated backups (GitHub Actions)
     path('api/backup/database/', admin_views.api_export_database_backup, name='api_export_database_backup'),
 
+    # GitHub cloud backups
+    path('admin/github-backups/', admin_views.admin_list_github_backups, name='admin_list_github_backups'),
+    path('admin/github-backups/download/<str:filename>/', admin_views.admin_download_github_backup, name='admin_download_github_backup'),
+
     # Backwards compatibility aliases
     path('admin/archive-management/', admin_views.admin_archive_management, name='admin_archive_management'),
 
