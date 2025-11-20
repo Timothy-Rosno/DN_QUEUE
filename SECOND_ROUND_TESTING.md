@@ -26,7 +26,7 @@
   - [X] Apply machine filter → pagination resets to page 1
   - [X] Filters preserved when changing pages
   - [X] Per-page setting preserved when filtering
-- [BOTH EXPORT BUTTONS BROKEN: SERVER ERROR (500)] Test "Export All Measurements" button (should export ALL, not just current page)
+- [BOTH EXPORT BUTTONS FIXED: SERVER ERROR (500)] Test "Export All Measurements" button (should export ALL, not just current page)
 
 ---
 
@@ -385,7 +385,7 @@
 - [X] Check in → status changes to "Running"
 - [X] Check out → status changes to "Completed"
 - [FIXED: Undo Check in should only display thanos dialog for staff. Regular users should see the default custom dialogue.]
-- [BROKEN: Make Check out and Undo-Check in the same size horizontally and vertically, not just text determined size.]
+- [FIXED: Make Check out and Undo-Check in the same size horizontally and vertically, not just text determined size.]
 - [X] Archive appears with entry
 - [X] Admin can approve user
 - [X] Admin can cancel entry

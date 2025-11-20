@@ -382,21 +382,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const availableCheckbox = document.getElementById('is_available');
 
     if (statusSelect && availableCheckbox) {
+        // Function to update availability checkbox state based on status
+        function updateAvailabilityState() {
+            if (statusSelect.value === 'maintenance') {
+                // Maintenance: uncheck and allow interaction
+                availableCheckbox.checked = false;
+                availableCheckbox.disabled = false;
+            } else {
+                // Other statuses: disable checkbox (no interaction)
+                availableCheckbox.disabled = true;
+            }
+        }
+
+        // Set initial state on page load
+        updateAvailabilityState();
+
         // When status changes, update availability
         statusSelect.addEventListener('change', function() {
-            if (this.value === 'idle') {
-                availableCheckbox.checked = true;
-            } else {
-                // maintenance, cooldown, running → uncheck availability
-                availableCheckbox.checked = false;
-            }
-        });
-
-        // When availability is checked, set status to idle
-        availableCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                statusSelect.value = 'idle';
-            }
+            updateAvailabilityState();
         });
     }
 });
