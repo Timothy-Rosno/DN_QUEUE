@@ -292,30 +292,30 @@
 
     <div class="collapsible-content" id="completed-section">
         {% if completed_entries %}
-            {% for entry in completed_entries %}
-            <div class="entry-card" style="opacity: 0.8; background-color: #ecf0f1;">
-                <div class="entry-card-inner">
-                <div class="entry-card-header">
-                    <div style="flex: 1;">
-                        <h3 class="entry-title">{{ entry.title }}</h3>
-                        <div class="entry-info">
-                            <div class="info-item">
-                                <span class="info-label">Machine:</span>
-                                <span>{{ entry.assigned_machine.name }}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Completed:</span>
-                                <span>{{ entry.completed_at|date:"M d, g:i A" }}</span>
+            <!-- Single scrollable container for all completed entries -->
+            <div style="border: 2px solid #95a5a6; border-radius: 6px; padding: 1rem; background-color: #f5f6f7; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                <div style="min-width: 450px;">
+                {% for entry in completed_entries %}
+                <div style="padding: 0.75rem; margin-bottom: 0.5rem; border-radius: 4px; background-color: #ecf0f1; opacity: 0.9;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem;">
+                        <div style="flex: 1;">
+                            <h3 class="entry-title">{{ entry.title }}</h3>
+                            <div class="entry-info">
+                                <div class="info-item">
+                                    <span class="info-label">Machine:</span>
+                                    <span>{{ entry.assigned_machine.name }}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Completed:</span>
+                                    <span>{{ entry.completed_at|date:"M d, g:i A" }}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <!-- <div>
-                        <a href="{% url 'save_to_archive' entry.id %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.9rem; background-color: #5dade2;">Save to Archive</a>
-                    </div> -->
                 </div>
+                {% endfor %}
                 </div>
             </div>
-            {% endfor %}
         {% else %}
             <div style="padding: 1rem; color: #7f8c8d; text-align: center; background-color: #f8f9fa; border-radius: 4px;">
                 No completed entries yet.
