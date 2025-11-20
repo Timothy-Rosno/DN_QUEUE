@@ -1793,8 +1793,14 @@ def copy_preset(request, preset_id):
 
     else:
         # Pre-fill form with source preset data
+        # Truncate name if needed (max 75 chars, " - copy" is 7 chars)
+        max_name_length = 75
+        suffix = ' - copy'
+        available_chars = max_name_length - len(suffix)
+        truncated_name = source_preset.name[:available_chars] if len(source_preset.name) > available_chars else source_preset.name
+
         initial_data = {
-            'name': f'{source_preset.name} - copy',
+            'name': f'{truncated_name}{suffix}',
             'is_public': False,  # Default to private
             'title': source_preset.title,
             'description': source_preset.description,
