@@ -4,11 +4,18 @@
 
 {% block content %}
 <style>
+    /* Enable horizontal scrolling for mobile */
+    .scrollable-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .machine-card {
         border: 1px solid #ddd;
         border-radius: 4px;
         margin-bottom: 1rem;
         overflow: hidden;
+        min-width: 600px;
     }
 
     .machine-header {
@@ -146,6 +153,7 @@
     </div>
 
     {% if machines %}
+        <div class="scrollable-container">
         {% for machine in machines %}
         <div class="machine-card" data-machine-id="{{ machine.id }}">
             <div class="machine-header" onclick="toggleMachine({{ machine.id }})">
@@ -315,6 +323,7 @@
             </div>
         </div>
         {% endfor %}
+        </div>
     {% else %}
         <p style="color: #7f8c8d;">No machines found.</p>
     {% endif %}

@@ -485,6 +485,7 @@ def edit_machine(request, machine_id):
             machine.daughterboard_type = request.POST.get('daughterboard_type', machine.daughterboard_type)
             machine.optical_capabilities = request.POST.get('optical_capabilities', machine.optical_capabilities)
             machine.cooldown_hours = int(request.POST.get('cooldown_hours', machine.cooldown_hours))
+            old_status = machine.current_status
             machine.current_status = request.POST.get('current_status', machine.current_status)
             machine.is_available = request.POST.get('is_available') == 'on'
             machine.description = request.POST.get('description', machine.description)
@@ -495,6 +496,19 @@ def edit_machine(request, machine_id):
                 machine.is_available = False
 
             machine.save()
+
+            # If machine was in maintenance and is now idle, notify position 1 user
+            if old_status == 'maintenance' and machine.current_status == 'idle':
+                next_entry = QueueEntry.objects.filter(
+                    assigned_machine=machine,
+                    status='queued',
+                    queue_position=1
+                ).first()
+
+                if next_entry:
+                    # Send ready for check-in notification
+                    notifications.check_and_notify_on_deck_status(machine)
+
             messages.success(request, f'Machine "{machine.name}" updated successfully.')
             return redirect('admin_machines')
         except (ValueError, TypeError) as e:

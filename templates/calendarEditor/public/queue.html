@@ -81,6 +81,25 @@
     .collapsible-section:hover {
         opacity: 0.8;
     }
+
+    /* Enable horizontal scrolling for mobile */
+    .scrollable-table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .scrollable-table table {
+        min-width: 600px;
+    }
+
+    .scrollable-content {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .scrollable-content-inner {
+        min-width: 500px;
+    }
 </style>
 
 <div class="card">
@@ -232,6 +251,7 @@
     <div>
         <h3 style="margin-bottom: 0.5rem;">Queue ({{ data.queue_count }} total)</h3>
         {% if data.queue_entries %}
+            <div class="scrollable-table">
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="background-color: #ecf0f1;">
@@ -265,6 +285,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
         {% else %}
             <p style="color: #7f8c8d;">No entries in queue - machine is available!</p>
         {% endif %}
