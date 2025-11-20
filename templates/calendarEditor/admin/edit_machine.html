@@ -377,39 +377,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Link status and availability fields
-    const statusSelect = document.getElementById('current_status');
-    const availableCheckbox = document.getElementById('is_available');
-
-    if (statusSelect && availableCheckbox) {
-        // Function to update availability checkbox state based on status
-        function updateAvailabilityState() {
-            if (statusSelect.value === 'maintenance') {
-                // Maintenance: uncheck and allow interaction
-                availableCheckbox.checked = false;
-                availableCheckbox.disabled = false;
-            } else {
-                // Other statuses: disable checkbox (no interaction)
-                availableCheckbox.disabled = true;
-            }
-        }
-
-        // Set initial state on page load
-        updateAvailabilityState();
-
-        // When status changes, update availability
-        statusSelect.addEventListener('change', function() {
-            updateAvailabilityState();
-        });
-
-        // Re-enable checkbox before form submission so value is sent
-        const form = document.querySelector('form');
-        if (form) {
-            form.addEventListener('submit', function() {
-                availableCheckbox.disabled = false;
-            });
-        }
-    }
 });
 </script>
 {% endblock %}
