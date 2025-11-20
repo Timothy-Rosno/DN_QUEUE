@@ -12,10 +12,11 @@
         {{ form.as_p }}
 
         <div style="margin-top: 1rem; margin-bottom: 1rem;">
-            <label for="remember_me" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;" data-tooltip="Stay signed in for 1 year">
+            <label for="remember_me" id="remember-label" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
                 <input type="checkbox" name="remember_me" id="remember_me" style="margin-right: 0.5rem; width: auto; cursor: pointer;">
                 <span style="font-weight: bold;">Keep me signed in</span>
             </label>
+            <div id="remember-tooltip" style="display: none; position: absolute; background-color: #2c3e50; color: white; padding: 0.5rem; border-radius: 4px; font-size: 0.85rem; white-space: nowrap; z-index: 1000; pointer-events: none;">Stay signed in for 1 year</div>
         </div>
 
         <div style="margin-top: 1.5rem;">
@@ -35,31 +36,6 @@
 </div>
 
 <style>
-    /* Delayed tooltip for remember me checkbox */
-    label[for="remember_me"][data-tooltip]:hover::after {
-        content: attr(data-tooltip);
-        position: absolute;
-        background-color: #2c3e50;
-        color: white;
-        padding: 0.5rem;
-        border-radius: 4px;
-        font-size: 0.85rem;
-        white-space: nowrap;
-        z-index: 1000;
-        margin-top: 2.5rem;
-        margin-left: -5rem;
-        animation: fadeIn 0.1s 0.1s both;
-    }
-
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
-    }
-
     /* Make checkbox cursor pointer */
     input[type="checkbox"] {
         cursor: pointer !important;
@@ -68,4 +44,68 @@
         cursor: pointer !important;
     }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const label = document.getElementById('remember-label');
+    const tooltip = document.getElementById('remember-tooltip');
+    const card = document.querySelector('.card');
+    let showTimeout = null;
+    let mouseX = 0;
+    let mouseY = 0;
+
+    label.addEventListener('mouseenter', function(e) {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        showTimeout = setTimeout(function() {
+            positionTooltip();
+            tooltip.style.display = 'block';
+        }, 100);
+    });
+
+    label.addEventListener('mousemove', function(e) {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        if (tooltip.style.display === 'block') {
+            positionTooltip();
+        }
+    });
+
+    label.addEventListener('mouseleave', function() {
+        if (showTimeout) {
+            clearTimeout(showTimeout);
+            showTimeout = null;
+        }
+        tooltip.style.display = 'none';
+    });
+
+    function positionTooltip() {
+        const cardRect = card.getBoundingClientRect();
+        const tooltipRect = tooltip.getBoundingClientRect();
+
+        // Position tooltip near cursor with offset
+        let left = mouseX + 10;
+        let top = mouseY + 15;
+
+        // Keep within container horizontally
+        if (left + tooltipRect.width > cardRect.right) {
+            left = cardRect.right - tooltipRect.width - 5;
+        }
+        if (left < cardRect.left) {
+            left = cardRect.left + 5;
+        }
+
+        // Keep within container vertically
+        if (top + tooltipRect.height > cardRect.bottom) {
+            top = mouseY - tooltipRect.height - 10;
+        }
+        if (top < cardRect.top) {
+            top = cardRect.top + 5;
+        }
+
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+    }
+});
+</script>
 {% endblock %}

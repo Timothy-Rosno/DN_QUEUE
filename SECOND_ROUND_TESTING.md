@@ -356,8 +356,8 @@
 - [X] Click "Delete" on YOUR preset
 - [X] Should see **normal confirmation** dialog (not Thanos modal)
 - [X] As **admin**, delete public preset
-- [BROKEN: See line below this] Should see **Thanos snap dialog** (dramatic confirmation)
-- [BROKEN: In schedule/submit, admin sees normal delete dialog. In admin-presets, dialog is correct for public presets but the private presets is the "page says" thing, not even custom dialog.] Verify both work correctly
+- [FIXED: See line below this] Should see **Thanos snap dialog** (dramatic confirmation)
+- [FIXED: In schedule/submit, admin sees normal delete dialog. In admin-presets, dialog is correct for public presets but the private presets is the "page says" thing, not even custom dialog.] Verify both work correctly
 
 ---
 
@@ -384,7 +384,7 @@
 - [X] Submit queue entry → appears in My Queue
 - [X] Check in → status changes to "Running"
 - [X] Check out → status changes to "Completed"
-- [BROKEN: Undo Check in should only display thanos dialog for staff. Regular users should see the default custom dialogue.]
+- [FIXED: Undo Check in should only display thanos dialog for staff. Regular users should see the default custom dialogue.]
 - [BROKEN: Make Check out and Undo-Check in the same size horizontally and vertically, not just text determined size.]
 - [X] Archive appears with entry
 - [X] Admin can approve user
