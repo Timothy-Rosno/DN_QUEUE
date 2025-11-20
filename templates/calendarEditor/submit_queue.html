@@ -324,11 +324,11 @@
             cursor: pointer !important;
         }
 
-        /* Disabled submit button styles */
+        /* Disabled submit button styles - grayed out blue */
         .btn:disabled, .btn.btn-disabled {
-            background-color: #95a5a6 !important;
+            background-color: #7fb3d3 !important;
             cursor: not-allowed !important;
-            opacity: 0.7;
+            opacity: 0.8;
         }
 
         /* Submit button tooltip container */
@@ -376,7 +376,8 @@
             word-wrap: break-word;
         }
 
-        .submit-btn-wrapper:hover .validation-tooltip {
+        /* Only show tooltip when hovering AND button is disabled */
+        .submit-btn-wrapper:hover .btn:disabled + .validation-tooltip {
             display: block;
         }
     </style>
@@ -1422,33 +1423,35 @@
                 // Title validation (min 3 characters)
                 const titleValue = titleField.value.trim();
                 if (!titleValue) {
-                    errors.push('Title: Required');
+                    errors.push('Enter a title (minimum 3 characters)');
                 } else if (titleValue.length < 3) {
-                    errors.push('Title: Not long enough (3 character minimum)');
+                    const needed = 3 - titleValue.length;
+                    errors.push(`Title needs ${needed} more character${needed === 1 ? '' : 's'}`);
                 }
 
                 // Description validation (min 50 characters)
                 const descValue = descriptionField.value.trim();
                 if (!descValue) {
-                    errors.push('Description: Required');
+                    errors.push('Enter a description (minimum 50 characters)');
                 } else if (descValue.length < 50) {
-                    errors.push(`Description: Not long enough (50 character minimum, currently ${descValue.length})`);
+                    const needed = 50 - descValue.length;
+                    errors.push(`Description needs ${needed} more character${needed === 1 ? '' : 's'}`);
                 }
 
                 // Min temperature validation
                 const minTempValue = minTempField.value.trim();
                 if (!minTempValue) {
-                    errors.push('Minimum Temperature: Required');
+                    errors.push('Enter a minimum temperature');
                 } else {
                     const tempNum = parseFloat(minTempValue);
                     const min = parseFloat(minTempField.getAttribute('min'));
                     const max = parseFloat(minTempField.getAttribute('max'));
                     if (isNaN(tempNum)) {
-                        errors.push('Minimum Temperature: Must be a valid number');
+                        errors.push('Minimum temperature must be a valid number');
                     } else if (!isNaN(min) && tempNum < min) {
-                        errors.push(`Minimum Temperature: Must be at least ${min}`);
+                        errors.push(`Minimum temperature must be at least ${min}`);
                     } else if (!isNaN(max) && tempNum > max) {
-                        errors.push(`Minimum Temperature: Must be at most ${max}`);
+                        errors.push(`Minimum temperature must be at most ${max}`);
                     }
                 }
 
