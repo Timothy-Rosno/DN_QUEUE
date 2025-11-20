@@ -737,11 +737,10 @@ def check_out_job(request, entry_id):
         queue_position=1
     ).first()
 
-    # Check if machine is unavailable (disconnected)
-    if not machine.is_online():
-        # Machine is disconnected - set to maintenance
+    # Check if machine is unavailable (marked by admin)
+    if not machine.is_available:
+        # Machine is unavailable - set to maintenance
         machine.current_status = 'maintenance'
-        machine.is_available = False
         machine.estimated_available_time = None
     elif next_entry:
         # Machine status becomes idle, but may have cooldown time
@@ -762,8 +761,8 @@ def check_out_job(request, entry_id):
     print(f"[USER CHECKOUT] Machine status after checkout: {machine.current_status}, is_available: {machine.is_available}")
 
     # DIRECTLY notify the next person in line - bypass all complex logic
-    # Only notify if machine is online (not in maintenance due to disconnection)
-    if next_entry and machine.is_online():
+    # Only notify if machine is available (not in maintenance)
+    if next_entry and machine.is_available:
         print(f"[USER CHECKOUT] DIRECTLY creating notification for {next_entry.user.username}")
         try:
             from .models import Notification
