@@ -119,7 +119,7 @@
             <div>
                 <form method="post" action="{% url 'check_in_job' entry.id %}">
                     {% csrf_token %}
-                    {% if not entry.assigned_machine.is_online %}
+                    {% if not entry.assigned_machine.is_available %}
                     <button type="button" class="btn btn-secondary btn-lg" style="cursor: not-allowed;" disabled title="Machine is unavailable. Please contact an administrator.">Check In Now</button>
                     {% else %}
                     <button type="submit" class="btn btn-success btn-lg">Check In Now</button>

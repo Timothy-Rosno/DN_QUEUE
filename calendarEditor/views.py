@@ -1444,6 +1444,10 @@ def delete_preset(request, preset_id):
 
     messages.success(request, f'Preset "{preset_name}" deleted successfully.')
 
+    # Redirect to admin-presets if coming from admin page
+    referer = request.META.get('HTTP_REFERER', '')
+    if request.user.is_staff and 'admin-presets' in referer:
+        return redirect('admin_presets')
     return redirect('submit_queue')
 
 

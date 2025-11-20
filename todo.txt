@@ -23,6 +23,65 @@ but now what I want is to remove the auto-logout capability
 
 [ ] [EXT CAT]   Hardware autofocus micromanager connection
 [ ] [EXT CAT]   Extract corners from image processing (2DMatV2)
+  Based on the codebase research, here's how the system works:
+
+  Current Architecture
+
+  The temperature_gateway.py runs on one central computer within the
+  university network. This computer must have network access to reach all
+  machine IPs, regardless of which physical computers/subnets they're on.
+
+  Your Current Configuration
+
+  From gateway_config.json:
+
+  {
+    "id": 7,
+    "name": "Opticool",
+    "ip": "192.168.10.103",
+    "api_type": "quantum_design",
+    "api_port": 47101
+  },
+  {
+    "id": 8,
+    "name": "CryoCore",
+    "ip": "192.168.10.105",
+    "api_type": "quantum_design",
+    "api_port": 47101
+  }
+
+  Accessing Machines on Different Computers
+
+  The gateway computer must be able to reach each machine's IP address. The
+  machines can be:
+  - On different physical computers
+  - On different subnets (e.g., 10.3.x.x vs 192.168.10.x)
+  - In different rooms/buildings
+
+  As long as the gateway computer can ping/reach each IP, it will work.
+
+  Endpoint URLs
+
+  For CryoCore and OptiCool (Quantum Design API):
+  http://192.168.10.103:47101/v1/sampleChamber/temperatureControllers/user1/
+  thermometer/properties/sample
+  http://192.168.10.105:47101/v1/sampleChamber/temperatureControllers/user1/
+  thermometer/properties/sample
+
+  If You Need Cross-Network Access
+
+  If the gateway computer cannot directly reach these IPs (e.g., they're on
+  isolated networks), you have a few options:
+
+  1. Run the gateway on a computer with access to all networks (e.g., a
+  server with multiple network interfaces)
+  2. Set up network routing/bridging between the subnets
+  3. Run multiple gateway instances - one per network, each configured with
+  only the machines it can reach
+  4. Use SSH tunnels or VPN to bridge networks
+
+  Would you like me to help with any specific network configuration
+  scenario?
 
 To switch to PostgreSQL later:
 When you're ready to use PostgreSQL instead of SQLite, you'll need to:
