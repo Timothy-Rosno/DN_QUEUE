@@ -11,6 +11,9 @@
     <p style="margin: 0.5rem 0; font-size: 0.95rem;">
         Check <a href="{% url 'fridge_list' %}" style="color: #3498db; text-decoration: underline;">here</a> for the most up-to-date fridge specifications.
     </p>
+    <p style="margin: 0.5rem 0; font-size: 0.9rem; color: #e74c3c;">
+        <span style="font-weight: bold;">*</span> Required fields
+    </p>
 
     <form method="post" id="queueForm" action="{% url 'submit_queue' %}">
         {% csrf_token %}
@@ -55,13 +58,16 @@
         </div>
 
         <div style="margin-top: 1.5rem;">
-            <button type="submit" class="btn" id="submitBtn">Submit Request</button>
-            <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
+            <span class="submit-btn-wrapper">
+                <button type="submit" class="btn" id="submitBtnTop" disabled>Submit Request</button>
+                <div class="validation-tooltip" id="validationTooltipTop"></div>
+            </span>
+            <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Home</a>
         </div>
 
         <div style="margin-bottom: 1.5rem;">
             <label for="{{ form.title.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
-                {{ form.title.label }}
+                {{ form.title.label }} <span style="color: #e74c3c;">*</span>
             </label>
             {{ form.title }}
             {% if form.title.errors %}
@@ -72,7 +78,7 @@
 
         <div style="margin-bottom: 1.5rem;">
             <label for="{{ form.description.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
-                {{ form.description.label }}
+                {{ form.description.label }} <span style="color: #e74c3c;">*</span>
             </label>
             {{ form.description }}
             {% if form.description.errors %}
@@ -83,7 +89,7 @@
 
         <div style="margin-bottom: 1.5rem;">
             <label for="{{ form.required_min_temp.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
-                {{ form.required_min_temp.label }}
+                {{ form.required_min_temp.label }} <span style="color: #e74c3c;">*</span>
             </label>
             {{ form.required_min_temp }}
             {% if form.required_min_temp.errors %}
@@ -301,8 +307,11 @@
         </div>
 
         <div style="margin-top: 1.5rem;">
-            <button type="submit" class="btn" id="submitBtn">Submit Request</button>
-            <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
+            <span class="submit-btn-wrapper">
+                <button type="submit" class="btn" id="submitBtnBottom" disabled>Submit Request</button>
+                <div class="validation-tooltip" id="validationTooltipBottom"></div>
+            </span>
+            <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Home</a>
         </div>
     </form>
 
@@ -313,6 +322,62 @@
         }
         label:has(input[type="checkbox"]) {
             cursor: pointer !important;
+        }
+
+        /* Disabled submit button styles */
+        .btn:disabled, .btn.btn-disabled {
+            background-color: #95a5a6 !important;
+            cursor: not-allowed !important;
+            opacity: 0.7;
+        }
+
+        /* Submit button tooltip container */
+        .submit-btn-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        /* Validation tooltip */
+        .validation-tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            background-color: #2c3e50;
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            max-width: 300px;
+            width: max-content;
+            z-index: 1000;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .validation-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 20px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: #2c3e50 transparent transparent transparent;
+        }
+
+        .validation-tooltip ul {
+            margin: 0;
+            padding: 0 0 0 1rem;
+            list-style: disc;
+        }
+
+        .validation-tooltip li {
+            margin: 0.25rem 0;
+            word-wrap: break-word;
+        }
+
+        .submit-btn-wrapper:hover .validation-tooltip {
+            display: block;
         }
     </style>
     <script>
@@ -1334,6 +1399,99 @@
                             firstError.previousSibling.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
                     }
+                });
+            }
+        })();
+
+        // ===============================
+        // Submit Button Validation
+        // ===============================
+        (function() {
+            const submitBtnTop = document.getElementById('submitBtnTop');
+            const submitBtnBottom = document.getElementById('submitBtnBottom');
+            const tooltipTop = document.getElementById('validationTooltipTop');
+            const tooltipBottom = document.getElementById('validationTooltipBottom');
+
+            const titleField = document.getElementById('{{ form.title.id_for_label }}');
+            const descriptionField = document.getElementById('{{ form.description.id_for_label }}');
+            const minTempField = document.getElementById('{{ form.required_min_temp.id_for_label }}');
+
+            function validateForm() {
+                const errors = [];
+
+                // Title validation (min 3 characters)
+                const titleValue = titleField.value.trim();
+                if (!titleValue) {
+                    errors.push('Title: Required');
+                } else if (titleValue.length < 3) {
+                    errors.push('Title: Not long enough (3 character minimum)');
+                }
+
+                // Description validation (min 50 characters)
+                const descValue = descriptionField.value.trim();
+                if (!descValue) {
+                    errors.push('Description: Required');
+                } else if (descValue.length < 50) {
+                    errors.push(`Description: Not long enough (50 character minimum, currently ${descValue.length})`);
+                }
+
+                // Min temperature validation
+                const minTempValue = minTempField.value.trim();
+                if (!minTempValue) {
+                    errors.push('Minimum Temperature: Required');
+                } else {
+                    const tempNum = parseFloat(minTempValue);
+                    const min = parseFloat(minTempField.getAttribute('min'));
+                    const max = parseFloat(minTempField.getAttribute('max'));
+                    if (isNaN(tempNum)) {
+                        errors.push('Minimum Temperature: Must be a valid number');
+                    } else if (!isNaN(min) && tempNum < min) {
+                        errors.push(`Minimum Temperature: Must be at least ${min}`);
+                    } else if (!isNaN(max) && tempNum > max) {
+                        errors.push(`Minimum Temperature: Must be at most ${max}`);
+                    }
+                }
+
+                return errors;
+            }
+
+            function updateSubmitButtons() {
+                const errors = validateForm();
+                const isValid = errors.length === 0;
+
+                // Update button states
+                submitBtnTop.disabled = !isValid;
+                submitBtnBottom.disabled = !isValid;
+
+                // Update tooltips
+                if (errors.length > 0) {
+                    const tooltipContent = '<ul>' + errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+                    tooltipTop.innerHTML = tooltipContent;
+                    tooltipBottom.innerHTML = tooltipContent;
+                } else {
+                    tooltipTop.innerHTML = '';
+                    tooltipBottom.innerHTML = '';
+                }
+            }
+
+            // Add event listeners for real-time validation
+            titleField.addEventListener('input', updateSubmitButtons);
+            titleField.addEventListener('blur', updateSubmitButtons);
+            descriptionField.addEventListener('input', updateSubmitButtons);
+            descriptionField.addEventListener('blur', updateSubmitButtons);
+            minTempField.addEventListener('input', updateSubmitButtons);
+            minTempField.addEventListener('blur', updateSubmitButtons);
+            minTempField.addEventListener('change', updateSubmitButtons);
+
+            // Initial validation on page load
+            updateSubmitButtons();
+
+            // Also validate when presets are loaded
+            const presetDropdown = document.getElementById('presetDropdown');
+            if (presetDropdown) {
+                presetDropdown.addEventListener('change', function() {
+                    // Delay to allow preset data to populate fields
+                    setTimeout(updateSubmitButtons, 100);
                 });
             }
         })();
