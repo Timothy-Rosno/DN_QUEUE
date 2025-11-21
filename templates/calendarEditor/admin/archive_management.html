@@ -163,25 +163,92 @@
     <h2 style="margin-top: 0; color: #2ecc71;">Cloud Backups</h2>
     <p style="color: #7f8c8d;">Automated nightly backups stored in GitHub. These run daily at 12:30 AM Central.</p>
 
-    <div id="cloudBackupsContainer" style="margin-top: 1rem;">
+    <!-- Month selector dropdown -->
+    <div style="display: flex; align-items: center; gap: 1rem; margin: 1rem 0;">
+        <label for="cloudBackupMonthSelect" style="font-weight: bold; white-space: nowrap;">View month:</label>
+        <select id="cloudBackupMonthSelect" style="padding: 0.5rem; border: 2px solid #2ecc71; border-radius: 5px; flex: 1; max-width: 200px;">
+            <option value="loading">Loading...</option>
+        </select>
+        <button id="openBackupSelectorBtn" class="btn" style="background: #3498db; padding: 0.5rem 1rem;">
+            Browse All
+        </button>
+    </div>
+
+    <!-- Horizontally scrollable card container -->
+    <div id="cloudBackupsScrollContainer" style="
+        overflow-x: auto;
+        white-space: nowrap;
+        padding: 1rem 0;
+        margin: 0 -1rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    ">
         <p style="color: #7f8c8d;"><em>Loading cloud backups...</em></p>
     </div>
 
     <div id="cloudBackupsError" style="display: none; background: #fee; border-left: 4px solid #e74c3c; padding: 1rem; margin-top: 1rem;">
     </div>
+
+    <p id="cloudBackupsCount" style="color: #7f8c8d; margin-top: 0.5rem; font-size: 0.9rem;"></p>
+</div>
+
+<!-- Backup Selector Modal -->
+<div id="backupSelectorModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:2rem; border-radius:10px; max-width:600px; width:90%; max-height:80vh; display:flex; flex-direction:column; position:relative;">
+        <h3 style="margin-top: 0; color: #2ecc71;">Select Cloud Backup</h3>
+
+        <!-- Month filter in modal -->
+        <div style="margin-bottom: 1rem;">
+            <select id="modalMonthSelect" style="padding: 0.5rem; border: 2px solid #2ecc71; border-radius: 5px; width: 100%;">
+                <option value="all">All Backups</option>
+            </select>
+        </div>
+
+        <!-- Scrollable backup list -->
+        <div id="backupSelectorList" style="flex: 1; overflow-y: auto; max-height: 400px; border: 1px solid #ecf0f1; border-radius: 5px;">
+            <p style="padding: 1rem; color: #7f8c8d;">Loading...</p>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top: 1rem;">
+            <button id="backupSelectorCancel" class="btn" style="background: #95a5a6;">Cancel</button>
+        </div>
+        <span id="backupSelectorClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.5rem; color: #7f8c8d;">&times;</span>
+    </div>
 </div>
 
 <script>
-// Load cloud backups from GitHub
+// Cloud Backups with horizontal scroll and selector modal
+let allCloudBackups = [];
+let backupsByMonth = {};
+
 document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('cloudBackupsContainer');
+    const scrollContainer = document.getElementById('cloudBackupsScrollContainer');
     const errorDiv = document.getElementById('cloudBackupsError');
+    const monthSelect = document.getElementById('cloudBackupMonthSelect');
+    const countDisplay = document.getElementById('cloudBackupsCount');
+    const openSelectorBtn = document.getElementById('openBackupSelectorBtn');
+    const selectorModal = document.getElementById('backupSelectorModal');
+    const selectorList = document.getElementById('backupSelectorList');
+    const modalMonthSelect = document.getElementById('modalMonthSelect');
+    const selectorCancel = document.getElementById('backupSelectorCancel');
+    const selectorClose = document.getElementById('backupSelectorClose');
+
+    // Save scroll position before page unload
+    window.addEventListener('beforeunload', function() {
+        sessionStorage.setItem('cloudBackupsScrollPos', scrollContainer.scrollLeft);
+        sessionStorage.setItem('pageScrollPos', window.scrollY);
+    });
+
+    // Restore page scroll position
+    const savedPageScroll = sessionStorage.getItem('pageScrollPos');
+    if (savedPageScroll) {
+        setTimeout(() => window.scrollTo(0, parseInt(savedPageScroll)), 100);
+        sessionStorage.removeItem('pageScrollPos');
+    }
 
     fetch('{% url "admin_list_github_backups" %}')
         .then(response => {
-            // Check if response is OK before parsing JSON
             if (!response.ok) {
-                // If redirected to login page (HTML response), show auth error
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
                     throw new Error('Session expired or authentication required. Please refresh the page.');
@@ -193,40 +260,32 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.error) {
                 errorDiv.innerHTML = `<strong style="color: #e74c3c;">Error:</strong> ${data.error}`;
                 errorDiv.style.display = 'block';
-                container.innerHTML = '';
+                scrollContainer.innerHTML = '';
+                monthSelect.innerHTML = '<option value="">Error loading</option>';
                 return;
             }
 
             if (data.message) {
-                container.innerHTML = `<p style="color: #7f8c8d;">${data.message}</p>`;
+                scrollContainer.innerHTML = `<p style="color: #7f8c8d; white-space: normal;">${data.message}</p>`;
+                monthSelect.innerHTML = '<option value="">No backups</option>';
                 return;
             }
 
             if (!data.backups || data.backups.length === 0) {
-                container.innerHTML = '<p style="color: #7f8c8d;">No cloud backups found yet. Backups run nightly at 12:30 AM Central.</p>';
+                scrollContainer.innerHTML = '<p style="color: #7f8c8d; white-space: normal;">No cloud backups found yet. Backups run nightly at 12:30 AM Central.</p>';
+                monthSelect.innerHTML = '<option value="">No backups</option>';
                 return;
             }
 
-            // Build table of backups
-            let html = `
-                <div class="table-container">
-                    <table class="styled-table">
-                        <thead>
-                            <tr>
-                                <th style="text-align: left;">Backup Date</th>
-                                <th style="text-align: center;">Size</th>
-                                <th style="text-align: center;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-
-            data.backups.forEach(backup => {
-                // Parse date from filename: database_backup_2024-01-15_06-30-00.json
+            // Process and organize backups by month
+            allCloudBackups = data.backups.map(backup => {
                 const match = backup.name.match(/database_backup_(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})\.json/);
+                let date = null;
                 let dateStr = backup.name;
+                let monthKey = 'unknown';
+
                 if (match) {
-                    const date = new Date(`${match[1]}T${match[2]}:${match[3]}:${match[4]}Z`);
+                    date = new Date(`${match[1]}T${match[2]}:${match[3]}:${match[4]}Z`);
                     dateStr = date.toLocaleString('en-US', {
                         year: 'numeric',
                         month: 'short',
@@ -235,61 +294,216 @@ document.addEventListener('DOMContentLoaded', function() {
                         minute: '2-digit',
                         hour12: true
                     });
+                    monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                 }
 
-                // Format size
                 const sizeKB = (backup.size / 1024).toFixed(1);
                 const sizeStr = backup.size > 1024 * 1024
                     ? `${(backup.size / 1024 / 1024).toFixed(2)} MB`
                     : `${sizeKB} KB`;
 
-                const downloadUrl = `/schedule/admin/github-backups/download/${encodeURIComponent(backup.name)}/`;
-                html += `
-                    <tr>
-                        <td style="text-align: left;">${dateStr}</td>
-                        <td style="text-align: center;">${sizeStr}</td>
-                        <td style="text-align: center;">
-                            <a href="${downloadUrl}"
-                               class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.85rem; background: #2ecc71;">
-                                Download
-                            </a>
-                            <button type="button"
-                               class="btn restore-cloud-btn"
-                               data-filename="${backup.name}"
-                               data-date="${dateStr}"
-                               style="padding: 0.3rem 0.6rem; font-size: 0.85rem; background: #e67e22; margin-left: 0.5rem;">
-                                Restore
-                            </button>
-                        </td>
-                    </tr>
-                `;
+                return {
+                    ...backup,
+                    date,
+                    dateStr,
+                    sizeStr,
+                    monthKey
+                };
             });
 
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-                <p style="color: #7f8c8d; margin-top: 1rem; font-size: 0.9rem;">
-                    Last ${data.backups.length} backups shown. Click "Restore" to restore directly from a cloud backup.
-                </p>
-            `;
-
-            container.innerHTML = html;
-
-            // Add event listeners to restore buttons
-            container.querySelectorAll('.restore-cloud-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const filename = this.dataset.filename;
-                    const dateStr = this.dataset.date;
-                    openCloudRestoreModal(filename, dateStr);
-                });
+            // Group by month
+            backupsByMonth = {};
+            allCloudBackups.forEach(backup => {
+                if (!backupsByMonth[backup.monthKey]) {
+                    backupsByMonth[backup.monthKey] = [];
+                }
+                backupsByMonth[backup.monthKey].push(backup);
             });
+
+            // Populate month dropdown
+            const months = Object.keys(backupsByMonth).sort().reverse();
+            monthSelect.innerHTML = months.map(month => {
+                const [year, mon] = month.split('-');
+                const monthName = new Date(year, parseInt(mon) - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+                return `<option value="${month}">${monthName} (${backupsByMonth[month].length})</option>`;
+            }).join('');
+
+            // Also populate modal dropdown
+            modalMonthSelect.innerHTML = '<option value="all">All Backups (' + allCloudBackups.length + ')</option>' +
+                months.map(month => {
+                    const [year, mon] = month.split('-');
+                    const monthName = new Date(year, parseInt(mon) - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+                    return `<option value="${month}">${monthName} (${backupsByMonth[month].length})</option>`;
+                }).join('');
+
+            // Determine which month to show (current or last if none this month)
+            const now = new Date();
+            const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            let selectedMonth = months[0]; // Default to most recent
+
+            if (backupsByMonth[currentMonthKey] && backupsByMonth[currentMonthKey].length > 0) {
+                selectedMonth = currentMonthKey;
+            }
+
+            monthSelect.value = selectedMonth;
+            renderBackupsForMonth(selectedMonth);
+
+            // Restore horizontal scroll position
+            const savedScrollPos = sessionStorage.getItem('cloudBackupsScrollPos');
+            if (savedScrollPos) {
+                setTimeout(() => {
+                    scrollContainer.scrollLeft = parseInt(savedScrollPos);
+                }, 100);
+                sessionStorage.removeItem('cloudBackupsScrollPos');
+            }
         })
         .catch(error => {
             errorDiv.innerHTML = `<strong style="color: #e74c3c;">Network Error:</strong> ${error.message}`;
             errorDiv.style.display = 'block';
-            container.innerHTML = '';
+            scrollContainer.innerHTML = '';
         });
+
+    // Month select change handler
+    monthSelect.addEventListener('change', function() {
+        renderBackupsForMonth(this.value);
+    });
+
+    // Render backups as horizontal cards
+    function renderBackupsForMonth(monthKey) {
+        const backups = backupsByMonth[monthKey] || [];
+
+        if (backups.length === 0) {
+            scrollContainer.innerHTML = '<p style="color: #7f8c8d; white-space: normal;">No backups for this month.</p>';
+            countDisplay.textContent = '';
+            return;
+        }
+
+        let html = '<div style="display: inline-flex; gap: 1rem;">';
+
+        backups.forEach(backup => {
+            const downloadUrl = `/schedule/admin/github-backups/download/${encodeURIComponent(backup.name)}/`;
+            html += `
+                <div style="
+                    display: inline-block;
+                    background: #f8f9fa;
+                    border: 2px solid #2ecc71;
+                    border-radius: 8px;
+                    padding: 1rem;
+                    min-width: 200px;
+                    white-space: normal;
+                    vertical-align: top;
+                ">
+                    <p style="margin: 0 0 0.5rem 0; font-weight: bold; font-size: 0.95rem;">${backup.dateStr}</p>
+                    <p style="margin: 0 0 0.75rem 0; color: #7f8c8d; font-size: 0.85rem;">${backup.sizeStr}</p>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a href="${downloadUrl}" class="btn" style="padding: 0.3rem 0.5rem; font-size: 0.8rem; background: #2ecc71; flex: 1; text-align: center;">
+                            Download
+                        </a>
+                        <button type="button" class="btn restore-cloud-btn"
+                            data-filename="${backup.name}"
+                            data-date="${backup.dateStr}"
+                            style="padding: 0.3rem 0.5rem; font-size: 0.8rem; background: #e67e22; flex: 1;">
+                            Restore
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        scrollContainer.innerHTML = html;
+        countDisplay.textContent = `${backups.length} backup${backups.length !== 1 ? 's' : ''} this month. Scroll for more or click "Browse All".`;
+
+        // Add restore button listeners
+        scrollContainer.querySelectorAll('.restore-cloud-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                openCloudRestoreModal(this.dataset.filename, this.dataset.date);
+            });
+        });
+    }
+
+    // Open selector modal
+    openSelectorBtn.addEventListener('click', function() {
+        selectorModal.style.display = 'flex';
+        modalMonthSelect.value = 'all';
+        renderSelectorList('all');
+    });
+
+    // Modal month filter change
+    modalMonthSelect.addEventListener('change', function() {
+        renderSelectorList(this.value);
+    });
+
+    // Render selector list
+    function renderSelectorList(filter) {
+        let backups = filter === 'all' ? allCloudBackups : (backupsByMonth[filter] || []);
+
+        if (backups.length === 0) {
+            selectorList.innerHTML = '<p style="padding: 1rem; color: #7f8c8d;">No backups found.</p>';
+            return;
+        }
+
+        let html = '';
+        backups.forEach(backup => {
+            const downloadUrl = `/schedule/admin/github-backups/download/${encodeURIComponent(backup.name)}/`;
+            html += `
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 0.75rem 1rem;
+                    border-bottom: 1px solid #ecf0f1;
+                    gap: 1rem;
+                ">
+                    <div style="flex: 1;">
+                        <p style="margin: 0; font-weight: bold; font-size: 0.9rem;">${backup.dateStr}</p>
+                        <p style="margin: 0; color: #7f8c8d; font-size: 0.8rem;">${backup.sizeStr}</p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a href="${downloadUrl}" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #2ecc71;">
+                            Download
+                        </a>
+                        <button type="button" class="btn modal-restore-btn"
+                            data-filename="${backup.name}"
+                            data-date="${backup.dateStr}"
+                            style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #e67e22;">
+                            Restore
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        selectorList.innerHTML = html;
+
+        // Add restore button listeners
+        selectorList.querySelectorAll('.modal-restore-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                closeSelectorModal();
+                openCloudRestoreModal(this.dataset.filename, this.dataset.date);
+            });
+        });
+    }
+
+    // Close selector modal
+    function closeSelectorModal() {
+        selectorModal.style.display = 'none';
+    }
+
+    selectorCancel.addEventListener('click', closeSelectorModal);
+    selectorClose.addEventListener('click', closeSelectorModal);
+    selectorModal.addEventListener('click', function(e) {
+        if (e.target === selectorModal) {
+            closeSelectorModal();
+        }
+    });
+
+    // ESC key to close modal
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && selectorModal.style.display === 'flex') {
+            closeSelectorModal();
+        }
+    });
 });
 </script>
 
