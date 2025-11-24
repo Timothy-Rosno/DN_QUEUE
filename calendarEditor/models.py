@@ -297,7 +297,8 @@ class QueueEntry(models.Model):
 
     # Reminder tracking (replaces Celery scheduled tasks)
     reminder_due_at = models.DateTimeField(null=True, blank=True, help_text="When checkout reminder should be sent")
-    reminder_sent = models.BooleanField(default=False, help_text="Whether checkout reminder was sent")
+    last_reminder_sent_at = models.DateTimeField(null=True, blank=True, help_text="When the last checkout reminder was sent (for repeat reminders every 2 hours)")
+    reminder_snoozed_until = models.DateTimeField(null=True, blank=True, help_text="When the reminder snooze expires (user clicked notification link)")
 
     # Additional info
     special_requirements = models.TextField(blank=True, help_text="Any special requirements or notes", validators=[MaxLengthValidator(500)])
@@ -574,8 +575,14 @@ class Notification(models.Model):
         elif self.notification_type in ['queue_moved', 'queue_added', 'queue_cancelled', 'admin_edit_entry']:
             return reverse('my_queue')
 
-        # ON DECK, Ready for Check-In, Checkout Reminder, Machine Status Changed, Admin Check-In, Admin Checkout - go to check-in/check-out page
-        elif self.notification_type in ['on_deck', 'ready_for_check_in', 'checkout_reminder', 'machine_status_changed', 'admin_check_in', 'admin_checkout']:
+        # Checkout Reminder - go to snooze endpoint (silences for 6 hours)
+        elif self.notification_type == 'checkout_reminder':
+            if self.related_queue_entry:
+                return reverse('snooze_checkout_reminder', kwargs={'entry_id': self.related_queue_entry.id})
+            return reverse('check_in_check_out')
+
+        # ON DECK, Ready for Check-In, Machine Status Changed, Admin Check-In, Admin Checkout - go to check-in/check-out page
+        elif self.notification_type in ['on_deck', 'ready_for_check_in', 'machine_status_changed', 'admin_check_in', 'admin_checkout']:
             return reverse('check_in_check_out')
 
         # Account approval - go to home page

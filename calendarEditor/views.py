@@ -651,9 +651,11 @@ def check_in_job(request, entry_id):
     reorder_queue(machine)
 
     # Set reminder due time (replaces Celery scheduled task)
+    # Reminder will be sent every 2 hours (except 12 AM - 6 AM) until checkout
     queue_entry.reminder_due_at = queue_entry.started_at + timedelta(hours=queue_entry.estimated_duration_hours)
-    queue_entry.reminder_sent = False
-    queue_entry.save(update_fields=['reminder_due_at', 'reminder_sent'])
+    queue_entry.last_reminder_sent_at = None
+    queue_entry.reminder_snoozed_until = None
+    queue_entry.save(update_fields=['reminder_due_at', 'last_reminder_sent_at', 'reminder_snoozed_until'])
 
     # Broadcast WebSocket update
     try:
@@ -840,6 +842,37 @@ def check_out_job(request, entry_id):
 
 
 @login_required
+def snooze_checkout_reminder(request, entry_id):
+    """
+    Snooze checkout reminder for 6 hours.
+
+    This is triggered when a user clicks the notification link.
+    It silences reminders for 6 hours, after which they resume at 2-hour intervals.
+
+    Requirements:
+    - User must own the entry
+    - Entry must be running
+    """
+    queue_entry = get_object_or_404(QueueEntry, id=entry_id, user=request.user)
+
+    # Only allow snoozing for running entries
+    if queue_entry.status != 'running':
+        messages.info(request, 'This measurement is no longer running.')
+        return redirect('check_in_check_out')
+
+    # Set snooze time to 6 hours from now
+    queue_entry.reminder_snoozed_until = timezone.now() + timedelta(hours=6)
+    queue_entry.save(update_fields=['reminder_snoozed_until'])
+
+    # Mark the related notifications as read
+    from .notifications import auto_clear_notifications
+    auto_clear_notifications(related_queue_entry=queue_entry, notification_types=['checkout_reminder'])
+
+    messages.success(request, f'Reminder snoozed for 6 hours. You can continue your measurement on {queue_entry.assigned_machine.name}.')
+    return redirect('check_in_check_out')
+
+
+@login_required
 def undo_check_in(request, entry_id):
     """
     Undo a check-in to move running entry back to on-deck position (RUNNING → QUEUED at position 1).
@@ -888,7 +921,8 @@ def undo_check_in(request, entry_id):
         queue_entry.queue_position = 1
         queue_entry.started_at = None
         queue_entry.reminder_due_at = None
-        queue_entry.reminder_sent = False
+        queue_entry.last_reminder_sent_at = None
+        queue_entry.reminder_snoozed_until = None
         queue_entry.save()
 
         # Update machine status to idle
@@ -2393,27 +2427,40 @@ def api_check_reminders(request):
     - sent: number of reminders sent
     """
     from django.utils import timezone
+    from django.db.models import Q
     from .middleware import CheckReminderMiddleware
 
     # Run the same logic as middleware
     middleware = CheckReminderMiddleware(lambda x: x)
 
-    # Count pending reminders before
+    now = timezone.now()
+    two_hours_ago = now - timedelta(hours=2)
+
+    # Count pending reminders before (entries that need a reminder)
     pending_before = QueueEntry.objects.filter(
-        reminder_due_at__lte=timezone.now(),
-        reminder_sent=False,
-        status='running'
+        Q(reminder_due_at__lte=now) &  # Past initial reminder time
+        Q(status='running') &  # Still running
+        (
+            Q(last_reminder_sent_at__isnull=True) |  # Never sent
+            Q(last_reminder_sent_at__lte=two_hours_ago)  # Sent 2+ hours ago
+        )
     ).count()
 
     # Check and send reminders
     try:
         middleware._check_pending_reminders()
 
-        # Count what's left after
+        # Count what's left after (should be fewer if any were sent)
+        # Recalculate since last_reminder_sent_at was updated
+        now_after = timezone.now()
+        two_hours_ago_after = now_after - timedelta(hours=2)
         pending_after = QueueEntry.objects.filter(
-            reminder_due_at__lte=timezone.now(),
-            reminder_sent=False,
-            status='running'
+            Q(reminder_due_at__lte=now_after) &
+            Q(status='running') &
+            (
+                Q(last_reminder_sent_at__isnull=True) |
+                Q(last_reminder_sent_at__lte=two_hours_ago_after)
+            )
         ).count()
 
         sent = pending_before - pending_after
@@ -2422,7 +2469,7 @@ def api_check_reminders(request):
             'success': True,
             'checked': pending_before,
             'sent': sent,
-            'timestamp': timezone.now().isoformat(),
+            'timestamp': now_after.isoformat(),
         })
 
     except Exception as e:

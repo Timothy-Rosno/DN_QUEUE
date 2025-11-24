@@ -15,7 +15,7 @@ from .notifications import auto_clear_notifications
 from .views import reorder_queue
 from . import notifications
 from .forms import QueueEntryForm
-from .matching_algorithm import find_best_machine
+from .matching_algorithm import find_best_machine, get_compatible_machines, set_queue_position
 
 
 @staff_member_required
@@ -1583,6 +1583,7 @@ def admin_edit_entry(request, entry_id):
     """
     Admin page for editing queue entries.
     Both queued and running entries can be edited.
+    Allows manual machine reassignment and queue position editing.
     """
     queue_entry = get_object_or_404(QueueEntry, id=entry_id)
 
@@ -1616,6 +1617,7 @@ def admin_edit_entry(request, entry_id):
         'special_requirements': queue_entry.special_requirements,
         'is_rush_job': queue_entry.is_rush_job,
         'assigned_machine': queue_entry.assigned_machine,
+        'queue_position': queue_entry.queue_position,
     }
 
     if request.method == 'POST':
@@ -1628,43 +1630,104 @@ def admin_edit_entry(request, entry_id):
             # Save form but don't commit yet
             edited_entry = form.save(commit=False)
 
-            # Check if requirements still match current machine
+            # Check for manual machine selection
+            manual_machine_id = request.POST.get('manual_machine_id')
             old_machine = queue_entry.assigned_machine
-            best_machine, compatibility_score = find_best_machine(edited_entry, return_details=True)
 
-            # If machine would change and user hasn't confirmed, show warning
-            if best_machine != old_machine and not confirmed:
-                context = {
-                    'queue_entry': queue_entry,
-                    'form': form,
-                    'show_machine_warning': True,
-                    'old_machine': old_machine,
-                    'new_machine': best_machine,
-                    'compatibility_score': compatibility_score,
-                }
-                return render(request, 'calendarEditor/admin/admin_edit_entry.html', context)
+            if manual_machine_id:
+                # Admin manually selected a machine
+                try:
+                    selected_machine = Machine.objects.get(id=manual_machine_id)
+                    # Verify this machine is compatible
+                    compatible_machines = get_compatible_machines(edited_entry)
+                    if selected_machine not in compatible_machines:
+                        messages.error(request, f'Selected machine "{selected_machine.name}" is not compatible with the requirements.')
+                        # Get compatible machines again for the form
+                        context = {
+                            'queue_entry': queue_entry,
+                            'form': form,
+                            'compatible_machines': compatible_machines,
+                            'max_queue_position': QueueEntry.objects.filter(
+                                assigned_machine=old_machine, status='queued'
+                            ).count() if old_machine else 1,
+                        }
+                        return render(request, 'calendarEditor/admin/admin_edit_entry.html', context)
+                    target_machine = selected_machine
+                except Machine.DoesNotExist:
+                    messages.error(request, 'Selected machine not found.')
+                    return redirect('admin_queue')
+            else:
+                # No manual selection - use best-fit algorithm
+                best_machine, compatibility_score = find_best_machine(edited_entry, return_details=True)
 
-            # Check if we have a compatible machine
-            if best_machine is None:
-                messages.error(request, 'No compatible machines found for these requirements. Please adjust the requirements.')
-                form.add_error(None, 'No compatible machines found for these requirements.')
-                context = {
-                    'queue_entry': queue_entry,
-                    'form': form,
-                }
-                return render(request, 'calendarEditor/admin/admin_edit_entry.html', context)
+                # If machine would change and user hasn't confirmed, show warning
+                if best_machine != old_machine and not confirmed:
+                    compatible_machines = get_compatible_machines(edited_entry)
+                    context = {
+                        'queue_entry': queue_entry,
+                        'form': form,
+                        'show_machine_warning': True,
+                        'old_machine': old_machine,
+                        'new_machine': best_machine,
+                        'compatibility_score': compatibility_score,
+                        'compatible_machines': compatible_machines,
+                        'max_queue_position': QueueEntry.objects.filter(
+                            assigned_machine=old_machine, status='queued'
+                        ).count() if old_machine else 1,
+                    }
+                    return render(request, 'calendarEditor/admin/admin_edit_entry.html', context)
 
-            # Save the changes
-            edited_entry.assigned_machine = best_machine
+                # Check if we have a compatible machine
+                if best_machine is None:
+                    messages.error(request, 'No compatible machines found for these requirements. Please adjust the requirements.')
+                    form.add_error(None, 'No compatible machines found for these requirements.')
+                    context = {
+                        'queue_entry': queue_entry,
+                        'form': form,
+                        'compatible_machines': [],
+                        'max_queue_position': 1,
+                    }
+                    return render(request, 'calendarEditor/admin/admin_edit_entry.html', context)
+
+                target_machine = best_machine
+
+            # Save the machine assignment
+            edited_entry.assigned_machine = target_machine
+
+            # Handle queue position changes
+            queue_position_action = request.POST.get('queue_position_action')
+            manual_position = request.POST.get('manual_queue_position')
+            old_position = queue_entry.queue_position
+
+            # Save the entry first
             edited_entry.save()
 
-            # If machine changed, reorder queues
-            if old_machine != best_machine:
+            # If machine changed, handle queue reassignment
+            if old_machine != target_machine:
                 # Remove from old machine's queue and reorder
                 if old_machine:
                     reorder_queue(old_machine)
                 # Add to new machine's queue and reorder
-                reorder_queue(best_machine)
+                reorder_queue(target_machine)
+
+            # Handle queue position changes (only for queued entries)
+            if queue_entry.status == 'queued':
+                if queue_position_action == 'first':
+                    # Move to position 1
+                    set_queue_position(edited_entry.id, 1)
+                elif queue_position_action == 'last':
+                    # Move to last position
+                    max_pos = QueueEntry.objects.filter(
+                        assigned_machine=target_machine, status='queued'
+                    ).count()
+                    set_queue_position(edited_entry.id, max_pos)
+                elif queue_position_action == 'custom' and manual_position:
+                    # Move to specific position
+                    try:
+                        new_pos = int(manual_position)
+                        set_queue_position(edited_entry.id, new_pos)
+                    except (ValueError, TypeError):
+                        pass  # Invalid position, ignore
 
             # Track changes for notification
             changes = []
@@ -1693,8 +1756,13 @@ def admin_edit_entry(request, entry_id):
                 changes.append('special requirements')
             if original_values['is_rush_job'] != edited_entry.is_rush_job:
                 changes.append('rush job status')
-            if old_machine != best_machine:
-                changes.append(f'machine assignment (moved to {best_machine.name})')
+            if old_machine != target_machine:
+                changes.append(f'machine assignment (moved to {target_machine.name})')
+
+            # Refresh from DB to get updated queue position
+            edited_entry.refresh_from_db()
+            if original_values['queue_position'] != edited_entry.queue_position and queue_entry.status == 'queued':
+                changes.append(f'queue position (moved to #{edited_entry.queue_position})')
 
             # Create change summary for notification
             if changes:
@@ -1709,19 +1777,35 @@ def admin_edit_entry(request, entry_id):
             return redirect(return_url)
 
         else:
-            # Form has validation errors
+            # Form has validation errors - get compatible machines for re-render
+            compatible_machines = get_compatible_machines(queue_entry)
             context = {
                 'queue_entry': queue_entry,
                 'form': form,
+                'compatible_machines': compatible_machines,
+                'max_queue_position': QueueEntry.objects.filter(
+                    assigned_machine=queue_entry.assigned_machine, status='queued'
+                ).count() if queue_entry.assigned_machine else 1,
             }
             return render(request, 'calendarEditor/admin/admin_edit_entry.html', context)
 
     else:
         # GET request - show form
         form = QueueEntryForm(instance=queue_entry)
+
+        # Get compatible machines based on current requirements
+        compatible_machines = get_compatible_machines(queue_entry)
+
+        # Get max queue position for current machine
+        max_queue_position = QueueEntry.objects.filter(
+            assigned_machine=queue_entry.assigned_machine, status='queued'
+        ).count() if queue_entry.assigned_machine else 1
+
         context = {
             'queue_entry': queue_entry,
             'form': form,
+            'compatible_machines': compatible_machines,
+            'max_queue_position': max_queue_position,
         }
         return render(request, 'calendarEditor/admin/admin_edit_entry.html', context)
 

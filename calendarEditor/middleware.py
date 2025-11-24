@@ -6,6 +6,7 @@ This replaces the Celery scheduled tasks approach.
 """
 from django.utils import timezone
 from django.db import transaction
+from datetime import timedelta
 from .models import QueueEntry
 from . import notifications
 from .render_usage import increment_request_count
@@ -17,10 +18,12 @@ class CheckReminderMiddleware:
 
     This runs after authentication middleware so we can access request.user.
     It checks for any QueueEntry where:
-    - reminder_due_at is in the past
-    - reminder_sent is False
+    - reminder_due_at is in the past (initial reminder trigger)
+    - OR it's been 2+ hours since last_reminder_sent_at (repeat reminders)
     - status is still 'running' (meaning user hasn't checked out yet)
+    - current time is NOT between 12 AM - 6 AM (no reminders during night hours)
 
+    Reminders are sent every 2 hours until the user checks out.
     Using database-level locking to prevent duplicate notifications.
     """
 
@@ -45,31 +48,56 @@ class CheckReminderMiddleware:
         """
         Check for and send any pending checkout reminders.
 
+        Sends reminders every 2 hours (except 12 AM - 6 AM) until user checks out.
         Uses select_for_update() to prevent race conditions where multiple
         requests might try to send the same reminder simultaneously.
         """
         now = timezone.now()
 
+        # Check if we're in the "do not disturb" hours (12 AM - 6 AM)
+        current_hour = now.hour
+        if 0 <= current_hour < 6:
+            # Skip sending reminders during night hours
+            return
+
         try:
-            # Find all entries with pending reminders
+            # Find all running entries that need a reminder
             # Using select_for_update() with skip_locked=True to handle concurrent requests
             # Note: Must clear default ordering to avoid LEFT OUTER JOIN on nullable assigned_machine FK
             # (PostgreSQL does not allow FOR UPDATE on nullable side of outer join)
             with transaction.atomic():
-                pending_entries = QueueEntry.objects.select_for_update(skip_locked=True).filter(
+                # Get all running entries that have passed their initial reminder time
+                running_entries = QueueEntry.objects.select_for_update(skip_locked=True).filter(
                     reminder_due_at__lte=now,
-                    reminder_sent=False,
                     status='running'  # Only send if still running (not checked out early)
                 ).order_by()  # Clear Model.Meta.ordering to prevent JOIN
 
-                for entry in pending_entries:
+                for entry in running_entries:
                     try:
-                        # Send the notification
-                        notifications.notify_checkout_reminder(entry)
+                        # Check if reminder is snoozed
+                        if entry.reminder_snoozed_until and entry.reminder_snoozed_until > now:
+                            # Still in snooze period - skip this entry
+                            continue
 
-                        # Mark reminder as sent
-                        entry.reminder_sent = True
-                        entry.save(update_fields=['reminder_sent'])
+                        # Determine if we should send a reminder
+                        should_send = False
+
+                        if entry.last_reminder_sent_at is None:
+                            # Never sent a reminder - send the first one
+                            should_send = True
+                        else:
+                            # Check if it's been at least 2 hours since last reminder
+                            time_since_last = now - entry.last_reminder_sent_at
+                            if time_since_last >= timedelta(hours=2):
+                                should_send = True
+
+                        if should_send:
+                            # Send the notification
+                            notifications.notify_checkout_reminder(entry)
+
+                            # Update last reminder sent time
+                            entry.last_reminder_sent_at = now
+                            entry.save(update_fields=['last_reminder_sent_at'])
 
                     except Exception as e:
                         # Log error but don't break the request

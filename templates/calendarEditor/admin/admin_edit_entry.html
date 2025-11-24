@@ -11,11 +11,78 @@
     <!-- Entry Info -->
     <div style="background-color: #ecf0f1; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem;">
         <p style="margin: 0.25rem 0;"><strong>User:</strong> {{ queue_entry.user.username }}</p>
-        <p style="margin: 0.25rem 0;"><strong>Current Machine:</strong> {{ queue_entry.assigned_machine.name }}</p>
-        <p style="margin: 0.25rem 0;"><strong>Queue Position:</strong> #{{ queue_entry.queue_position }}</p>
         <p style="margin: 0.25rem 0;"><strong>Status:</strong> {{ queue_entry.get_status_display }}</p>
         <p style="margin: 0.25rem 0;"><strong>Submitted:</strong> {{ queue_entry.created_at|date:"M d, Y g:i A" }}</p>
     </div>
+
+    <!-- Machine Selection and Queue Position Controls -->
+    {% if not show_machine_warning %}
+    <div style="background-color: #e8f4f8; border-left: 4px solid #3498db; padding: 1rem; margin-bottom: 1.5rem; border-radius: 4px;">
+        <h3 style="margin-top: 0; color: #2c3e50;">Machine Assignment & Queue Position</h3>
+
+        <!-- Machine Selection -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="machine_select" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Current Machine:
+            </label>
+            {% if compatible_machines %}
+                <select id="machine_select" name="machine_select" style="width: 100%; padding: 0.5rem; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 1rem;">
+                    {% for machine in compatible_machines %}
+                        <option value="{{ machine.id }}" {% if machine.id == queue_entry.assigned_machine.id %}selected{% endif %}>
+                            {{ machine.name }}{% if machine.id == queue_entry.assigned_machine.id %} (Current){% endif %}
+                            - Available in {{ machine.get_estimated_wait_time.total_seconds|floatformat:0|add:"0"|floatformat:0 }}s
+                            ({{ machine.get_queue_count }} in queue)
+                        </option>
+                    {% endfor %}
+                </select>
+                <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">
+                    Showing {{ compatible_machines|length }} compatible machine{{ compatible_machines|length|pluralize }}.
+                    Sorted by availability (earliest first).
+                </small>
+            {% else %}
+                <p style="color: #e74c3c; margin: 0.5rem 0;">No compatible machines found for current requirements.</p>
+            {% endif %}
+        </div>
+
+        <!-- Queue Position Controls (only for queued entries) -->
+        {% if queue_entry.status == 'queued' %}
+        <div style="margin-bottom: 0;">
+            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Queue Position: #{{ queue_entry.queue_position }} of {{ max_queue_position }}
+            </label>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="queue_position_action" value="keep" checked style="margin-right: 0.25rem;">
+                    Keep Current (#{{ queue_entry.queue_position }})
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="queue_position_action" value="first" style="margin-right: 0.25rem;">
+                    Move to First
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="queue_position_action" value="last" style="margin-right: 0.25rem;">
+                    Move to Last
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="queue_position_action" value="custom" id="custom_position_radio" style="margin-right: 0.25rem;">
+                    Custom:
+                </label>
+                <input type="number" name="manual_queue_position" id="manual_queue_position"
+                       min="1" max="{{ max_queue_position }}" placeholder="#"
+                       style="width: 60px; padding: 0.25rem; border: 1px solid #bdc3c7; border-radius: 4px;"
+                       onfocus="document.getElementById('custom_position_radio').checked = true;">
+            </div>
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">
+                Position 1 is next to run (ON DECK). Max position: {{ max_queue_position }}
+            </small>
+        </div>
+        {% else %}
+        <div style="margin-bottom: 0;">
+            <p style="color: #7f8c8d; margin: 0.5rem 0;"><strong>Queue Position:</strong> N/A (entry is currently running)</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
 
     {% if show_machine_warning %}
     <!-- Machine Change Warning -->
@@ -42,6 +109,7 @@
     <!-- Edit Form -->
     <form method="post" id="editForm">
         {% csrf_token %}
+        <input type="hidden" name="manual_machine_id" id="manual_machine_id" value="">
 
         {% if form.non_field_errors %}
             <div style="background-color: #ffe6e6; color: #e74c3c; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem;">
@@ -244,7 +312,7 @@
 </div>
 
 <script>
-// Character counters
+// Character counters and form submission handling
 document.addEventListener('DOMContentLoaded', function() {
     const titleField = document.getElementById('{{ form.title.id_for_label }}');
     const titleCounter = document.getElementById('titleCounter');
@@ -279,6 +347,23 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCounter(specialField, specialCounter, 500);
         specialField.addEventListener('input', function() {
             updateCounter(specialField, specialCounter, 500);
+        });
+    }
+
+    // Handle form submission - copy machine selection to hidden field
+    const editForm = document.getElementById('editForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            const machineSelect = document.getElementById('machine_select');
+            const manualMachineId = document.getElementById('manual_machine_id');
+
+            if (machineSelect && manualMachineId) {
+                // Only set the hidden field if user changed the machine
+                const currentMachineId = '{{ queue_entry.assigned_machine.id }}';
+                if (machineSelect.value !== currentMachineId) {
+                    manualMachineId.value = machineSelect.value;
+                }
+            }
         });
     }
 });

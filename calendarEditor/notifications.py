@@ -521,14 +521,12 @@ def notify_checkout_reminder(queue_entry):
     """
     Notify user when their estimated measurement time has elapsed and they should check out.
 
-    This notification is sent when:
-    - Timeout expires (called by Celery scheduled task)
-    - Machine status changes to 'idle' unexpectedly while job is running
+    This notification is sent:
+    - First time: when estimated duration expires
+    - Repeat: every 2 hours (except 12 AM - 6 AM) until checkout
+    - Unless: user clicks the notification to snooze for 6 hours
 
-    This notification is NOT sent when:
-    - User manually checks out via the button
-
-    This is a REQUIRED notification (user preference notify_checkout_reminder).
+    Clicking the notification snoozes reminders for 6 hours.
     """
     user = queue_entry.user
     prefs = NotificationPreference.get_or_create_for_user(user)
@@ -538,7 +536,7 @@ def notify_checkout_reminder(queue_entry):
             recipient=user,
             notification_type='checkout_reminder',
             title='Measurement Time Expired',
-            message=f'Predicted measurement time expired for "{queue_entry.title}" on {queue_entry.assigned_machine.name} -- did you forget to check out?',
+            message=f'Predicted measurement time expired for "{queue_entry.title}" on {queue_entry.assigned_machine.name} -- did you forget to check out? (Click to snooze for 6 hours)',
             related_queue_entry=queue_entry,
             related_machine=queue_entry.assigned_machine,
         )

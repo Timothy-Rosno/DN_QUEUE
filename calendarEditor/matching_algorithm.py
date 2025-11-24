@@ -208,6 +208,103 @@ def find_best_machine(queue_entry, return_details=False):
     return best_machine
 
 
+def get_compatible_machines(queue_entry):
+    """
+    Get all machines compatible with a queue entry's requirements.
+
+    Args:
+        queue_entry: QueueEntry instance with user requirements
+
+    Returns:
+        List of Machine instances that are compatible, sorted by availability
+        (earliest available first)
+    """
+    # Get all available machines (not in maintenance and marked as available)
+    available_machines = Machine.objects.filter(is_available=True).exclude(current_status='maintenance')
+
+    # Filter by temperature requirements
+    temp_compatible = []
+    for machine in available_machines:
+        if machine.min_temp <= queue_entry.required_min_temp:
+            if queue_entry.required_max_temp:
+                if machine.max_temp >= queue_entry.required_max_temp:
+                    temp_compatible.append(machine)
+            else:
+                temp_compatible.append(machine)
+
+    if not temp_compatible:
+        return []
+
+    # Filter by B-field requirements
+    field_compatible = []
+    for machine in temp_compatible:
+        if (machine.b_field_x >= queue_entry.required_b_field_x and
+            machine.b_field_y >= queue_entry.required_b_field_y and
+            machine.b_field_z >= queue_entry.required_b_field_z):
+            field_compatible.append(machine)
+
+    if not field_compatible:
+        return []
+
+    # Filter by B-field direction requirements
+    direction_compatible = []
+    for machine in field_compatible:
+        if queue_entry.required_b_field_direction and queue_entry.required_b_field_direction != '':
+            if queue_entry.required_b_field_direction == 'none':
+                direction_compatible.append(machine)
+            elif queue_entry.required_b_field_direction == 'parallel_perpendicular':
+                if machine.b_field_direction == 'parallel_perpendicular':
+                    direction_compatible.append(machine)
+            else:
+                if (machine.b_field_direction == 'parallel_perpendicular' or
+                    machine.b_field_direction == queue_entry.required_b_field_direction):
+                    direction_compatible.append(machine)
+        else:
+            direction_compatible.append(machine)
+
+    if not direction_compatible:
+        return []
+
+    # Filter by DC/RF line requirements
+    connection_compatible = []
+    for machine in direction_compatible:
+        if (machine.dc_lines >= queue_entry.required_dc_lines and
+            machine.rf_lines >= queue_entry.required_rf_lines):
+            connection_compatible.append(machine)
+
+    if not connection_compatible:
+        return []
+
+    # Filter by daughterboard requirements
+    daughterboard_compatible = []
+    for machine in connection_compatible:
+        if queue_entry.required_daughterboard:
+            machine_boards = [b.strip() for b in machine.daughterboard_type.split('or')]
+            if any(queue_entry.required_daughterboard.lower() in board.lower() for board in machine_boards):
+                daughterboard_compatible.append(machine)
+        else:
+            daughterboard_compatible.append(machine)
+
+    if not daughterboard_compatible:
+        return []
+
+    # Optical requirements (currently disabled - all pass)
+    optical_compatible = daughterboard_compatible
+
+    # Sort by availability (earliest available first)
+    machines_with_times = []
+    for machine in optical_compatible:
+        wait_time = machine.get_estimated_wait_time()
+        available_at = timezone.now() + wait_time
+        machines_with_times.append((machine, available_at))
+
+    # Sort by availability time
+    machines_with_times.sort(key=lambda x: x[1])
+
+    # Return just the machines (in sorted order)
+    return [machine for machine, _ in machines_with_times]
+
+
 def assign_to_queue(queue_entry):
     """
     Assign a queue entry to the best matching machine and set queue position.

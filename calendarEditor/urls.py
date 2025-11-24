@@ -16,6 +16,7 @@ urlpatterns = [
     path('check-in/<int:entry_id>/', views.check_in_job, name='check_in_job'),
     path('check-out/<int:entry_id>/', views.check_out_job, name='check_out_job'),
     path('undo-check-in/<int:entry_id>/', views.undo_check_in, name='undo_check_in'),
+    path('snooze-reminder/<int:entry_id>/', views.snooze_checkout_reminder, name='snooze_checkout_reminder'),
     path('check-in-check-out/', views.check_in_check_out, name='check_in_check_out'),
 
     # Preset management paths
