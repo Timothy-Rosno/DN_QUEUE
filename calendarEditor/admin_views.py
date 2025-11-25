@@ -199,6 +199,12 @@ def reject_user(request, user_id):
             profile.is_approved = False  # Keep legacy field in sync
             profile.save()
 
+            # Auto-clear all "new user signup" notifications for this user (task completed)
+            auto_clear_notifications(
+                notification_type='admin_new_user',
+                triggering_user=user
+            )
+
             # Send notification to the user via the notification system (Slack first, then email fallback)
             notifications.create_notification(
                 recipient=user,
@@ -1217,6 +1223,17 @@ def admin_check_in(request, entry_id):
     queue_entry.status = 'running'
     queue_entry.started_at = timezone.now()
     queue_entry.queue_position = None  # Remove from queue
+
+    # Set checkout reminder fields
+    queue_entry.reminder_due_at = queue_entry.started_at + timedelta(hours=queue_entry.estimated_duration_hours)
+    queue_entry.last_reminder_sent_at = None
+    queue_entry.reminder_snoozed_until = None
+
+    # Clear check-in reminder fields (no longer at position 1)
+    queue_entry.checkin_reminder_due_at = None
+    queue_entry.last_checkin_reminder_sent_at = None
+    queue_entry.checkin_reminder_snoozed_until = None
+
     queue_entry.save()
 
     # Auto-clear queue status notifications (on_deck, ready_for_check_in, admin_check_in)
@@ -1241,11 +1258,6 @@ def admin_check_in(request, entry_id):
         notifications.notify_admin_check_in(queue_entry, request.user)
     except Exception as e:
         print(f"Admin check-in notification failed: {e}")
-
-    # Set reminder due time (replaces Celery scheduled task)
-    queue_entry.reminder_due_at = queue_entry.started_at + timedelta(hours=queue_entry.estimated_duration_hours)
-    queue_entry.reminder_sent = False
-    queue_entry.save(update_fields=['reminder_due_at', 'reminder_sent'])
 
     # Broadcast WebSocket update
     try:

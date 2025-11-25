@@ -886,13 +886,14 @@ def check_and_notify_on_deck_status(machine):
                 notify_ready_for_check_in(on_deck_entry)
                 print(f"[CHECK_ON_DECK] notify_ready_for_check_in completed")
 
-                # Initialize check-in reminder (send first reminder immediately, then every 6 hours)
+                # Initialize check-in reminder (send first reminder after 6 hours, then every 6 hours)
                 from django.utils import timezone
-                on_deck_entry.checkin_reminder_due_at = timezone.now()  # First reminder due immediately
+                from datetime import timedelta
+                on_deck_entry.checkin_reminder_due_at = timezone.now() + timedelta(hours=6)  # First reminder after 6 hours
                 on_deck_entry.last_checkin_reminder_sent_at = None  # Reset counter
                 on_deck_entry.checkin_reminder_snoozed_until = None  # Clear any snooze
                 on_deck_entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
-                print(f"[CHECK_ON_DECK] Initialized check-in reminder for {on_deck_entry.title}")
+                print(f"[CHECK_ON_DECK] Initialized check-in reminder for {on_deck_entry.title} (due in 6 hours)")
             else:
                 # Machine is busy, unavailable, offline, in maintenance, or cooling down - user is on deck but must wait
                 print(f"[CHECK_ON_DECK] Calling notify_on_deck with reason={on_deck_reason}")

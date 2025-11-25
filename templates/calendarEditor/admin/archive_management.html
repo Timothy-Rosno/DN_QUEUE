@@ -9,8 +9,12 @@
 </div>
 
 <!-- Storage Statistics -->
-<div class="card" style="border-left: 4px solid {% if storage_stats.status == 'critical' %}#e74c3c{% elif storage_stats.status == 'warning' %}#f39c12{% else %}#2ecc71{% endif %};">
-    <h2 style="margin-top: 0;">Database Storage</h2>
+<div class="card collapsible-card" style="border-left: 4px solid {% if storage_stats.status == 'critical' %}#e74c3c{% elif storage_stats.status == 'warning' %}#f39c12{% else %}#2ecc71{% endif %};" data-card-id="storage-stats">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin-top: 0; margin-bottom: 0;">Database Storage</h2>
+        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+    </div>
+    <div class="card-content">
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;">
         <div>
@@ -61,11 +65,16 @@
         Consider exporting and clearing old archived measurements soon.
     </div>
     {% endif %}
+    </div>
 </div>
 
 <!-- Storage Breakdown -->
-<div class="card">
-    <h2 style="margin-top: 0;">Storage Breakdown</h2>
+<div class="card collapsible-card" data-card-id="storage-breakdown">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin-top: 0; margin-bottom: 0;">Storage Breakdown</h2>
+        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+    </div>
+    <div class="card-content">
     <p style="color: #7f8c8d; margin-bottom: 1rem;">Detailed breakdown of database storage by category.</p>
 
     <div class="table-container">
@@ -123,11 +132,16 @@
             <li><strong>PostgreSQL overhead</strong> - TOAST storage, free space maps, visibility maps, dead tuples</li>
         </ul>
     </div>
+    </div>
 </div>
 
 <!-- Archive Statistics -->
-<div class="card">
-    <h2 style="margin-top: 0;">Archived Measurements</h2>
+<div class="card collapsible-card" data-card-id="archive-stats">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin-top: 0; margin-bottom: 0;">Archived Measurements</h2>
+        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+    </div>
+    <div class="card-content">
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;">
         <div>
@@ -139,11 +153,16 @@
             <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">~{{ estimated_archive_size_mb }} MB</p>
         </div>
     </div>
+    </div>
 </div>
 
 <!-- Export Full Database Backup -->
-<div class="card" style="border-left: 4px solid #8e44ad;">
-    <h2 style="margin-top: 0; color: #8e44ad;">Export Full Database Backup</h2>
+<div class="card collapsible-card" style="border-left: 4px solid #8e44ad;" data-card-id="export-full">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin-top: 0; margin-bottom: 0; color: #8e44ad;">Export Full Database Backup</h2>
+        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+    </div>
+    <div class="card-content">
     <p style="color: #7f8c8d;">Download a complete backup of the entire database for disaster recovery.</p>
 
     <div style="margin-top: 1rem;">
@@ -156,11 +175,16 @@
         Includes all data: users, machines, queue entries, presets, archived measurements, and notifications.
         Recommended before major system changes or monthly for backups.
     </p>
+    </div>
 </div>
 
 <!-- Cloud Backups (GitHub) -->
-<div class="card" style="border-left: 4px solid #2ecc71;">
-    <h2 style="margin-top: 0; color: #2ecc71;">Cloud Backups</h2>
+<div class="card collapsible-card" style="border-left: 4px solid #2ecc71;" data-card-id="cloud-backups">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin-top: 0; margin-bottom: 0; color: #2ecc71;">Cloud Backups</h2>
+        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+    </div>
+    <div class="card-content">
     <p style="color: #7f8c8d;">Automated nightly backups stored in GitHub. These run daily at 12:30 AM Central.</p>
 
     <!-- Month selector dropdown -->
@@ -190,6 +214,7 @@
     </div>
 
     <p id="cloudBackupsCount" style="color: #7f8c8d; margin-top: 0.5rem; font-size: 0.9rem;"></p>
+    </div>
 </div>
 
 <!-- Backup Selector Modal -->
@@ -508,8 +533,12 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <!-- Export Archive Measurements -->
-<div class="card" style="border-left: 4px solid #3498db;">
-    <h2 style="margin-top: 0; color: #3498db;">Export Archived Measurements</h2>
+<div class="card collapsible-card" style="border-left: 4px solid #3498db;" data-card-id="export-archive">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin-top: 0; margin-bottom: 0; color: #3498db;">Export Archived Measurements</h2>
+        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+    </div>
+    <div class="card-content">
     <p style="color: #7f8c8d;">Download archived measurement records only.</p>
 
     <div style="display: flex; gap: 1rem; margin-top: 1rem;">
@@ -524,11 +553,16 @@ document.addEventListener('DOMContentLoaded', function() {
     <p style="color: #7f8c8d; margin-top: 1rem; font-size: 0.9rem;">
         JSON format preserves all data. CSV format is easier to view in spreadsheets.
     </p>
+    </div>
 </div>
 
 <!-- Import/Restore Database -->
-<div class="card" style="border-left: 4px solid #e67e22;">
-    <h2 style="margin-top: 0; color: #e67e22;">Import/Restore Database</h2>
+<div class="card collapsible-card" style="border-left: 4px solid #e67e22;" data-card-id="import-restore">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin-top: 0; margin-bottom: 0; color: #e67e22;">Import/Restore Database</h2>
+        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+    </div>
+    <div class="card-content">
     <p style="color: #7f8c8d;">Upload a backup file to restore database state.</p>
 
     <form id="importForm" style="margin-top: 1rem;">
@@ -559,11 +593,16 @@ document.addEventListener('DOMContentLoaded', function() {
             Import Database Backup
         </button>
     </form>
+    </div>
 </div>
 
 <!-- Clear Archive -->
-<div class="card" style="border-left: 4px solid #e74c3c;">
-    <h2 style="margin-top: 0; color: #e74c3c;">Clear Archive (Danger Zone)</h2>
+<div class="card collapsible-card" style="border-left: 4px solid #e74c3c;" data-card-id="clear-archive">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin-top: 0; margin-bottom: 0; color: #e74c3c;">Clear Archive (Danger Zone)</h2>
+        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+    </div>
+    <div class="card-content">
     <p style="color: #7f8c8d;">Permanently delete all archived measurements to free up database space.</p>
 
     {% if archive_count == 0 %}
@@ -591,6 +630,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
     {% endif %}
+    </div>
 </div>
 
 <!-- Thanos Delete Confirmation Modal -->
@@ -1012,6 +1052,39 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Enter') {
             btnYes.click();
         }
+    });
+});
+
+// Collapsible Cards functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.collapsible-card');
+
+    cards.forEach(card => {
+        const btn = card.querySelector('.collapse-btn');
+        const content = card.querySelector('.card-content');
+        const cardId = card.dataset.cardId;
+
+        // Load saved state from localStorage
+        const isCollapsed = localStorage.getItem(`card-collapsed-${cardId}`) === 'true';
+        if (isCollapsed) {
+            content.style.display = 'none';
+            btn.textContent = '+';
+        }
+
+        // Toggle collapse on click
+        btn.addEventListener('click', function() {
+            const isCurrentlyCollapsed = content.style.display === 'none';
+
+            if (isCurrentlyCollapsed) {
+                content.style.display = 'block';
+                btn.textContent = '−';
+                localStorage.setItem(`card-collapsed-${cardId}`, 'false');
+            } else {
+                content.style.display = 'none';
+                btn.textContent = '+';
+                localStorage.setItem(`card-collapsed-${cardId}`, 'true');
+            }
+        });
     });
 });
 </script>

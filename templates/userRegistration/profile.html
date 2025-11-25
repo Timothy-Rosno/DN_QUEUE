@@ -144,10 +144,12 @@
         {% endif %}
 
         <!-- Queue Notifications Section -->
-        <h2 style="margin-top: 2rem; margin-bottom: 1rem; color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">
-            Queue Notifications
-        </h2>
-        <div style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
+        <div class="collapsible-section" data-section-id="queue-notifications">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; margin-bottom: 1rem; color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">
+                <h2 style="margin: 0;">Queue Notifications</h2>
+                <button type="button" class="section-collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #3498db; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+            </div>
+            <div class="section-content" style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
             {% for field in notification_form %}
                 {% if field.name in 'notify_queue_added,notify_queue_position_change,notify_queue_cancelled,notify_on_deck,notify_ready_for_check_in,notify_checkin_reminder,notify_checkout_reminder' %}
                     <div style="margin-bottom: {% if not forloop.last %}1.5rem{% else %}0{% endif %}; padding: 1rem; background-color: white; border-radius: 4px; border-left: 4px solid {% if field.name == 'notify_on_deck' or field.name == 'notify_ready_for_check_in' or field.name == 'notify_checkin_reminder' or field.name == 'notify_checkout_reminder' %}#e74c3c{% else %}#3498db{% endif %};">
@@ -170,14 +172,16 @@
                     </div>
                 {% endif %}
             {% endfor %}
+            </div>
         </div>
 
         <!-- Preset Notifications Section -->
-        <h2 style="margin-top: 2rem; margin-bottom: 1rem; color: #9b59b6; border-bottom: 2px solid #9b59b6; padding-bottom: 0.5rem;">
-            Preset Notifications
-        </h2>
-        
-        <div style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
+        <div class="collapsible-section" data-section-id="preset-notifications">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; margin-bottom: 1rem; color: #9b59b6; border-bottom: 2px solid #9b59b6; padding-bottom: 0.5rem;">
+                <h2 style="margin: 0;">Preset Notifications</h2>
+                <button type="button" class="section-collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #9b59b6; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+            </div>
+            <div class="section-content" style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
             {% for field in notification_form %}
                 {% if field.name in 'notify_public_preset_created,notify_public_preset_edited,notify_public_preset_deleted,notify_private_preset_edited,notify_followed_preset_edited,notify_followed_preset_deleted' %}
                     <div style="margin-bottom: {% if followed_presets or not forloop.last %}1.5rem{% else %}0{% endif %}; padding: 1rem; background-color: white; border-radius: 4px; border-left: 4px solid #9b59b6;">
@@ -216,13 +220,16 @@
             {% else %}
                 <p style="color: #7f8c8d; font-size: 0.9rem; font-style: italic; margin-top: 1rem;">You're not following any presets yet. Use the "Follow This Preset" button when viewing a public preset to get notified of changes.</p>
             {% endif %}
+            </div>
         </div>
 
         <!-- Machine Queue Notifications Section -->
-        <h2 style="margin-top: 2rem; margin-bottom: 1rem; color: #16a085; border-bottom: 2px solid #16a085; padding-bottom: 0.5rem;">
-            Machine Queue Notifications
-        </h2>
-        <div style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
+        <div class="collapsible-section" data-section-id="machine-queue-notifications">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; margin-bottom: 1rem; color: #16a085; border-bottom: 2px solid #16a085; padding-bottom: 0.5rem;">
+                <h2 style="margin: 0;">Machine Queue Notifications</h2>
+                <button type="button" class="section-collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #16a085; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+            </div>
+            <div class="section-content" style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
             {% for field in notification_form %}
                 {% if field.name == 'notify_machine_queue_changes' %}
                     <div style="margin-bottom: 0; padding: 1rem; background-color: white; border-radius: 4px; border-left: 4px solid #16a085;">
@@ -245,13 +252,16 @@
                     </div>
                 {% endif %}
             {% endfor %}
+            </div>
         </div>
 
         <!-- Admin Actions Notifications Section -->
-        <h2 style="margin-top: 2rem; margin-bottom: 1rem; color: #f39c12; border-bottom: 2px solid #f39c12; padding-bottom: 0.5rem;">
-            Admin Actions
-        </h2>
-        <div style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
+        <div class="collapsible-section" data-section-id="admin-actions">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; margin-bottom: 1rem; color: #f39c12; border-bottom: 2px solid #f39c12; padding-bottom: 0.5rem;">
+                <h2 style="margin: 0;">Admin Actions</h2>
+                <button type="button" class="section-collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #f39c12; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+            </div>
+            <div class="section-content" style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
             {% for field in notification_form %}
                 {% if field.name in 'notify_admin_check_in,notify_admin_checkout,notify_admin_edit_entry,notify_admin_moved_entry,notify_machine_status_change' %}
                     <div style="margin-bottom: {% if not forloop.last %}1.5rem{% else %}0{% endif %}; padding: 1rem; background-color: white; border-radius: 4px; border-left: 4px solid #f39c12;">
@@ -274,13 +284,16 @@
                     </div>
                 {% endif %}
             {% endfor %}
+            </div>
         </div>
 
         <!-- Account Status Notifications Section -->
-        <h2 style="margin-top: 2rem; margin-bottom: 1rem; color: #c0392b; border-bottom: 2px solid #c0392b; padding-bottom: 0.5rem;">
-            Account Status (Critical)
-        </h2>
-        <div style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
+        <div class="collapsible-section" data-section-id="account-status">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; margin-bottom: 1rem; color: #c0392b; border-bottom: 2px solid #c0392b; padding-bottom: 0.5rem;">
+                <h2 style="margin: 0;">Account Status (Critical)</h2>
+                <button type="button" class="section-collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #c0392b; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+            </div>
+            <div class="section-content" style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
             <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.9rem;">These notifications are critical and cannot be disabled.</p>
             {% for field in notification_form %}
                 {% if field.name in 'notify_account_approved,notify_account_unapproved,notify_account_promoted,notify_account_demoted,notify_account_info_changed' %}
@@ -304,13 +317,16 @@
                     </div>
                 {% endif %}
             {% endfor %}
+            </div>
         </div>
 
         <!-- Delivery Preferences Section -->
-        <h2 style="margin-top: 2rem; margin-bottom: 1rem; color: #e67e22; border-bottom: 2px solid #e67e22; padding-bottom: 0.5rem;">
-            Delivery Preferences
-        </h2>
-        <div style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
+        <div class="collapsible-section" data-section-id="delivery-preferences">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; margin-bottom: 1rem; color: #e67e22; border-bottom: 2px solid #e67e22; padding-bottom: 0.5rem;">
+                <h2 style="margin: 0;">Delivery Preferences</h2>
+                <button type="button" class="section-collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #e67e22; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+            </div>
+            <div class="section-content" style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
             {% for field in notification_form %}
                 {% if field.name in 'email_notifications,in_app_notifications' %}
                     <div style="margin-bottom: {% if not forloop.last %}1.5rem{% else %}0{% endif %}; padding: 1rem; background-color: white; border-radius: 4px; border-left: 4px solid #e67e22;">
@@ -333,14 +349,17 @@
                     </div>
                 {% endif %}
             {% endfor %}
+            </div>
         </div>
 
         {% if user.is_staff or user.is_superuser %}
         <!-- Admin Settings Section -->
-        <h2 style="margin-top: 2rem; margin-bottom: 1rem; color: #e74c3c; border-bottom: 2px solid #e74c3c; padding-bottom: 0.5rem;">
-            👑👑👑 Admin Settings 👑👑👑
-        </h2>
-        <div style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
+        <div class="collapsible-section" data-section-id="admin-settings">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; margin-bottom: 1rem; color: #e74c3c; border-bottom: 2px solid #e74c3c; padding-bottom: 0.5rem;">
+                <h2 style="margin: 0;">👑👑👑 Admin Settings 👑👑👑</h2>
+                <button type="button" class="section-collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #e74c3c; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+            </div>
+            <div class="section-content" style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
             <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.9rem;">Administrative notifications for staff and superusers. Critical admin notifications cannot be disabled.</p>
 
             {% for field in notification_form %}
@@ -365,6 +384,7 @@
                     </div>
                 {% endif %}
             {% endfor %}
+            </div>
         </div>
         {% endif %}
 
@@ -602,5 +622,38 @@ function setupCharacterCounter(fieldId, counterId, errorId, maxLength) {
     field.addEventListener("input", updateCounter);
     field.addEventListener("keyup", updateCounter);
 }
+
+// Collapsible Sections functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const sections = document.querySelectorAll('.collapsible-section');
+
+    sections.forEach(section => {
+        const btn = section.querySelector('.section-collapse-btn');
+        const content = section.querySelector('.section-content');
+        const sectionId = section.dataset.sectionId;
+
+        // Load saved state from localStorage
+        const isCollapsed = localStorage.getItem(`section-collapsed-${sectionId}`) === 'true';
+        if (isCollapsed) {
+            content.style.display = 'none';
+            btn.textContent = '+';
+        }
+
+        // Toggle collapse on click
+        btn.addEventListener('click', function() {
+            const isCurrentlyCollapsed = content.style.display === 'none';
+
+            if (isCurrentlyCollapsed) {
+                content.style.display = 'block';
+                btn.textContent = '−';
+                localStorage.setItem(`section-collapsed-${sectionId}`, 'false');
+            } else {
+                content.style.display = 'none';
+                btn.textContent = '+';
+                localStorage.setItem(`section-collapsed-${sectionId}`, 'true');
+            }
+        });
+    });
+});
 </script>
 {% endblock %}

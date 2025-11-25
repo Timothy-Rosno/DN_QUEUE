@@ -883,11 +883,8 @@ def snooze_checkout_reminder(request, entry_id):
     queue_entry.reminder_snoozed_until = timezone.now() + timedelta(hours=6)
     queue_entry.save(update_fields=['reminder_snoozed_until'])
 
-    # Mark the related notifications as read
-    from .notifications import auto_clear_notifications
-    auto_clear_notifications(related_queue_entry=queue_entry, notification_types=['checkout_reminder'])
-
-    messages.success(request, f'Reminder snoozed for 6 hours. You can continue your measurement on {queue_entry.assigned_machine.name}.')
+    # NOTE: Do NOT auto-clear notifications here - only clear when user actually checks out
+    messages.success(request, f'✅ Checkout reminder snoozed for 6 hours. You can continue your measurement on {queue_entry.assigned_machine.name}.')
     return redirect('check_in_check_out')
 
 
@@ -914,11 +911,8 @@ def snooze_checkin_reminder(request, entry_id):
     queue_entry.checkin_reminder_snoozed_until = timezone.now() + timedelta(hours=24)
     queue_entry.save(update_fields=['checkin_reminder_snoozed_until'])
 
-    # Mark the related notifications as read
-    from .notifications import auto_clear_notifications
-    auto_clear_notifications(related_queue_entry=queue_entry, notification_types=['ready_for_check_in'])
-
-    messages.success(request, f'Check-in reminder snoozed for 24 hours for "{queue_entry.title}" on {queue_entry.assigned_machine.name}.')
+    # NOTE: Do NOT auto-clear notifications here - only clear when user actually checks in
+    messages.success(request, f'✅ Check-in reminder snoozed for 24 hours for "{queue_entry.title}" on {queue_entry.assigned_machine.name}.')
     return redirect('check_in_check_out')
 
 
