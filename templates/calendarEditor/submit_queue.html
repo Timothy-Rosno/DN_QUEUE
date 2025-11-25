@@ -382,6 +382,10 @@
         }
     </style>
     <script>
+        // Global rush job modal utilities
+        let rushJobUpdateCounter = null;
+        const RUSH_JOB_DRAFT_KEY = 'rushJobDraft';
+
         document.addEventListener("DOMContentLoaded", () => {
             const modal = document.getElementById("rushJobModal");
             const textarea = document.getElementById("rushJobExplanationInput");
@@ -430,7 +434,14 @@
                 error.style.display = "none";
             }
 
-            textarea.addEventListener("input", updateCounter);
+            // Make updateCounter available globally
+            rushJobUpdateCounter = updateCounter;
+
+            // Save draft to localStorage on input
+            textarea.addEventListener("input", () => {
+                updateCounter();
+                localStorage.setItem(RUSH_JOB_DRAFT_KEY, textarea.value);
+            });
             textarea.addEventListener("keyup", updateCounter);
 
             // Initialize modal with hidden field value
@@ -441,6 +452,8 @@
 
             saveBtn.addEventListener("click", () => {
                 if (hiddenField) hiddenField.value = textarea.value.trim();
+                // Clear draft from localStorage when saved
+                localStorage.removeItem(RUSH_JOB_DRAFT_KEY);
                 modal.style.display = "none";
             });
 
@@ -468,9 +481,16 @@
             // Show modal when rush job is checked
             rushJobCheckbox.addEventListener('change', function() {
                 if (this.checked) {
-                    // Load existing explanation if any
-                    rushJobInput.value = specialReqField.value || '';
+                    // Load existing explanation if any, otherwise load draft from localStorage
+                    if (specialReqField.value) {
+                        rushJobInput.value = specialReqField.value;
+                    } else {
+                        const draft = localStorage.getItem(RUSH_JOB_DRAFT_KEY) || '';
+                        rushJobInput.value = draft;
+                    }
                     rushJobError.style.display = 'none';
+                    // Reset validation state based on current content
+                    if (rushJobUpdateCounter) rushJobUpdateCounter();
                     rushJobModal.style.display = 'block';
                 } else {
                     // Clear explanation when unchecked
@@ -481,9 +501,16 @@
 
             // Edit button - reopen modal
             editBtn.addEventListener('click', function() {
-                rushJobInput.value = specialReqField.value || '';
-                rushJobCharCount.textContent = rushJobInput.value.trim().length;
+                // Load existing explanation if any, otherwise load draft from localStorage
+                if (specialReqField.value) {
+                    rushJobInput.value = specialReqField.value;
+                } else {
+                    const draft = localStorage.getItem(RUSH_JOB_DRAFT_KEY) || '';
+                    rushJobInput.value = draft;
+                }
                 rushJobError.style.display = 'none';
+                // Reset validation state based on current content
+                if (rushJobUpdateCounter) rushJobUpdateCounter();
                 rushJobModal.style.display = 'block';
             });
 
@@ -506,6 +533,9 @@
                 // Update display
                 rushJobText.textContent = explanation;
                 rushJobDisplay.style.display = 'block';
+
+                // Clear draft from localStorage when saved
+                localStorage.removeItem(RUSH_JOB_DRAFT_KEY);
 
                 // Close modal
                 rushJobModal.style.display = 'none';
