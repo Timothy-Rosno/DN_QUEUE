@@ -307,6 +307,12 @@ def submit_queue_entry(request):
                     except Exception as e:
                         print(f"Machine queue notification failed: {e}")
 
+                    # Notify the user that their entry was successfully added
+                    try:
+                        notifications.notify_queue_added(queue_entry)
+                    except Exception as e:
+                        print(f"Queue added notification failed: {e}")
+
                     # Build detailed success message
                     wait_time = details['availability_times'][best_machine.name]['wait_time']
                     hours = int(wait_time.total_seconds() // 3600)
@@ -493,6 +499,12 @@ def cancel_queue_entry(request, pk):
         # Auto-clear all notifications related to this cancelled queue entry
         auto_clear_notifications(related_queue_entry=queue_entry)
 
+        # Notify the user that their entry was cancelled
+        try:
+            notifications.notify_queue_cancelled(queue_entry)
+        except Exception as e:
+            print(f"Queue cancelled notification failed: {e}")
+
         # Always archive canceled measurements
         try:
             ArchivedMeasurement.objects.create(
@@ -650,12 +662,19 @@ def check_in_job(request, entry_id):
     from .matching_algorithm import reorder_queue
     reorder_queue(machine)
 
-    # Set reminder due time (replaces Celery scheduled task)
+    # Set checkout reminder due time (replaces Celery scheduled task)
     # Reminder will be sent every 2 hours (except 12 AM - 6 AM) until checkout
     queue_entry.reminder_due_at = queue_entry.started_at + timedelta(hours=queue_entry.estimated_duration_hours)
     queue_entry.last_reminder_sent_at = None
     queue_entry.reminder_snoozed_until = None
-    queue_entry.save(update_fields=['reminder_due_at', 'last_reminder_sent_at', 'reminder_snoozed_until'])
+
+    # Clear check-in reminder fields (user has now checked in)
+    queue_entry.checkin_reminder_due_at = None
+    queue_entry.last_checkin_reminder_sent_at = None
+    queue_entry.checkin_reminder_snoozed_until = None
+
+    queue_entry.save(update_fields=['reminder_due_at', 'last_reminder_sent_at', 'reminder_snoozed_until',
+                                     'checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
 
     # Broadcast WebSocket update
     try:
@@ -869,6 +888,37 @@ def snooze_checkout_reminder(request, entry_id):
     auto_clear_notifications(related_queue_entry=queue_entry, notification_types=['checkout_reminder'])
 
     messages.success(request, f'Reminder snoozed for 6 hours. You can continue your measurement on {queue_entry.assigned_machine.name}.')
+    return redirect('check_in_check_out')
+
+
+@login_required
+def snooze_checkin_reminder(request, entry_id):
+    """
+    Snooze check-in reminder for 24 hours.
+
+    This is triggered when a user clicks the "did you forget to check in" notification link.
+    It silences reminders for 24 hours, after which they resume at 6-hour intervals.
+
+    Requirements:
+    - User must own the entry
+    - Entry must be queued at position 1 (ON DECK)
+    """
+    queue_entry = get_object_or_404(QueueEntry, id=entry_id, user=request.user)
+
+    # Only allow snoozing for position 1 queued entries
+    if queue_entry.status != 'queued' or queue_entry.queue_position != 1:
+        messages.info(request, 'This entry is no longer at position 1 or ready for check-in.')
+        return redirect('check_in_check_out')
+
+    # Set snooze time to 24 hours from now
+    queue_entry.checkin_reminder_snoozed_until = timezone.now() + timedelta(hours=24)
+    queue_entry.save(update_fields=['checkin_reminder_snoozed_until'])
+
+    # Mark the related notifications as read
+    from .notifications import auto_clear_notifications
+    auto_clear_notifications(related_queue_entry=queue_entry, notification_types=['ready_for_check_in'])
+
+    messages.success(request, f'Check-in reminder snoozed for 24 hours for "{queue_entry.title}" on {queue_entry.assigned_machine.name}.')
     return redirect('check_in_check_out')
 
 
@@ -1882,14 +1932,23 @@ def notification_settings(request):
         if form.is_valid():
             # Save without committing to ensure critical notifications stay True
             saved_prefs = form.save(commit=False)
+            # Critical queue notifications (always on)
             saved_prefs.notify_on_deck = True
             saved_prefs.notify_ready_for_check_in = True
+            saved_prefs.notify_checkin_reminder = True
             saved_prefs.notify_checkout_reminder = True
+            # Critical account status notifications (always on)
+            saved_prefs.notify_account_approved = True
+            saved_prefs.notify_account_unapproved = True
+            saved_prefs.notify_account_promoted = True
+            saved_prefs.notify_account_demoted = True
+            saved_prefs.notify_account_info_changed = True
 
             # Force admin notifications to remain True if user is staff
             if request.user.is_staff or request.user.is_superuser:
                 saved_prefs.notify_admin_new_user = True
                 saved_prefs.notify_admin_rush_job = True
+                saved_prefs.notify_database_restored = True
 
             saved_prefs.save()
             messages.success(request, 'Notification preferences updated successfully!')
@@ -1933,13 +1992,27 @@ def reset_notification_preferences(request):
         prefs.notify_private_preset_edited = False
         prefs.notify_followed_preset_edited = True
         prefs.notify_followed_preset_deleted = True
+        prefs.notify_queue_added = True
         prefs.notify_queue_position_change = False
+        prefs.notify_queue_cancelled = True
         prefs.notify_on_deck = True
         prefs.notify_ready_for_check_in = True
+        prefs.notify_checkin_reminder = True
         prefs.notify_checkout_reminder = True
         prefs.notify_machine_queue_changes = False
+        prefs.notify_admin_check_in = True
+        prefs.notify_admin_checkout = True
+        prefs.notify_admin_edit_entry = True
+        prefs.notify_admin_moved_entry = True
+        prefs.notify_machine_status_change = True
+        prefs.notify_account_approved = True
+        prefs.notify_account_unapproved = True
+        prefs.notify_account_promoted = True
+        prefs.notify_account_demoted = True
+        prefs.notify_account_info_changed = True
         prefs.notify_admin_new_user = True
         prefs.notify_admin_rush_job = True
+        prefs.notify_database_restored = True
     else:
         # Regular user defaults (all notifications enabled)
         prefs.notify_public_preset_created = False
@@ -1948,11 +2021,24 @@ def reset_notification_preferences(request):
         prefs.notify_private_preset_edited = True
         prefs.notify_followed_preset_edited = True
         prefs.notify_followed_preset_deleted = True
+        prefs.notify_queue_added = True
         prefs.notify_queue_position_change = True
+        prefs.notify_queue_cancelled = True
         prefs.notify_on_deck = True
         prefs.notify_ready_for_check_in = True
+        prefs.notify_checkin_reminder = True
         prefs.notify_checkout_reminder = True
         prefs.notify_machine_queue_changes = False
+        prefs.notify_admin_check_in = True
+        prefs.notify_admin_checkout = True
+        prefs.notify_admin_edit_entry = True
+        prefs.notify_admin_moved_entry = True
+        prefs.notify_machine_status_change = True
+        prefs.notify_account_approved = True
+        prefs.notify_account_unapproved = True
+        prefs.notify_account_promoted = True
+        prefs.notify_account_demoted = True
+        prefs.notify_account_info_changed = True
 
     # Delivery preferences (same for all users)
     prefs.email_notifications = True

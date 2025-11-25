@@ -951,6 +951,9 @@ def approve_rush_job(request, entry_id):
         # Notify the rush job user they've been moved to position 1
         notifications.notify_admin_moved_entry(entry, request.user, old_position, 1)
 
+        # Notify all admins on Slack that rush job has been approved (task complete)
+        notifications.notify_admins_rush_job_approved(entry, request.user)
+
         messages.success(request, f'Rush job "{entry.title}" approved and moved to position 1 on {machine.name}.')
     else:
         messages.error(request, 'Cannot approve this entry.')
@@ -988,6 +991,9 @@ def reject_rush_job(request, entry_id):
             related_machine=entry.assigned_machine,
             triggering_user=request.user,
         )
+
+        # Notify all admins on Slack that rush job has been rejected (task complete)
+        notifications.notify_admins_rush_job_rejected(entry, request.user, rejection_message)
 
         messages.success(request, f'Rush job appeal for "{entry.title}" has been rejected. User notified.')
     else:

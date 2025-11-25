@@ -38,6 +38,7 @@ class CheckReminderMiddleware:
         # Check for pending reminders BEFORE processing the request
         # This ensures reminders are sent even if the request fails
         self._check_pending_reminders()
+        self._check_pending_checkin_reminders()
 
         # Continue processing the request
         response = self.get_response(request)
@@ -106,6 +107,74 @@ class CheckReminderMiddleware:
         except Exception as e:
             # Don't break the request if reminder checking fails
             print(f"Error checking pending reminders: {e}")
+
+    def _check_pending_checkin_reminders(self):
+        """
+        Check for and send any pending check-in reminders.
+
+        Sends reminders every 6 hours (no time restrictions) until user checks in.
+        For entries at position #1 that haven't checked in yet.
+        Uses select_for_update() to prevent race conditions.
+        """
+        now = timezone.now()
+
+        try:
+            # Find all position #1 queued entries that need a check-in reminder
+            # Using select_for_update() with skip_locked=True to handle concurrent requests
+            with transaction.atomic():
+                # Get all queued entries at position 1 with machines that are available
+                queued_entries = QueueEntry.objects.select_for_update(skip_locked=True).filter(
+                    queue_position=1,
+                    status='queued',
+                    assigned_machine__isnull=False,
+                    assigned_machine__current_status='idle',  # Machine must be available
+                    assigned_machine__is_available=True  # Machine must not be in maintenance
+                ).order_by()  # Clear Model.Meta.ordering to prevent JOIN
+
+                for entry in queued_entries:
+                    try:
+                        # Check if check-in reminder is initialized
+                        if entry.checkin_reminder_due_at is None:
+                            # Not initialized yet - skip (will be initialized when they reach position 1)
+                            continue
+
+                        # Check if past the initial due time
+                        if entry.checkin_reminder_due_at > now:
+                            # Not due yet
+                            continue
+
+                        # Check if reminder is snoozed
+                        if entry.checkin_reminder_snoozed_until and entry.checkin_reminder_snoozed_until > now:
+                            # Still in snooze period - skip this entry
+                            continue
+
+                        # Determine if we should send a reminder
+                        should_send = False
+
+                        if entry.last_checkin_reminder_sent_at is None:
+                            # Never sent a reminder - send the first one
+                            should_send = True
+                        else:
+                            # Check if it's been at least 6 hours since last reminder
+                            time_since_last = now - entry.last_checkin_reminder_sent_at
+                            if time_since_last >= timedelta(hours=6):
+                                should_send = True
+
+                        if should_send:
+                            # Send the notification
+                            notifications.notify_checkin_reminder(entry)
+
+                            # Update last reminder sent time
+                            entry.last_checkin_reminder_sent_at = now
+                            entry.save(update_fields=['last_checkin_reminder_sent_at'])
+
+                    except Exception as e:
+                        # Log error but don't break the request
+                        print(f"Error sending check-in reminder for entry {entry.id}: {e}")
+
+        except Exception as e:
+            # Don't break the request if reminder checking fails
+            print(f"Error checking pending check-in reminders: {e}")
 
 
 class RenderUsageMiddleware:

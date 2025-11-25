@@ -295,10 +295,15 @@ class QueueEntry(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
     estimated_start_time = models.DateTimeField(null=True, blank=True)
 
-    # Reminder tracking (replaces Celery scheduled tasks)
+    # Checkout reminder tracking (replaces Celery scheduled tasks)
     reminder_due_at = models.DateTimeField(null=True, blank=True, help_text="When checkout reminder should be sent")
     last_reminder_sent_at = models.DateTimeField(null=True, blank=True, help_text="When the last checkout reminder was sent (for repeat reminders every 2 hours)")
-    reminder_snoozed_until = models.DateTimeField(null=True, blank=True, help_text="When the reminder snooze expires (user clicked notification link)")
+    reminder_snoozed_until = models.DateTimeField(null=True, blank=True, help_text="When the checkout reminder snooze expires (user clicked notification link)")
+
+    # Check-in reminder tracking (for position #1 entries that haven't checked in yet)
+    checkin_reminder_due_at = models.DateTimeField(null=True, blank=True, help_text="When check-in reminder should be sent (for ON DECK entries)")
+    last_checkin_reminder_sent_at = models.DateTimeField(null=True, blank=True, help_text="When the last check-in reminder was sent (for repeat reminders every 6 hours)")
+    checkin_reminder_snoozed_until = models.DateTimeField(null=True, blank=True, help_text="When the check-in reminder snooze expires (user clicked notification link)")
 
     # Additional info
     special_requirements = models.TextField(blank=True, help_text="Any special requirements or notes", validators=[MaxLengthValidator(500)])
@@ -513,6 +518,7 @@ class Notification(models.Model):
         ('queue_cancelled', 'Queue Entry Cancelled'),
         ('on_deck', 'On Deck - You\'re Next!'),
         ('ready_for_check_in', 'Ready for Check-In'),
+        ('checkin_reminder', 'Did You Forget to Check In?'),
         ('checkout_reminder', 'Time to Check Out'),
         ('machine_status_changed', 'Machine Status Changed - Time to Check Out'),
         ('admin_check_in', 'Admin Checked You In'),
@@ -581,6 +587,12 @@ class Notification(models.Model):
                 return reverse('snooze_checkout_reminder', kwargs={'entry_id': self.related_queue_entry.id})
             return reverse('check_in_check_out')
 
+        # Check-in Reminder - go to snooze endpoint (silences for 24 hours)
+        elif self.notification_type == 'checkin_reminder':
+            if self.related_queue_entry:
+                return reverse('snooze_checkin_reminder', kwargs={'entry_id': self.related_queue_entry.id})
+            return reverse('check_in_check_out')
+
         # ON DECK, Ready for Check-In, Machine Status Changed, Admin Check-In, Admin Checkout - go to check-in/check-out page
         elif self.notification_type in ['on_deck', 'ready_for_check_in', 'machine_status_changed', 'admin_check_in', 'admin_checkout']:
             return reverse('check_in_check_out')
@@ -609,10 +621,13 @@ class NotificationPreference(models.Model):
     notify_followed_preset_deleted = models.BooleanField(default=False, help_text="Notify when presets you follow are deleted")
 
     # Queue notifications
+    notify_queue_added = models.BooleanField(default=True, help_text="Notify when your queue entry is successfully added")
     notify_queue_position_change = models.BooleanField(default=True, help_text="Notify when your queue position changes")
-    notify_on_deck = models.BooleanField(default=True, help_text="Notify when you're next in line (ON DECK)")
-    notify_ready_for_check_in = models.BooleanField(default=True, help_text="Notify when the machine is available and you can check in")
-    notify_checkout_reminder = models.BooleanField(default=True, help_text="Notify when your estimated measurement time has elapsed and you should check out")
+    notify_queue_cancelled = models.BooleanField(default=True, help_text="Notify when your queue entry is cancelled")
+    notify_on_deck = models.BooleanField(default=True, help_text="Notify when you're next in line (ON DECK) - CRITICAL")
+    notify_ready_for_check_in = models.BooleanField(default=True, help_text="Notify when the machine is available and you can check in - CRITICAL")
+    notify_checkin_reminder = models.BooleanField(default=True, help_text="Notify when you forget to check in - CRITICAL")
+    notify_checkout_reminder = models.BooleanField(default=True, help_text="Notify when your estimated measurement time has elapsed and you should check out - CRITICAL")
 
     # Machine queue notifications
     notify_machine_queue_changes = models.BooleanField(default=False, help_text="Notify when entries are added to machines you're queued for")
@@ -621,11 +636,20 @@ class NotificationPreference(models.Model):
     notify_admin_check_in = models.BooleanField(default=True, help_text="Notify when an admin checks you in")
     notify_admin_checkout = models.BooleanField(default=True, help_text="Notify when an admin checks you out")
     notify_admin_edit_entry = models.BooleanField(default=True, help_text="Notify when an admin edits your queue entry")
+    notify_admin_moved_entry = models.BooleanField(default=True, help_text="Notify when an admin moves your queue entry")
     notify_machine_status_change = models.BooleanField(default=True, help_text="Notify when admin changes machine status affecting your measurement")
 
+    # Account status notifications (critical - always sent)
+    notify_account_approved = models.BooleanField(default=True, help_text="Notify when your account is approved - CRITICAL")
+    notify_account_unapproved = models.BooleanField(default=True, help_text="Notify when your account is unapproved - CRITICAL")
+    notify_account_promoted = models.BooleanField(default=True, help_text="Notify when you're promoted to staff - CRITICAL")
+    notify_account_demoted = models.BooleanField(default=True, help_text="Notify when you're demoted from staff - CRITICAL")
+    notify_account_info_changed = models.BooleanField(default=True, help_text="Notify when your account information is changed - CRITICAL")
+
     # Admin-only notifications (only relevant for staff users)
-    notify_admin_new_user = models.BooleanField(default=True, help_text="[Admin] Notify when new users sign up")
-    notify_admin_rush_job = models.BooleanField(default=True, help_text="[Admin] Notify when rush jobs are submitted")
+    notify_admin_new_user = models.BooleanField(default=True, help_text="[Admin] Notify when new users sign up - CRITICAL")
+    notify_admin_rush_job = models.BooleanField(default=True, help_text="[Admin] Notify when rush jobs are submitted - CRITICAL")
+    notify_database_restored = models.BooleanField(default=True, help_text="[Admin] Notify when database is restored - CRITICAL")
 
     # Delivery preferences (for future email/Slack integration)
     email_notifications = models.BooleanField(default=True, help_text="Send notifications via email")

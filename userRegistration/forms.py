@@ -162,6 +162,13 @@ class NotificationPreferenceForm(forms.ModelForm):
                 widget=forms.CheckboxInput(attrs={'disabled': True}),
                 initial=self.instance.notify_admin_rush_job if self.instance.pk else True
             )
+            self.fields['notify_database_restored'] = forms.BooleanField(
+                required=False,
+                label='Database restored',
+                help_text='Critical notification - cannot be disabled',
+                widget=forms.CheckboxInput(attrs={'disabled': True}),
+                initial=self.instance.notify_database_restored if self.instance.pk else True
+            )
 
     class Meta:
         model = NotificationPreference
@@ -175,9 +182,12 @@ class NotificationPreferenceForm(forms.ModelForm):
             'notify_followed_preset_edited',
             'notify_followed_preset_deleted',
             # Queue notifications
+            'notify_queue_added',
             'notify_queue_position_change',
+            'notify_queue_cancelled',
             'notify_on_deck',
             'notify_ready_for_check_in',
+            'notify_checkin_reminder',
             'notify_checkout_reminder',
             # Machine queue notifications
             'notify_machine_queue_changes',
@@ -185,7 +195,14 @@ class NotificationPreferenceForm(forms.ModelForm):
             'notify_admin_check_in',
             'notify_admin_checkout',
             'notify_admin_edit_entry',
+            'notify_admin_moved_entry',
             'notify_machine_status_change',
+            # Account status notifications
+            'notify_account_approved',
+            'notify_account_unapproved',
+            'notify_account_promoted',
+            'notify_account_demoted',
+            'notify_account_info_changed',
             # Delivery preferences
             'in_app_notifications',
             'email_notifications',
@@ -197,28 +214,49 @@ class NotificationPreferenceForm(forms.ModelForm):
             'notify_private_preset_edited': 'Your private preset edited by others',
             'notify_followed_preset_edited': 'Presets you follow are edited',
             'notify_followed_preset_deleted': 'Presets you follow are deleted',
+            'notify_queue_added': 'Queue entry successfully added',
             'notify_queue_position_change': 'Queue position changes',
+            'notify_queue_cancelled': 'Queue entry cancelled',
             'notify_on_deck': 'When you\'re ON DECK (next in line)',
             'notify_ready_for_check_in': 'Machine available for check-in',
+            'notify_checkin_reminder': 'Reminder to check in',
             'notify_checkout_reminder': 'Time to check out',
             'notify_machine_queue_changes': 'Entries added to machines you\'re queued for',
             'notify_admin_check_in': 'Admin checks you in',
             'notify_admin_checkout': 'Admin checks you out',
             'notify_admin_edit_entry': 'Admin edits your queue entry',
+            'notify_admin_moved_entry': 'Admin moves your queue entry',
             'notify_machine_status_change': 'Admin changes machine status',
+            'notify_account_approved': 'Account approved',
+            'notify_account_unapproved': 'Account unapproved',
+            'notify_account_promoted': 'Promoted to staff',
+            'notify_account_demoted': 'Demoted from staff',
+            'notify_account_info_changed': 'Account information changed by admin',
             'in_app_notifications': 'Show notifications in app',
             'email_notifications': 'Send notifications via email',
         }
         help_texts = {
             'notify_on_deck': 'Critical notification - cannot be disabled',
             'notify_ready_for_check_in': 'Critical notification - cannot be disabled',
+            'notify_checkin_reminder': 'Critical notification - cannot be disabled',
             'notify_checkout_reminder': 'Critical notification - cannot be disabled',
+            'notify_account_approved': 'Critical notification - cannot be disabled',
+            'notify_account_unapproved': 'Critical notification - cannot be disabled',
+            'notify_account_promoted': 'Critical notification - cannot be disabled',
+            'notify_account_demoted': 'Critical notification - cannot be disabled',
+            'notify_account_info_changed': 'Critical notification - cannot be disabled',
             'email_notifications': 'Email delivery not yet implemented',
         }
         widgets = {
             'notify_on_deck': forms.CheckboxInput(attrs={'disabled': True}),
             'notify_ready_for_check_in': forms.CheckboxInput(attrs={'disabled': True}),
+            'notify_checkin_reminder': forms.CheckboxInput(attrs={'disabled': True}),
             'notify_checkout_reminder': forms.CheckboxInput(attrs={'disabled': True}),
+            'notify_account_approved': forms.CheckboxInput(attrs={'disabled': True}),
+            'notify_account_unapproved': forms.CheckboxInput(attrs={'disabled': True}),
+            'notify_account_promoted': forms.CheckboxInput(attrs={'disabled': True}),
+            'notify_account_demoted': forms.CheckboxInput(attrs={'disabled': True}),
+            'notify_account_info_changed': forms.CheckboxInput(attrs={'disabled': True}),
         }
 
 

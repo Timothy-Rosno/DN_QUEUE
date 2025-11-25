@@ -517,6 +517,45 @@ def notify_machine_queue_addition(queue_entry, triggering_user):
             )
 
 
+def notify_queue_added(queue_entry):
+    """Notify user when their queue entry is successfully added."""
+    user = queue_entry.user
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    if prefs.notify_queue_added and prefs.in_app_notifications:
+        machine = queue_entry.assigned_machine
+        position_text = f" at position #{queue_entry.queue_position}" if queue_entry.queue_position else ""
+        create_notification(
+            recipient=user,
+            notification_type='queue_added',
+            title='Queue Entry Added',
+            message=f'Your request "{queue_entry.title}" has been added to {machine.name}{position_text}',
+            related_queue_entry=queue_entry,
+            related_machine=machine,
+        )
+
+
+def notify_queue_cancelled(queue_entry, reason=None):
+    """Notify user when their queue entry is cancelled."""
+    user = queue_entry.user
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    if prefs.notify_queue_cancelled and prefs.in_app_notifications:
+        machine = queue_entry.assigned_machine
+        message_text = f'Your request "{queue_entry.title}" on {machine.name} has been cancelled'
+        if reason:
+            message_text += f' - {reason}'
+
+        create_notification(
+            recipient=user,
+            notification_type='queue_cancelled',
+            title='Queue Entry Cancelled',
+            message=message_text,
+            related_queue_entry=queue_entry,
+            related_machine=machine,
+        )
+
+
 def notify_checkout_reminder(queue_entry):
     """
     Notify user when their estimated measurement time has elapsed and they should check out.
@@ -537,6 +576,33 @@ def notify_checkout_reminder(queue_entry):
             notification_type='checkout_reminder',
             title='Measurement Time Expired',
             message=f'Predicted measurement time expired for "{queue_entry.title}" on {queue_entry.assigned_machine.name} -- did you forget to check out? (Click to snooze for 6 hours)',
+            related_queue_entry=queue_entry,
+            related_machine=queue_entry.assigned_machine,
+        )
+
+
+def notify_checkin_reminder(queue_entry):
+    """
+    Notify user when they're at position 1 but haven't checked in yet.
+
+    This notification is sent:
+    - First time: when entry becomes ready for check-in (machine available)
+    - Repeat: every 6 hours until check-in
+    - Unless: user clicks the notification to snooze for 24 hours
+    - No time restrictions (sent 24/7)
+
+    Clicking the notification snoozes reminders for 24 hours.
+    """
+    user = queue_entry.user
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    # Using notify_ready_for_check_in preference since it's the same concept
+    if prefs.notify_ready_for_check_in and prefs.in_app_notifications:
+        create_notification(
+            recipient=user,
+            notification_type='checkin_reminder',
+            title='Did You Forget to Check In?',
+            message=f'"{queue_entry.title}" is ready for check-in on {queue_entry.assigned_machine.name}. The machine is available now. (Click to snooze for 24 hours)',
             related_queue_entry=queue_entry,
             related_machine=queue_entry.assigned_machine,
         )
@@ -660,6 +726,11 @@ def notify_admin_moved_entry(queue_entry, admin_user, old_position, new_position
     """
     user = queue_entry.user
     machine = queue_entry.assigned_machine
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    # Check if user wants these notifications
+    if not (prefs.notify_admin_moved_entry and prefs.in_app_notifications):
+        return
 
     # Build the message based on the move
     if new_position == 1:
@@ -680,7 +751,6 @@ def notify_admin_moved_entry(queue_entry, admin_user, old_position, new_position
         title = 'Admin Moved Your Queue Entry'
         message = f'Administrator {admin_user.username} moved your request "{queue_entry.title}" from position #{old_position} to #{new_position} on {machine.name}'
 
-    # Always send this notification (admin action is important)
     create_notification(
         recipient=user,
         notification_type='admin_moved_entry',
@@ -815,11 +885,26 @@ def check_and_notify_on_deck_status(machine):
                 print(f"[CHECK_ON_DECK] Calling notify_ready_for_check_in")
                 notify_ready_for_check_in(on_deck_entry)
                 print(f"[CHECK_ON_DECK] notify_ready_for_check_in completed")
+
+                # Initialize check-in reminder (send first reminder immediately, then every 6 hours)
+                from django.utils import timezone
+                on_deck_entry.checkin_reminder_due_at = timezone.now()  # First reminder due immediately
+                on_deck_entry.last_checkin_reminder_sent_at = None  # Reset counter
+                on_deck_entry.checkin_reminder_snoozed_until = None  # Clear any snooze
+                on_deck_entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
+                print(f"[CHECK_ON_DECK] Initialized check-in reminder for {on_deck_entry.title}")
             else:
                 # Machine is busy, unavailable, offline, in maintenance, or cooling down - user is on deck but must wait
                 print(f"[CHECK_ON_DECK] Calling notify_on_deck with reason={on_deck_reason}")
                 notify_on_deck(on_deck_entry, reason=on_deck_reason)
                 print(f"[CHECK_ON_DECK] notify_on_deck completed")
+
+                # Clear check-in reminder since machine isn't ready yet
+                on_deck_entry.checkin_reminder_due_at = None
+                on_deck_entry.last_checkin_reminder_sent_at = None
+                on_deck_entry.checkin_reminder_snoozed_until = None
+                on_deck_entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
+                print(f"[CHECK_ON_DECK] Cleared check-in reminder for {on_deck_entry.title} (machine not ready)")
     except Exception as e:
         print(f"[CHECK_ON_DECK] ERROR: {e}")
         import traceback
@@ -915,6 +1000,51 @@ def notify_admins_rush_job_deleted(queue_entry_title, machine_name, deleting_use
                 message=f'{deleting_user.username} cancelled their rush job request: "{queue_entry_title}" for {machine_name}.',
                 triggering_user=deleting_user,
             )
+
+
+def notify_admins_rush_job_approved(queue_entry, approving_admin):
+    """
+    Notify all admin/staff users on Slack when a rush job is approved.
+    This sends a Slack-only notification (no web notification) to inform admins the task is complete.
+
+    Args:
+        queue_entry: The QueueEntry that was approved
+        approving_admin: The admin who approved it
+    """
+    # Get all staff/admin users
+    admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
+
+    title = 'Rush Job Approved'
+    message = f'✓ {approving_admin.username} approved rush job "{queue_entry.title}" by {queue_entry.user.username} on {queue_entry.assigned_machine.name}. Moved to position 1.'
+
+    for admin in admin_users:
+        prefs = NotificationPreference.get_or_create_for_user(admin)
+        if prefs.notify_admin_rush_job:
+            # Send Slack-only notification (no web notification needed)
+            send_slack_dm(admin, title, message)
+
+
+def notify_admins_rush_job_rejected(queue_entry, rejecting_admin, rejection_reason):
+    """
+    Notify all admin/staff users on Slack when a rush job is rejected.
+    This sends a Slack-only notification (no web notification) to inform admins the task is complete.
+
+    Args:
+        queue_entry: The QueueEntry that was rejected
+        rejecting_admin: The admin who rejected it
+        rejection_reason: The reason for rejection
+    """
+    # Get all staff/admin users
+    admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
+
+    title = 'Rush Job Rejected'
+    message = f'✗ {rejecting_admin.username} rejected rush job "{queue_entry.title}" by {queue_entry.user.username}.\nReason: {rejection_reason}'
+
+    for admin in admin_users:
+        prefs = NotificationPreference.get_or_create_for_user(admin)
+        if prefs.notify_admin_rush_job:
+            # Send Slack-only notification (no web notification needed)
+            send_slack_dm(admin, title, message)
 
 
 def auto_clear_notifications(notification_type=None, related_queue_entry=None,
