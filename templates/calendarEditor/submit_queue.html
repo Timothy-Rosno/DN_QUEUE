@@ -1514,9 +1514,13 @@
                     const tooltipContent = '<ul>' + errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
                     tooltipTop.innerHTML = tooltipContent;
                     tooltipBottom.innerHTML = tooltipContent;
+                    tooltipTop.style.display = '';  // Reset to default (CSS will control visibility)
+                    tooltipBottom.style.display = '';
                 } else {
                     tooltipTop.innerHTML = '';
                     tooltipBottom.innerHTML = '';
+                    tooltipTop.style.display = 'none';  // Explicitly hide when valid
+                    tooltipBottom.style.display = 'none';
                 }
             }
 
