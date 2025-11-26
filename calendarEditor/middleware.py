@@ -7,10 +7,10 @@ This replaces the Celery scheduled tasks approach.
 from django.utils import timezone
 from django.db import transaction
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 from .models import QueueEntry
 from . import notifications
 from .render_usage import increment_request_count
-import pytz
 
 
 class CheckReminderMiddleware:
@@ -57,7 +57,7 @@ class CheckReminderMiddleware:
         now = timezone.now()
 
         # Check if we're in the "do not disturb" hours (12 AM - 6 AM Central Time)
-        central_tz = pytz.timezone('America/Chicago')
+        central_tz = ZoneInfo('America/Chicago')
         now_central = now.astimezone(central_tz)
         current_hour = now_central.hour
         if 0 <= current_hour < 6:
@@ -122,7 +122,7 @@ class CheckReminderMiddleware:
         now = timezone.now()
 
         # Check if we're in the "do not disturb" hours (12 AM - 6 AM Central Time)
-        central_tz = pytz.timezone('America/Chicago')
+        central_tz = ZoneInfo('America/Chicago')
         now_central = now.astimezone(central_tz)
         current_hour = now_central.hour
         if 0 <= current_hour < 6:
