@@ -10,6 +10,7 @@ from datetime import timedelta
 from .models import QueueEntry
 from . import notifications
 from .render_usage import increment_request_count
+import pytz
 
 
 class CheckReminderMiddleware:
@@ -49,14 +50,16 @@ class CheckReminderMiddleware:
         """
         Check for and send any pending checkout reminders.
 
-        Sends reminders every 2 hours (except 12 AM - 6 AM) until user checks out.
+        Sends reminders every 2 hours (except 12 AM - 6 AM Central Time) until user checks out.
         Uses select_for_update() to prevent race conditions where multiple
         requests might try to send the same reminder simultaneously.
         """
         now = timezone.now()
 
-        # Check if we're in the "do not disturb" hours (12 AM - 6 AM)
-        current_hour = now.hour
+        # Check if we're in the "do not disturb" hours (12 AM - 6 AM Central Time)
+        central_tz = pytz.timezone('America/Chicago')
+        now_central = now.astimezone(central_tz)
+        current_hour = now_central.hour
         if 0 <= current_hour < 6:
             # Skip sending reminders during night hours
             return
@@ -112,11 +115,19 @@ class CheckReminderMiddleware:
         """
         Check for and send any pending check-in reminders.
 
-        Sends reminders every 6 hours (no time restrictions) until user checks in.
+        Sends reminders every 6 hours (except 12 AM - 6 AM Central Time) until user checks in.
         For entries at position #1 that haven't checked in yet.
         Uses select_for_update() to prevent race conditions.
         """
         now = timezone.now()
+
+        # Check if we're in the "do not disturb" hours (12 AM - 6 AM Central Time)
+        central_tz = pytz.timezone('America/Chicago')
+        now_central = now.astimezone(central_tz)
+        current_hour = now_central.hour
+        if 0 <= current_hour < 6:
+            # Skip sending reminders during night hours
+            return
 
         try:
             # Find all position #1 queued entries that need a check-in reminder

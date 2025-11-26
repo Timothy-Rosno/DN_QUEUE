@@ -638,6 +638,14 @@
                     return false;
                 }
             }
+
+            // Prevent double submission by disabling submit buttons
+            const submitBtnTop = document.getElementById('submitBtnTop');
+            const submitBtnBottom = document.getElementById('submitBtnBottom');
+            submitBtnTop.disabled = true;
+            submitBtnBottom.disabled = true;
+            submitBtnTop.textContent = 'Submitting...';
+            submitBtnBottom.textContent = 'Submitting...';
         });
 
         // Initialize form state based on existing values (for validation errors)
