@@ -151,11 +151,11 @@ database_url = os.environ.get('DATABASE_URL')
 
 if database_url:
     # Production: Use PostgreSQL via DATABASE_URL (Neon, Supabase, etc.)
-    # Optimized for free tier with cold starts
+    # Optimized for free tier: connections close immediately to allow database to sleep
     DATABASES = {
         "default": dj_database_url.parse(
             database_url,
-            conn_max_age=60,  # Shorter for free tier cold starts (1 minute)
+            conn_max_age=0,  # Close connections immediately after each request (allows DB to sleep)
             conn_health_checks=True  # Verify connections before use (Django 4.1+)
         )
     }

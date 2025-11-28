@@ -964,6 +964,7 @@ def undo_check_in(request, entry_id):
         queue_entry.status = 'queued'
         queue_entry.queue_position = 1
         queue_entry.started_at = None
+        # Clear checkout reminder fields
         queue_entry.reminder_due_at = None
         queue_entry.last_reminder_sent_at = None
         queue_entry.reminder_snoozed_until = None
@@ -978,11 +979,19 @@ def undo_check_in(request, entry_id):
         # Auto-clear any running-related notifications
         auto_clear_notifications(related_queue_entry=queue_entry)
 
-        # Notify the person who was bumped from position 1 to position 2
-        from .notifications import notify_bumped_from_on_deck, notify_queue_position_change
+        # Clear check-in reminders for the entry that was bumped from position 1
+        from .notifications import notify_bumped_from_on_deck, notify_queue_position_change, check_and_notify_on_deck_status
         if was_on_deck:
             was_on_deck.refresh_from_db()  # Refresh to get updated queue_position
+            # Clear check-in reminders (no longer at position 1)
+            was_on_deck.checkin_reminder_due_at = None
+            was_on_deck.last_checkin_reminder_sent_at = None
+            was_on_deck.checkin_reminder_snoozed_until = None
+            was_on_deck.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
             notify_bumped_from_on_deck(was_on_deck, reason='measurement undone')
+
+        # Initialize check-in reminders for the entry now at position 1
+        check_and_notify_on_deck_status(machine)
 
         # Notify other users who were pushed back in the queue (if they have the preference enabled)
         for entry in existing_queued:
@@ -2698,55 +2707,25 @@ def health_check(request):
     """
     Health check endpoint for monitoring services (UptimeRobot, etc.)
 
-    Tests connectivity to critical services:
-    - Redis cache
-    - Django Channels layer (Redis-backed WebSocket support)
-    - Database
+    Lightweight check that keeps Render web server awake WITHOUT querying the database.
+    This prevents unnecessary database compute usage while still monitoring site availability.
+
+    Database health is checked separately by GitHub Actions via /api/check-reminders/
+    which runs hourly and actually needs to wake the database for reminder processing.
 
     ALWAYS returns 200 to keep UptimeRobot happy and prevent false alarms.
-    The act of attempting connections keeps Redis alive even if initially unavailable.
-    Check the JSON 'services' field to see actual health status of each service.
     """
     from channels.layers import get_channel_layer
-    from django.db import connection
 
     health_status = {
         'status': 'healthy',
         'timestamp': timezone.now().isoformat(),
-        'services': {}
+        'service': 'render-web-server',
+        'note': 'Database health checked hourly by GitHub Actions'
     }
 
-    # Test Redis cache - attempting connection wakes up Redis
-    try:
-        cache.set('health_check', 'ok', timeout=60)
-        cache_ok = cache.get('health_check') == 'ok'
-        health_status['services']['cache'] = 'ok' if cache_ok else 'degraded'
-        if not cache_ok:
-            health_status['status'] = 'degraded'
-    except Exception as e:
-        health_status['services']['cache'] = f'error: {str(e)}'
-        health_status['status'] = 'degraded'
+    # Optionally test cache and channels if needed, but skip database query
+    # to prevent keeping Neon database awake 24/7 from frequent health checks
 
-    # Test Django Channels layer (Redis) - wakes up Redis for WebSocket support
-    try:
-        channel_layer = get_channel_layer()
-        health_status['services']['channels'] = 'ok' if channel_layer else 'unavailable'
-        if not channel_layer:
-            health_status['status'] = 'degraded'
-    except Exception as e:
-        health_status['services']['channels'] = f'error: {str(e)}'
-        health_status['status'] = 'degraded'
-
-    # Test database connection
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT 1")
-        health_status['services']['database'] = 'ok'
-    except Exception as e:
-        health_status['services']['database'] = f'error: {str(e)}'
-        health_status['status'] = 'degraded'
-
-    # ALWAYS return 200 - even if services are degraded
-    # This keeps UptimeRobot happy and prevents false "down" alerts during wake-up
-    # The act of trying to connect is enough to wake services up
+    # ALWAYS return 200 - keeps Render awake without waking database
     return JsonResponse(health_status, status=200)

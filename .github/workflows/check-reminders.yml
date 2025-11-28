@@ -1,11 +1,12 @@
 name: Check Reminders
 
-# Runs every 5 minutes to check for pending reminders
-# This keeps the Render app alive and ensures reminders are sent on time
+# Runs every hour to check for pending reminders
+# This wakes the database and processes any pending reminders without keeping it awake 24/7
+# UptimeRobot keeps the Render web server alive via /schedule/health/ (which doesn't query DB)
 on:
   schedule:
-    # Runs every 5 minutes
-    - cron: '*/5 * * * *'
+    # Runs every hour on the hour
+    - cron: '0 * * * *'
   
   # Allow manual triggering for testing
   workflow_dispatch:
@@ -41,4 +42,4 @@ jobs:
       
       - name: Log completion
         if: success()
-        run: echo "Reminder check completed at $(date)"
+        run: echo "✅ Reminder check completed at $(date). Next check in 1 hour."

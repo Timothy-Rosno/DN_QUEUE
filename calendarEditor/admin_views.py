@@ -1480,6 +1480,13 @@ def admin_undo_check_in(request, entry_id):
     entry_user = queue_entry.user
     entry_title = queue_entry.title
 
+    # Find the entry that was at position 1 (will be bumped to position 2)
+    was_on_deck = QueueEntry.objects.filter(
+        assigned_machine=machine,
+        status='queued',
+        queue_position=1
+    ).first()
+
     # Bump all existing queued entries down by 1 position
     existing_queued = QueueEntry.objects.filter(
         assigned_machine=machine,
@@ -1494,8 +1501,10 @@ def admin_undo_check_in(request, entry_id):
     queue_entry.status = 'queued'
     queue_entry.queue_position = 1
     queue_entry.started_at = None
+    # Clear checkout reminder fields
     queue_entry.reminder_due_at = None
-    queue_entry.reminder_sent = False
+    queue_entry.last_reminder_sent_at = None
+    queue_entry.reminder_snoozed_until = None
     queue_entry.save()
 
     # Update machine status to idle
@@ -1506,6 +1515,14 @@ def admin_undo_check_in(request, entry_id):
 
     # Auto-clear any running-related notifications
     auto_clear_notifications(related_queue_entry=queue_entry)
+
+    # Clear check-in reminders for the entry that was bumped from position 1
+    if was_on_deck:
+        was_on_deck.refresh_from_db()  # Refresh to get updated queue_position
+        was_on_deck.checkin_reminder_due_at = None
+        was_on_deck.last_checkin_reminder_sent_at = None
+        was_on_deck.checkin_reminder_snoozed_until = None
+        was_on_deck.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
 
     # Notify the user that admin undid their check-in
     try:
@@ -1520,7 +1537,7 @@ def admin_undo_check_in(request, entry_id):
     except Exception as e:
         print(f"User notification for admin undo check-in failed: {e}")
 
-    # Send on-deck or ready-for-check-in notification based on machine status
+    # Initialize check-in reminders for the entry now at position 1
     notifications.check_and_notify_on_deck_status(machine)
 
     # Broadcast WebSocket update
