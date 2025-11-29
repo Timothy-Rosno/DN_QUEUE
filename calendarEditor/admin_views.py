@@ -2266,8 +2266,9 @@ def admin_restore_github_backup(request, filename):
     # Check if this is AJAX request
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
-    # Get import mode
+    # Get import mode and silent restore flag
     import_mode = request.POST.get('import_mode', 'merge')
+    silent_restore = request.POST.get('silent_restore', 'false').lower() == 'true'
 
     # Get GitHub settings
     github_token = settings.GITHUB_TOKEN
@@ -2364,11 +2365,18 @@ def admin_restore_github_backup(request, filename):
                         try:
                             model_class = apps.get_model(app_label, model_class_name)
                             if model_name == 'auth.User':
-                                model_class.objects.filter(is_superuser=False).delete()
+                                deleted_count = model_class.objects.filter(is_superuser=False).delete()[0]
+                                print(f"Deleted {deleted_count} non-superuser users")
                             else:
-                                model_class.objects.all().delete()
+                                deleted_count = model_class.objects.all().delete()[0]
+                                print(f"Deleted {deleted_count} {model_name} records")
                         except Exception as e:
                             print(f"Warning: Could not clear {model_name}: {e}")
+
+                # Clear database connection cache to ensure clean slate
+                from django.db import connection
+                connection.close()
+                connection.connect()
 
             # Restore models in correct order
             for model_name in models_order:
@@ -2399,11 +2407,14 @@ def admin_restore_github_backup(request, filename):
                                     continue
 
                             for deserialized_obj in serializers.deserialize('json', json.dumps([obj_data])):
+                                # The deserialized object's save() handles PK conflicts automatically
                                 deserialized_obj.save()
                                 restored_count += 1
 
                         except Exception as e:
+                            import traceback
                             print(f"Error restoring object from {model_name}: {e}")
+                            print(f"Traceback: {traceback.format_exc()}")
                             skipped_count += 1
                             continue
 
@@ -2428,17 +2439,18 @@ def admin_restore_github_backup(request, filename):
         else:
             success_msg += f'Restored {total_restored} records, skipped {total_skipped} existing records.'
 
-        # Notify ALL users about the restore
-        admin_name = request.user.get_full_name() or request.user.username
-        all_users = User.objects.filter(is_active=True)
+        # Notify ALL users about the restore (unless silent_restore is enabled)
+        if not silent_restore:
+            admin_name = request.user.get_full_name() or request.user.username
+            all_users = User.objects.filter(is_active=True)
 
-        for user in all_users:
-            notifications.create_notification(
-                recipient=user,
-                notification_type='database_restored',
-                title='Database Restored',
-                message=f'Database backup from {backup_date} was restored by {admin_name}. Your queue entries and data may have been updated.'
-            )
+            for user in all_users:
+                notifications.create_notification(
+                    recipient=user,
+                    notification_type='database_restored',
+                    title='Database Restored',
+                    message=f'Database backup from {backup_date} was restored by {admin_name}. Your queue entries and data may have been updated.'
+                )
 
         if is_ajax:
             return JsonResponse({
@@ -2622,6 +2634,7 @@ def admin_import_database(request):
 
     backup_file = request.FILES['backup_file']
     import_mode = request.POST.get('import_mode', 'merge')  # 'merge' or 'replace'
+    silent_restore = request.POST.get('silent_restore', 'false').lower() == 'true'
 
     # Validate file size (max 50MB)
     max_size = 50 * 1024 * 1024  # 50MB
@@ -2690,11 +2703,18 @@ def admin_import_database(request):
                             model_class = apps.get_model(app_label, model_class_name)
                             # Don't delete superusers to prevent lockout
                             if model_name == 'auth.User':
-                                model_class.objects.filter(is_superuser=False).delete()
+                                deleted_count = model_class.objects.filter(is_superuser=False).delete()[0]
+                                print(f"Deleted {deleted_count} non-superuser users")
                             else:
-                                model_class.objects.all().delete()
+                                deleted_count = model_class.objects.all().delete()[0]
+                                print(f"Deleted {deleted_count} {model_name} records")
                         except Exception as e:
                             print(f"Warning: Could not clear {model_name}: {e}")
+
+                # Clear database connection cache to ensure clean slate
+                from django.db import connection
+                connection.close()
+                connection.connect()
 
             # Restore models in correct order
             for model_name in models_order:
@@ -2730,12 +2750,16 @@ def admin_import_database(request):
 
                             # Deserialize single object
                             for deserialized_obj in serializers.deserialize('json', json.dumps([obj_data])):
+                                # In replace mode, use save() to insert
+                                # The deserialized object's save() handles PK conflicts automatically
                                 deserialized_obj.save()
                                 restored_count += 1
 
                         except Exception as e:
                             # Log error but continue with other objects
+                            import traceback
                             print(f"Error restoring object from {model_name}: {e}")
+                            print(f"Traceback: {traceback.format_exc()}")
                             skipped_count += 1
                             continue
 
@@ -2768,18 +2792,19 @@ def admin_import_database(request):
         if match:
             backup_date = f"{match.group(1)} {match.group(2)}:{match.group(3)}"
 
-        # Notify ALL users about the restore
-        from django.contrib.auth.models import User
-        admin_name = request.user.get_full_name() or request.user.username
-        all_users = User.objects.filter(is_active=True)
+        # Notify ALL users about the restore (unless silent_restore is enabled)
+        if not silent_restore:
+            from django.contrib.auth.models import User
+            admin_name = request.user.get_full_name() or request.user.username
+            all_users = User.objects.filter(is_active=True)
 
-        for user in all_users:
-            notifications.create_notification(
-                recipient=user,
-                notification_type='database_restored',
-                title='Database Restored',
-                message=f'Database backup from {backup_date} was restored by {admin_name}. Your queue entries and data may have been updated.'
-            )
+            for user in all_users:
+                notifications.create_notification(
+                    recipient=user,
+                    notification_type='database_restored',
+                    title='Database Restored',
+                    message=f'Database backup from {backup_date} was restored by {admin_name}. Your queue entries and data may have been updated.'
+                )
 
         if is_ajax:
             return JsonResponse({

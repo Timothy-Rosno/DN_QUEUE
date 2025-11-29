@@ -584,6 +584,16 @@ document.addEventListener('DOMContentLoaded', function() {
             </select>
         </div>
 
+        <div style="margin-bottom: 1rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="silentRestore" name="silent_restore" value="true" style="width: 18px; height: 18px; cursor: pointer;">
+                <span style="font-weight: bold;">Silent Restore (don't notify users)</span>
+            </label>
+            <p style="color: #7f8c8d; margin: 0.5rem 0 0 0; font-size: 0.85rem; padding-left: 1.75rem;">
+                When checked, users will NOT receive notifications about this database restore.
+            </p>
+        </div>
+
         <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.9rem;">
             <strong>Merge mode:</strong> Existing records are preserved, only missing records are added.<br>
             <strong>Replace mode:</strong> All data is cleared before restoring (except superusers).
@@ -842,6 +852,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData();
         formData.append('backup_file', backupFileInput.files[0]);
         formData.append('import_mode', importModeSelect.value);
+        formData.append('silent_restore', document.getElementById('silentRestore').checked ? 'true' : 'false');
         formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
         // Submit import request via AJAX
@@ -923,6 +934,16 @@ document.addEventListener('DOMContentLoaded', function() {
             </select>
         </div>
 
+        <div style="margin-bottom: 1rem; text-align: left;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="cloudSilentRestore" style="width: 18px; height: 18px; cursor: pointer;">
+                <span style="font-weight: bold;">Silent Restore (don't notify users)</span>
+            </label>
+            <p style="color: #7f8c8d; margin: 0.5rem 0 0 0; font-size: 0.85rem; padding-left: 1.75rem;">
+                When checked, users will NOT receive notifications about this database restore.
+            </p>
+        </div>
+
         <label for="cloudRestoreConfirmation" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
             Type <code style="background: #ecf0f1; padding: 2px 6px; border-radius: 3px;">CONFIRM RESTORE</code>:
         </label>
@@ -933,10 +954,6 @@ document.addEventListener('DOMContentLoaded', function() {
             placeholder="CONFIRM RESTORE"
         >
         <div id="cloudRestoreError" style="color: #e74c3c; font-size: 0.9rem; margin-bottom: 1rem; display: none;"></div>
-
-        <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.9rem;">
-            <strong>Note:</strong> All users will be notified about this restore.
-        </p>
 
         <div style="display:flex; justify-content:space-around; gap:1rem;">
             <button id="cloudRestoreYes" class="btn" style="background: #e67e22;">Yes, restore from cloud</button>
@@ -1014,6 +1031,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Prepare form data
         const formData = new FormData();
         formData.append('import_mode', modeSelect.value);
+        formData.append('silent_restore', document.getElementById('cloudSilentRestore').checked ? 'true' : 'false');
         formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
         // Submit restore request via AJAX
