@@ -2373,11 +2373,6 @@ def admin_restore_github_backup(request, filename):
                         except Exception as e:
                             print(f"Warning: Could not clear {model_name}: {e}")
 
-                # Clear database connection cache to ensure clean slate
-                from django.db import connection
-                connection.close()
-                connection.connect()
-
             # Restore models in correct order
             for model_name in models_order:
                 if model_name not in backup_data['models']:
@@ -2394,14 +2389,17 @@ def admin_restore_github_backup(request, filename):
                 try:
                     for obj_data in model_data:
                         try:
-                            if import_mode == 'merge':
-                                obj_pk = obj_data.get('pk')
-                                model_label = model_name.split('.')
-                                app_label, model_class_name = model_label[0], model_label[1]
+                            # Check if object exists (merge mode OR protected users in replace mode)
+                            obj_pk = obj_data.get('pk')
+                            model_label = model_name.split('.')
+                            app_label, model_class_name = model_label[0], model_label[1]
 
-                                from django.apps import apps
-                                model_class = apps.get_model(app_label, model_class_name)
+                            from django.apps import apps
+                            model_class = apps.get_model(app_label, model_class_name)
 
+                            # Always skip existing users (superusers and current user are protected)
+                            # In merge mode, skip all existing objects
+                            if import_mode == 'merge' or (import_mode == 'replace' and model_name == 'auth.User'):
                                 if model_class.objects.filter(pk=obj_pk).exists():
                                     skipped_count += 1
                                     continue
@@ -2701,20 +2699,20 @@ def admin_import_database(request):
                         from django.apps import apps
                         try:
                             model_class = apps.get_model(app_label, model_class_name)
-                            # Don't delete superusers to prevent lockout
+                            # Don't delete superusers OR current user to prevent lockout
                             if model_name == 'auth.User':
-                                deleted_count = model_class.objects.filter(is_superuser=False).delete()[0]
-                                print(f"Deleted {deleted_count} non-superuser users")
+                                # Keep all superusers AND the current logged-in user
+                                deleted_count = model_class.objects.filter(
+                                    is_superuser=False
+                                ).exclude(
+                                    pk=request.user.pk
+                                ).delete()[0]
+                                print(f"Deleted {deleted_count} non-superuser users (kept current user ID {request.user.pk})")
                             else:
                                 deleted_count = model_class.objects.all().delete()[0]
                                 print(f"Deleted {deleted_count} {model_name} records")
                         except Exception as e:
                             print(f"Warning: Could not clear {model_name}: {e}")
-
-                # Clear database connection cache to ensure clean slate
-                from django.db import connection
-                connection.close()
-                connection.connect()
 
             # Restore models in correct order
             for model_name in models_order:
@@ -2734,16 +2732,17 @@ def admin_import_database(request):
                     # Deserialize and restore objects
                     for obj_data in model_data:
                         try:
-                            # In merge mode, check if object exists
-                            if import_mode == 'merge':
-                                obj_pk = obj_data.get('pk')
-                                model_label = model_name.split('.')
-                                app_label, model_class_name = model_label[0], model_label[1]
+                            # Check if object exists (merge mode OR protected users in replace mode)
+                            obj_pk = obj_data.get('pk')
+                            model_label = model_name.split('.')
+                            app_label, model_class_name = model_label[0], model_label[1]
 
-                                from django.apps import apps
-                                model_class = apps.get_model(app_label, model_class_name)
+                            from django.apps import apps
+                            model_class = apps.get_model(app_label, model_class_name)
 
-                                # Skip if object already exists
+                            # Always skip existing users (superusers and current user are protected)
+                            # In merge mode, skip all existing objects
+                            if import_mode == 'merge' or (import_mode == 'replace' and model_name == 'auth.User'):
                                 if model_class.objects.filter(pk=obj_pk).exists():
                                     skipped_count += 1
                                     continue

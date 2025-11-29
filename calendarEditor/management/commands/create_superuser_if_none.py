@@ -21,17 +21,35 @@ class Command(BaseCommand):
         email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'admin@example.com')
         password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', 'admin')
 
-        User.objects.create_superuser(
-            username=username,
-            email=email,
-            password=password
-        )
+        # Fix PostgreSQL sequence if needed (happens after database restore)
+        from django.db import connection
+        if connection.vendor == 'postgresql':
+            with connection.cursor() as cursor:
+                # Reset the auth_user sequence to max(id) + 1
+                cursor.execute("""
+                    SELECT setval(pg_get_serial_sequence('auth_user', 'id'),
+                                  COALESCE(MAX(id), 1),
+                                  MAX(id) IS NOT NULL)
+                    FROM auth_user;
+                """)
+                self.stdout.write('Fixed auth_user sequence')
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f'Superuser created successfully!\n'
-                f'Username: {username}\n'
-                f'Password: {password}\n'
-                f'Email: {email}'
+        try:
+            User.objects.create_superuser(
+                username=username,
+                email=email,
+                password=password
             )
-        )
+
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f'Superuser created successfully!\n'
+                    f'Username: {username}\n'
+                    f'Password: {password}\n'
+                    f'Email: {email}'
+                )
+            )
+        except Exception as e:
+            self.stdout.write(
+                self.style.ERROR(f'Error creating superuser: {e}')
+            )
