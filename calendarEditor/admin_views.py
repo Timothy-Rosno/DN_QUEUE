@@ -2427,6 +2427,29 @@ def admin_restore_github_backup(request, filename):
                     messages.error(request, error_msg)
                     return redirect('admin_database_management')
 
+            # CRITICAL: Reset all PostgreSQL sequences after restore
+            if connection.vendor == 'postgresql':
+                from django.apps import apps
+                print("Resetting PostgreSQL sequences...")
+                for model in apps.get_models():
+                    table_name = model._meta.db_table
+                    if hasattr(model, 'id'):
+                        try:
+                            cursor = connection.cursor()
+                            cursor.execute(f"""
+                                SELECT setval(
+                                    pg_get_serial_sequence('{table_name}', 'id'),
+                                    COALESCE(MAX(id), 1),
+                                    MAX(id) IS NOT NULL
+                                )
+                                FROM {table_name};
+                            """)
+                            cursor.close()
+                            print(f"Reset sequence for {table_name}")
+                        except Exception as e:
+                            print(f"Warning: Could not reset sequence for {table_name}: {e}")
+                print("Sequence reset complete")
+
         # Prepare success message
         total_restored = sum(restored_counts.values())
         total_skipped = sum(skipped_counts.values())
@@ -2772,6 +2795,29 @@ def admin_import_database(request):
                         return JsonResponse({'success': False, 'error': error_msg})
                     messages.error(request, error_msg)
                     return redirect('admin_database_management')
+
+            # CRITICAL: Reset all PostgreSQL sequences after restore
+            if connection.vendor == 'postgresql':
+                from django.apps import apps
+                print("Resetting PostgreSQL sequences...")
+                for model in apps.get_models():
+                    table_name = model._meta.db_table
+                    if hasattr(model, 'id'):
+                        try:
+                            cursor = connection.cursor()
+                            cursor.execute(f"""
+                                SELECT setval(
+                                    pg_get_serial_sequence('{table_name}', 'id'),
+                                    COALESCE(MAX(id), 1),
+                                    MAX(id) IS NOT NULL
+                                )
+                                FROM {table_name};
+                            """)
+                            cursor.close()
+                            print(f"Reset sequence for {table_name}")
+                        except Exception as e:
+                            print(f"Warning: Could not reset sequence for {table_name}: {e}")
+                print("Sequence reset complete")
 
         # Prepare success message
         total_restored = sum(restored_counts.values())
