@@ -2256,7 +2256,7 @@ def admin_restore_github_backup(request, filename):
     Supports both Replace and Merge modes.
     """
     from django.core import serializers
-    from django.db import transaction
+    from django.db import transaction, connection
     from django.http import JsonResponse
     from django.conf import settings
     from django.contrib.auth.models import User
@@ -2364,9 +2364,15 @@ def admin_restore_github_backup(request, filename):
                         from django.apps import apps
                         try:
                             model_class = apps.get_model(app_label, model_class_name)
+                            # Don't delete superusers OR current user to prevent lockout
                             if model_name == 'auth.User':
-                                deleted_count = model_class.objects.filter(is_superuser=False).delete()[0]
-                                print(f"Deleted {deleted_count} non-superuser users")
+                                # Keep all superusers AND the current logged-in user
+                                deleted_count = model_class.objects.filter(
+                                    is_superuser=False
+                                ).exclude(
+                                    pk=request.user.pk
+                                ).delete()[0]
+                                print(f"Deleted {deleted_count} non-superuser users (kept current user ID {request.user.pk})")
                             else:
                                 deleted_count = model_class.objects.all().delete()[0]
                                 print(f"Deleted {deleted_count} {model_name} records")
@@ -2637,7 +2643,7 @@ def admin_import_database(request):
     Staff-only access.
     """
     from django.core import serializers
-    from django.db import transaction
+    from django.db import transaction, connection
     from django.http import JsonResponse
     import json
 
