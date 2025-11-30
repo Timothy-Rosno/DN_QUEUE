@@ -37,9 +37,18 @@ class CheckReminderMiddleware:
             return self.get_response(request)
 
         # Check for pending reminders BEFORE processing the request
-        # This ensures reminders are sent even if the request fails
-        self._check_pending_reminders()
-        self._check_pending_checkin_reminders()
+        # OPTIMIZATION: Only check once per minute to reduce database compute usage
+        # Use cache to track last check time
+        from django.core.cache import cache
+        last_check = cache.get('reminder_last_check')
+        now_timestamp = timezone.now().timestamp()
+
+        # Only check if more than 60 seconds since last check (or never checked)
+        if last_check is None or (now_timestamp - last_check) > 60:
+            self._check_pending_reminders()
+            self._check_pending_checkin_reminders()
+            # Update cache with current timestamp
+            cache.set('reminder_last_check', now_timestamp, 120)  # Cache for 2 minutes
 
         # Continue processing the request
         response = self.get_response(request)
