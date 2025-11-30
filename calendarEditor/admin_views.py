@@ -2433,8 +2433,8 @@ def admin_restore_github_backup(request, filename):
                     return redirect('admin_database_management')
 
             # CRITICAL: Reset PostgreSQL sequences for restored models only
-            # Only needed in replace mode (merge mode doesn't delete/recreate records)
-            if connection.vendor == 'postgresql' and import_mode == 'replace':
+            # Needed in BOTH modes to prevent duplicate key errors on next insert
+            if connection.vendor == 'postgresql':
                 from django.apps import apps
                 print("Resetting PostgreSQL sequences for restored models...")
                 with connection.cursor() as cursor:
@@ -2806,8 +2806,8 @@ def admin_import_database(request):
                     return redirect('admin_database_management')
 
             # CRITICAL: Reset PostgreSQL sequences for restored models only
-            # Only needed in replace mode (merge mode doesn't delete/recreate records)
-            if connection.vendor == 'postgresql' and import_mode == 'replace':
+            # Needed in BOTH modes to prevent duplicate key errors on next insert
+            if connection.vendor == 'postgresql':
                 from django.apps import apps
                 print("Resetting PostgreSQL sequences for restored models...")
                 with connection.cursor() as cursor:
