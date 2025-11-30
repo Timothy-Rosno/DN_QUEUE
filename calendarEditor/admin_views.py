@@ -2379,6 +2379,34 @@ def admin_restore_github_backup(request, filename):
                         except Exception as e:
                             print(f"Warning: Could not clear {model_name}: {e}")
 
+                # CRITICAL: Reset PostgreSQL sequences after deletion, before restore
+                # This prevents "duplicate key" errors when inserting with explicit IDs
+                if connection.vendor == 'postgresql':
+                    from django.apps import apps
+                    print("Resetting PostgreSQL sequences after deletion...")
+                    with connection.cursor() as cursor:
+                        # Only reset sequences for models we're about to restore
+                        for model_name in models_order:
+                            if model_name in backup_data['models']:
+                                try:
+                                    model_label = model_name.split('.')
+                                    app_label, model_class_name = model_label[0], model_label[1]
+                                    model_class = apps.get_model(app_label, model_class_name)
+                                    table_name = model_class._meta.db_table
+
+                                    # Reset sequence to 1 (table is empty after deletion)
+                                    cursor.execute(f"""
+                                        SELECT setval(
+                                            pg_get_serial_sequence('{table_name}', 'id'),
+                                            1,
+                                            false
+                                        );
+                                    """)
+                                    print(f"Reset sequence for {table_name}")
+                                except Exception as e:
+                                    print(f"Warning: Could not reset sequence for {model_name}: {e}")
+                    print("Sequence reset complete")
+
             # Restore models in correct order
             for model_name in models_order:
                 if model_name not in backup_data['models']:
@@ -2431,34 +2459,6 @@ def admin_restore_github_backup(request, filename):
                         return JsonResponse({'success': False, 'error': error_msg})
                     messages.error(request, error_msg)
                     return redirect('admin_database_management')
-
-            # CRITICAL: Reset PostgreSQL sequences for restored models only
-            # Needed in BOTH modes to prevent duplicate key errors on next insert
-            if connection.vendor == 'postgresql':
-                from django.apps import apps
-                print("Resetting PostgreSQL sequences for restored models...")
-                with connection.cursor() as cursor:
-                    # Only reset sequences for the models we actually restored
-                    for model_name in models_order:
-                        if model_name in restored_counts:
-                            try:
-                                model_label = model_name.split('.')
-                                app_label, model_class_name = model_label[0], model_label[1]
-                                model_class = apps.get_model(app_label, model_class_name)
-                                table_name = model_class._meta.db_table
-
-                                cursor.execute(f"""
-                                    SELECT setval(
-                                        pg_get_serial_sequence('{table_name}', 'id'),
-                                        COALESCE(MAX(id), 1),
-                                        MAX(id) IS NOT NULL
-                                    )
-                                    FROM {table_name};
-                                """)
-                                print(f"Reset sequence for {table_name}")
-                            except Exception as e:
-                                print(f"Warning: Could not reset sequence for {model_name}: {e}")
-                print("Sequence reset complete")
 
         # Prepare success message
         total_restored = sum(restored_counts.values())
@@ -2747,6 +2747,34 @@ def admin_import_database(request):
                         except Exception as e:
                             print(f"Warning: Could not clear {model_name}: {e}")
 
+                # CRITICAL: Reset PostgreSQL sequences after deletion, before restore
+                # This prevents "duplicate key" errors when inserting with explicit IDs
+                if connection.vendor == 'postgresql':
+                    from django.apps import apps
+                    print("Resetting PostgreSQL sequences after deletion...")
+                    with connection.cursor() as cursor:
+                        # Only reset sequences for models we're about to restore
+                        for model_name in models_order:
+                            if model_name in backup_data['models']:
+                                try:
+                                    model_label = model_name.split('.')
+                                    app_label, model_class_name = model_label[0], model_label[1]
+                                    model_class = apps.get_model(app_label, model_class_name)
+                                    table_name = model_class._meta.db_table
+
+                                    # Reset sequence to 1 (table is empty after deletion)
+                                    cursor.execute(f"""
+                                        SELECT setval(
+                                            pg_get_serial_sequence('{table_name}', 'id'),
+                                            1,
+                                            false
+                                        );
+                                    """)
+                                    print(f"Reset sequence for {table_name}")
+                                except Exception as e:
+                                    print(f"Warning: Could not reset sequence for {model_name}: {e}")
+                    print("Sequence reset complete")
+
             # Restore models in correct order
             for model_name in models_order:
                 if model_name not in backup_data['models']:
@@ -2804,34 +2832,6 @@ def admin_import_database(request):
                         return JsonResponse({'success': False, 'error': error_msg})
                     messages.error(request, error_msg)
                     return redirect('admin_database_management')
-
-            # CRITICAL: Reset PostgreSQL sequences for restored models only
-            # Needed in BOTH modes to prevent duplicate key errors on next insert
-            if connection.vendor == 'postgresql':
-                from django.apps import apps
-                print("Resetting PostgreSQL sequences for restored models...")
-                with connection.cursor() as cursor:
-                    # Only reset sequences for the models we actually restored
-                    for model_name in models_order:
-                        if model_name in restored_counts:
-                            try:
-                                model_label = model_name.split('.')
-                                app_label, model_class_name = model_label[0], model_label[1]
-                                model_class = apps.get_model(app_label, model_class_name)
-                                table_name = model_class._meta.db_table
-
-                                cursor.execute(f"""
-                                    SELECT setval(
-                                        pg_get_serial_sequence('{table_name}', 'id'),
-                                        COALESCE(MAX(id), 1),
-                                        MAX(id) IS NOT NULL
-                                    )
-                                    FROM {table_name};
-                                """)
-                                print(f"Reset sequence for {table_name}")
-                            except Exception as e:
-                                print(f"Warning: Could not reset sequence for {model_name}: {e}")
-                print("Sequence reset complete")
 
         # Prepare success message
         total_restored = sum(restored_counts.values())
