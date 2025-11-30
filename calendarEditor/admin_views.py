@@ -2432,27 +2432,32 @@ def admin_restore_github_backup(request, filename):
                     messages.error(request, error_msg)
                     return redirect('admin_database_management')
 
-            # CRITICAL: Reset all PostgreSQL sequences after restore
-            if connection.vendor == 'postgresql':
+            # CRITICAL: Reset PostgreSQL sequences for restored models only
+            # Only needed in replace mode (merge mode doesn't delete/recreate records)
+            if connection.vendor == 'postgresql' and import_mode == 'replace':
                 from django.apps import apps
-                print("Resetting PostgreSQL sequences...")
-                for model in apps.get_models():
-                    table_name = model._meta.db_table
-                    if hasattr(model, 'id'):
-                        try:
-                            cursor = connection.cursor()
-                            cursor.execute(f"""
-                                SELECT setval(
-                                    pg_get_serial_sequence('{table_name}', 'id'),
-                                    COALESCE(MAX(id), 1),
-                                    MAX(id) IS NOT NULL
-                                )
-                                FROM {table_name};
-                            """)
-                            cursor.close()
-                            print(f"Reset sequence for {table_name}")
-                        except Exception as e:
-                            print(f"Warning: Could not reset sequence for {table_name}: {e}")
+                print("Resetting PostgreSQL sequences for restored models...")
+                with connection.cursor() as cursor:
+                    # Only reset sequences for the models we actually restored
+                    for model_name in models_order:
+                        if model_name in restored_counts:
+                            try:
+                                model_label = model_name.split('.')
+                                app_label, model_class_name = model_label[0], model_label[1]
+                                model_class = apps.get_model(app_label, model_class_name)
+                                table_name = model_class._meta.db_table
+
+                                cursor.execute(f"""
+                                    SELECT setval(
+                                        pg_get_serial_sequence('{table_name}', 'id'),
+                                        COALESCE(MAX(id), 1),
+                                        MAX(id) IS NOT NULL
+                                    )
+                                    FROM {table_name};
+                                """)
+                                print(f"Reset sequence for {table_name}")
+                            except Exception as e:
+                                print(f"Warning: Could not reset sequence for {model_name}: {e}")
                 print("Sequence reset complete")
 
         # Prepare success message
@@ -2800,27 +2805,32 @@ def admin_import_database(request):
                     messages.error(request, error_msg)
                     return redirect('admin_database_management')
 
-            # CRITICAL: Reset all PostgreSQL sequences after restore
-            if connection.vendor == 'postgresql':
+            # CRITICAL: Reset PostgreSQL sequences for restored models only
+            # Only needed in replace mode (merge mode doesn't delete/recreate records)
+            if connection.vendor == 'postgresql' and import_mode == 'replace':
                 from django.apps import apps
-                print("Resetting PostgreSQL sequences...")
-                for model in apps.get_models():
-                    table_name = model._meta.db_table
-                    if hasattr(model, 'id'):
-                        try:
-                            cursor = connection.cursor()
-                            cursor.execute(f"""
-                                SELECT setval(
-                                    pg_get_serial_sequence('{table_name}', 'id'),
-                                    COALESCE(MAX(id), 1),
-                                    MAX(id) IS NOT NULL
-                                )
-                                FROM {table_name};
-                            """)
-                            cursor.close()
-                            print(f"Reset sequence for {table_name}")
-                        except Exception as e:
-                            print(f"Warning: Could not reset sequence for {table_name}: {e}")
+                print("Resetting PostgreSQL sequences for restored models...")
+                with connection.cursor() as cursor:
+                    # Only reset sequences for the models we actually restored
+                    for model_name in models_order:
+                        if model_name in restored_counts:
+                            try:
+                                model_label = model_name.split('.')
+                                app_label, model_class_name = model_label[0], model_label[1]
+                                model_class = apps.get_model(app_label, model_class_name)
+                                table_name = model_class._meta.db_table
+
+                                cursor.execute(f"""
+                                    SELECT setval(
+                                        pg_get_serial_sequence('{table_name}', 'id'),
+                                        COALESCE(MAX(id), 1),
+                                        MAX(id) IS NOT NULL
+                                    )
+                                    FROM {table_name};
+                                """)
+                                print(f"Reset sequence for {table_name}")
+                            except Exception as e:
+                                print(f"Warning: Could not reset sequence for {model_name}: {e}")
                 print("Sequence reset complete")
 
         # Prepare success message
