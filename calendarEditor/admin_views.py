@@ -2389,20 +2389,19 @@ def admin_restore_github_backup(request, filename):
                 try:
                     for obj_data in model_data:
                         try:
-                            # Check if object exists (merge mode OR protected users in replace mode)
-                            obj_pk = obj_data.get('pk')
-                            model_label = model_name.split('.')
-                            app_label, model_class_name = model_label[0], model_label[1]
+                            # In merge mode, skip existing objects to avoid conflicts
+                            if import_mode == 'merge':
+                                obj_pk = obj_data.get('pk')
+                                model_label = model_name.split('.')
+                                app_label, model_class_name = model_label[0], model_label[1]
 
-                            from django.apps import apps
-                            model_class = apps.get_model(app_label, model_class_name)
+                                from django.apps import apps
+                                model_class = apps.get_model(app_label, model_class_name)
 
-                            # Always skip existing users (superusers and current user are protected)
-                            # In merge mode, skip all existing objects
-                            if import_mode == 'merge' or (import_mode == 'replace' and model_name == 'auth.User'):
                                 if model_class.objects.filter(pk=obj_pk).exists():
                                     skipped_count += 1
                                     continue
+                            # In replace mode, restore all objects (deleted ones were already removed)
 
                             for deserialized_obj in serializers.deserialize('json', json.dumps([obj_data])):
                                 # The deserialized object's save() handles PK conflicts automatically
@@ -2755,20 +2754,19 @@ def admin_import_database(request):
                     # Deserialize and restore objects
                     for obj_data in model_data:
                         try:
-                            # Check if object exists (merge mode OR protected users in replace mode)
-                            obj_pk = obj_data.get('pk')
-                            model_label = model_name.split('.')
-                            app_label, model_class_name = model_label[0], model_label[1]
+                            # In merge mode, skip existing objects to avoid conflicts
+                            if import_mode == 'merge':
+                                obj_pk = obj_data.get('pk')
+                                model_label = model_name.split('.')
+                                app_label, model_class_name = model_label[0], model_label[1]
 
-                            from django.apps import apps
-                            model_class = apps.get_model(app_label, model_class_name)
+                                from django.apps import apps
+                                model_class = apps.get_model(app_label, model_class_name)
 
-                            # Always skip existing users (superusers and current user are protected)
-                            # In merge mode, skip all existing objects
-                            if import_mode == 'merge' or (import_mode == 'replace' and model_name == 'auth.User'):
                                 if model_class.objects.filter(pk=obj_pk).exists():
                                     skipped_count += 1
                                     continue
+                            # In replace mode, restore all objects (deleted ones were already removed)
 
                             # Deserialize single object
                             for deserialized_obj in serializers.deserialize('json', json.dumps([obj_data])):
