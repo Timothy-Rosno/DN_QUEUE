@@ -1,5 +1,5 @@
 {
-  "export_date": "2025-12-02T00:51:36.007002",
+  "export_date": "2025-12-09T00:51:22.627769",
   "export_type": "full_database_backup",
   "django_version": "4.2.25",
   "models": {
@@ -628,7 +628,7 @@
           "description": "Compact cryogenic refrigerator with moderate B-field",
           "location": "NANO 324",
           "created_at": "2025-10-20T17:34:57.194Z",
-          "updated_at": "2025-11-29T04:06:14.740Z"
+          "updated_at": "2025-12-04T05:13:32.235Z"
         }
       },
       {
@@ -660,7 +660,7 @@
           "description": "Optical cryostat with perpendicular B-field and optical capabilities",
           "location": "NANO 325",
           "created_at": "2025-10-20T17:34:57.196Z",
-          "updated_at": "2025-11-20T06:57:39.310Z"
+          "updated_at": "2025-12-04T05:14:05.329Z"
         }
       }
     ],
@@ -5080,15 +5080,15 @@
           "estimated_duration_hours": 48.0,
           "priority": 0,
           "assigned_machine": 6,
-          "machine_name_text": "",
+          "machine_name_text": "Kiutra",
           "queue_position": null,
-          "status": "running",
+          "status": "completed",
           "submitted_at": "2025-11-11T04:42:21.896Z",
           "started_at": "2025-11-11T04:42:28.363Z",
-          "completed_at": null,
+          "completed_at": "2025-12-04T05:13:32.066Z",
           "estimated_start_time": "2025-11-11T04:42:21.895Z",
           "reminder_due_at": "2025-11-13T04:42:28.363Z",
-          "last_reminder_sent_at": "2025-12-02T04:47:08.735Z",
+          "last_reminder_sent_at": "2025-12-04T04:28:48.319Z",
           "reminder_snoozed_until": null,
           "checkin_reminder_due_at": null,
           "last_checkin_reminder_sent_at": null,
@@ -5097,7 +5097,7 @@
           "is_rush_job": false,
           "rush_job_submitted_at": null,
           "created_at": "2025-11-11T04:42:21.896Z",
-          "updated_at": "2025-11-11T04:42:28.363Z"
+          "updated_at": "2025-12-04T05:13:32.066Z"
         }
       },
       {
@@ -5162,7 +5162,7 @@
           "assigned_machine": 7,
           "machine_name_text": "Hidalgo",
           "queue_position": 1,
-          "status": "queued",
+          "status": "cancelled",
           "submitted_at": "2025-11-21T20:40:08.890Z",
           "started_at": null,
           "completed_at": null,
@@ -5177,7 +5177,7 @@
           "is_rush_job": false,
           "rush_job_submitted_at": null,
           "created_at": "2025-11-21T20:40:08.890Z",
-          "updated_at": "2025-11-24T16:10:54.126Z"
+          "updated_at": "2025-12-04T05:13:46.894Z"
         }
       },
       {
@@ -5920,15 +5920,15 @@
           "estimated_duration_hours": 48.0,
           "priority": 0,
           "assigned_machine": 7,
-          "machine_name_text": "",
+          "machine_name_text": "Opticool",
           "queue_position": null,
-          "status": "running",
+          "status": "cancelled",
           "submitted_at": "2025-11-11T04:47:15.272Z",
           "started_at": "2025-11-11T04:48:18.996Z",
           "completed_at": null,
           "estimated_start_time": "2025-11-11T04:47:15.271Z",
           "reminder_due_at": "2025-11-13T04:48:18.996Z",
-          "last_reminder_sent_at": "2025-12-02T04:47:08.735Z",
+          "last_reminder_sent_at": "2025-12-04T04:28:48.319Z",
           "reminder_snoozed_until": null,
           "checkin_reminder_due_at": null,
           "last_checkin_reminder_sent_at": null,
@@ -5937,7 +5937,7 @@
           "is_rush_job": false,
           "rush_job_submitted_at": "2025-11-11T04:47:15.245Z",
           "created_at": "2025-11-11T04:47:15.273Z",
-          "updated_at": "2025-11-11T04:48:18.996Z"
+          "updated_at": "2025-12-04T05:14:05.036Z"
         }
       }
     ],
@@ -6020,6 +6020,26 @@
           "archived_at": "2025-11-21T21:03:39.341Z",
           "created_at": "2025-11-21T21:03:39.342Z",
           "updated_at": "2025-11-21T21:03:39.342Z"
+        }
+      },
+      {
+        "model": "calendarEditor.archivedmeasurement",
+        "pk": 80,
+        "fields": {
+          "user": 21,
+          "machine": 7,
+          "machine_name": "Opticool",
+          "related_queue_entry": 297,
+          "measurement_date": "2025-11-21T20:40:08.890Z",
+          "title": "Hey I noticed you assigned me to cryocore",
+          "notes": "I hate hate hate hate hate hate hate cryocore and need opticool because I am using the optical setup that is in 325. Typing here is kind of cathartic. It's like I am writing in a diary.\r\nDear diary,\r\nI still don't have approval to use the dewar filler. I really really don't wanna either. It's a bureaucratic type thing tbh, getting approval and room access and official training. And I barely use it. Other people empty half the tank every few days. It's loud and cold and uncomfortable. \r\n-Nate",
+          "duration_hours": null,
+          "preset_snapshot": null,
+          "uploaded_file": "",
+          "status": "cancelled",
+          "archived_at": "2025-12-04T05:13:46.906Z",
+          "created_at": "2025-12-04T05:13:46.906Z",
+          "updated_at": "2025-12-04T05:13:46.906Z"
         }
       },
       {
@@ -8154,6 +8174,630 @@
     "calendarEditor.Notification": [
       {
         "model": "calendarEditor.notification",
+        "pk": 688,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "queue_cancelled",
+          "title": "Measurement Canceled by Admin",
+          "message": "Administrator test_admin canceled your running measurement \"Capser\" on Opticool.",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": false,
+          "created_at": "2025-12-04T05:14:05.048Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 687,
+        "fields": {
+          "recipient": 21,
+          "notification_type": "queue_cancelled",
+          "title": "Queue Entry Canceled by Admin",
+          "message": "Administrator test_admin canceled your queue entry \"Hey I noticed you assigned me to cryocore\" on Opticool.",
+          "related_preset": null,
+          "related_queue_entry": 297,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": false,
+          "created_at": "2025-12-04T05:13:46.919Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 686,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "admin_checkout",
+          "title": "Admin Check-Out",
+          "message": "Administrator test_admin checked you out from \"Capser\" on Kiutra.",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": 8,
+          "is_read": false,
+          "created_at": "2025-12-04T05:13:32.251Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 685,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-04T04:28:48.752Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 684,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-04T04:28:48.380Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 683,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-04T02:25:18.744Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 682,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-04T02:25:18.426Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 681,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-04T00:22:07.945Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 680,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-04T00:22:07.633Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 679,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T22:18:40.485Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 678,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T22:18:40.142Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 677,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T20:14:31.865Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 676,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T20:14:31.604Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 675,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T18:11:14.149Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 674,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T18:11:13.829Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 673,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T16:08:29.231Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 672,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T16:08:28.660Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 671,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T14:05:55.867Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 670,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T14:05:55.437Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 669,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T12:02:59.139Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 668,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T12:02:58.750Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 667,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T04:28:23.152Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 666,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T04:28:22.894Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 665,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T02:27:48.154Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 664,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T02:27:47.709Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 663,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T00:24:02.033Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 662,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-03T00:24:01.656Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 659,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-02T22:17:32.334Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 658,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-02T22:17:32.025Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 657,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-02T20:16:42.841Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 656,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-02T20:16:42.345Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 655,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-02T18:13:37.541Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 654,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-02T18:13:37.112Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 653,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-02T16:10:17.067Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 652,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-02T16:10:16.638Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 651,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-02T14:07:47.442Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 650,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-02T14:07:47.029Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 649,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Opticool -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-02T12:05:06.242Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 648,
+        "fields": {
+          "recipient": 10,
+          "notification_type": "checkout_reminder",
+          "title": "Measurement Time Expired",
+          "message": "Predicted measurement time expired for \"Capser\" on Kiutra -- did you forget to check out? (Click to snooze for 6 hours)",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-02T12:05:05.867Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
         "pk": 647,
         "fields": {
           "recipient": 10,
@@ -8164,7 +8808,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-02T04:47:09.270Z"
         }
       },
@@ -8180,7 +8824,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-02T04:47:08.763Z"
         }
       },
@@ -8196,7 +8840,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-02T02:46:39.071Z"
         }
       },
@@ -8212,7 +8856,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-02T02:46:38.815Z"
         }
       },
@@ -8228,7 +8872,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-02T00:41:33.227Z"
         }
       },
@@ -8244,7 +8888,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-02T00:41:32.875Z"
         }
       },
@@ -8260,7 +8904,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T22:40:39.845Z"
         }
       },
@@ -8276,7 +8920,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T22:40:39.472Z"
         }
       },
@@ -8292,7 +8936,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T20:34:30.900Z"
         }
       },
@@ -8308,7 +8952,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T20:34:30.635Z"
         }
       },
@@ -8324,7 +8968,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T18:31:59.132Z"
         }
       },
@@ -8340,7 +8984,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T18:31:58.775Z"
         }
       },
@@ -8356,7 +9000,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T16:31:55.949Z"
         }
       },
@@ -8372,7 +9016,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T16:31:55.518Z"
         }
       },
@@ -8388,7 +9032,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T14:29:17.010Z"
         }
       },
@@ -8404,7 +9048,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T14:29:16.651Z"
         }
       },
@@ -8420,7 +9064,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T12:00:32.155Z"
         }
       },
@@ -8436,7 +9080,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T12:00:31.826Z"
         }
       },
@@ -8452,7 +9096,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T04:10:15.922Z"
         }
       },
@@ -8468,7 +9112,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T04:10:15.570Z"
         }
       },
@@ -8484,7 +9128,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T02:09:16.026Z"
         }
       },
@@ -8500,7 +9144,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T02:09:15.662Z"
         }
       },
@@ -8516,7 +9160,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T00:08:16.134Z"
         }
       },
@@ -8532,7 +9176,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-12-01T00:08:15.821Z"
         }
       },
@@ -8548,7 +9192,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T22:07:01.657Z"
         }
       },
@@ -8564,7 +9208,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T22:07:01.312Z"
         }
       },
@@ -8580,7 +9224,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T20:06:16.712Z"
         }
       },
@@ -8596,7 +9240,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T20:06:16.447Z"
         }
       },
@@ -8612,7 +9256,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T18:05:39.856Z"
         }
       },
@@ -8628,7 +9272,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T18:05:39.544Z"
         }
       },
@@ -8644,7 +9288,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T16:02:01.436Z"
         }
       },
@@ -8660,7 +9304,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T16:02:00.906Z"
         }
       },
@@ -8932,7 +9576,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T14:00:24.923Z"
         }
       },
@@ -8948,7 +9592,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T14:00:24.629Z"
         }
       },
@@ -8964,7 +9608,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T12:00:15.726Z"
         }
       },
@@ -8980,7 +9624,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T12:00:15.417Z"
         }
       },
@@ -8996,7 +9640,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T05:51:18.860Z"
         }
       },
@@ -9012,7 +9656,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T05:51:18.186Z"
         }
       },
@@ -9028,7 +9672,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T03:51:15.010Z"
         }
       },
@@ -9044,7 +9688,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T03:51:14.609Z"
         }
       },
@@ -9060,7 +9704,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T01:46:47.853Z"
         }
       },
@@ -9076,7 +9720,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-30T01:46:47.470Z"
         }
       },
@@ -9092,7 +9736,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-29T23:46:43.070Z"
         }
       },
@@ -9108,7 +9752,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-29T23:46:42.671Z"
         }
       },
@@ -9124,7 +9768,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-29T21:46:19.159Z"
         }
       },
@@ -9140,7 +9784,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-29T21:46:18.868Z"
         }
       },
@@ -9156,7 +9800,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-29T19:45:19.485Z"
         }
       },
@@ -9172,7 +9816,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-29T19:45:19.185Z"
         }
       },
@@ -9188,7 +9832,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-29T17:45:06.187Z"
         }
       },
@@ -9204,7 +9848,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-29T17:45:05.795Z"
         }
       },
@@ -9396,7 +10040,7 @@
           "related_queue_entry": 195,
           "related_machine": 7,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-29T15:44:33.431Z"
         }
       },
@@ -9412,7 +10056,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-29T15:44:32.316Z"
         }
       },
@@ -9444,7 +10088,7 @@
           "related_queue_entry": 297,
           "related_machine": 4,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-24T14:19:21.719Z"
         }
       },
@@ -9508,7 +10152,7 @@
           "related_queue_entry": 297,
           "related_machine": 4,
           "triggering_user": null,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-21T21:03:30.529Z"
         }
       },
@@ -10804,7 +11448,7 @@
           "related_queue_entry": 193,
           "related_machine": 6,
           "triggering_user": 10,
-          "is_read": false,
+          "is_read": true,
           "created_at": "2025-11-11T04:42:28.374Z"
         }
       },
