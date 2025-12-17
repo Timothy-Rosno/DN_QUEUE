@@ -141,13 +141,46 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
             # Parse response
             result_data = response.json()
 
-            # Extract results from response
-            if 'results' in result_data and len(result_data['results']) > 0:
-                result = result_data['results'][0]
-                if 'response' in result and 'result' in result['response']:
-                    return result['response']['result']
+            # Turso v2 pipeline response format:
+            # {
+            #   "results": [
+            #     {
+            #       "type": "ok",
+            #       "response": {
+            #         "type": "execute",
+            #         "result": {
+            #           "cols": ["column1", "column2"],
+            #           "rows": [[value1, value2], ...],
+            #           "affected_row_count": N,
+            #           "last_insert_rowid": N
+            #         }
+            #       }
+            #     }
+            #   ]
+            # }
 
-            return {'rows': []}
+            if 'results' in result_data and len(result_data['results']) > 0:
+                first_result = result_data['results'][0]
+
+                # Check if query succeeded
+                if first_result.get('type') == 'error':
+                    error_msg = first_result.get('error', {}).get('message', 'Unknown error')
+                    raise Exception(f"Turso query error: {error_msg}")
+
+                # Extract result data
+                if 'response' in first_result and 'result' in first_result['response']:
+                    result = first_result['response']['result']
+
+                    # Return rows in the expected format
+                    return {
+                        'rows': result.get('rows', []),
+                        'cols': result.get('cols', []),
+                        'affected_row_count': result.get('affected_row_count', 0),
+                        'last_insert_rowid': result.get('last_insert_rowid'),
+                    }
+
+            # Empty result
+            return {'rows': [], 'cols': []}
 
         except requests.exceptions.RequestException as e:
             raise Exception(f"Turso HTTP request failed: {e}\nSQL: {sql}\nParams: {params}")
@@ -158,36 +191,77 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
         """Create a cursor that executes queries against Turso."""
         cursor = super().create_cursor(name)
 
+        # Store reference to parent wrapper
+        cursor._turso_wrapper = self
+
         # Wrap cursor to intercept execute() calls
         original_execute = cursor.execute
 
         def turso_execute(sql, params=None):
-            # Send query to Turso instead of local SQLite
+            # Send ALL queries to Turso (including PRAGMAs)
             try:
                 result = self._execute_turso_query(sql, params)
-                # Store result for fetchall()
+
+                # Store result and prepare for fetch operations
                 cursor._turso_result = result
+                cursor._turso_rows = result.get('rows', []) if isinstance(result, dict) else []
+                cursor._turso_row_index = 0
+
                 return cursor
             except Exception as e:
-                # Fall back to local execution for some queries (like introspection)
-                if 'sqlite_master' in sql or 'pragma' in sql.lower():
+                # For certain introspection queries, use local SQLite
+                if 'sqlite_master' in sql.lower() and 'SELECT' in sql.upper():
+                    # Let Django introspect the schema from local memory
+                    # (we'll sync schema from Turso separately)
                     return original_execute(sql, params)
-                raise e
+
+                # For errors, try to provide helpful context
+                raise Exception(f"Turso query failed: {e}\nSQL: {sql}")
 
         cursor.execute = turso_execute
 
-        # Override fetchall to return Turso results
+        # Override fetchone to return one row at a time
+        original_fetchone = cursor.fetchone
+
+        def turso_fetchone():
+            if hasattr(cursor, '_turso_rows'):
+                if cursor._turso_row_index < len(cursor._turso_rows):
+                    row = cursor._turso_rows[cursor._turso_row_index]
+                    cursor._turso_row_index += 1
+                    # Convert row to tuple if it's a list
+                    if isinstance(row, list):
+                        return tuple(row)
+                    return row
+                return None
+            return original_fetchone()
+
+        cursor.fetchone = turso_fetchone
+
+        # Override fetchall to return all rows
         original_fetchall = cursor.fetchall
 
         def turso_fetchall():
-            if hasattr(cursor, '_turso_result'):
-                result = cursor._turso_result
-                if hasattr(result, 'rows'):
-                    return result.rows
-                return []
+            if hasattr(cursor, '_turso_rows'):
+                rows = cursor._turso_rows[cursor._turso_row_index:]
+                cursor._turso_row_index = len(cursor._turso_rows)
+                # Convert rows to tuples if needed
+                return [tuple(row) if isinstance(row, list) else row for row in rows]
             return original_fetchall()
 
         cursor.fetchall = turso_fetchall
+
+        # Override fetchmany to return N rows
+        original_fetchmany = cursor.fetchmany
+
+        def turso_fetchmany(size=cursor.arraysize):
+            if hasattr(cursor, '_turso_rows'):
+                end_index = min(cursor._turso_row_index + size, len(cursor._turso_rows))
+                rows = cursor._turso_rows[cursor._turso_row_index:end_index]
+                cursor._turso_row_index = end_index
+                return [tuple(row) if isinstance(row, list) else row for row in rows]
+            return original_fetchmany(size)
+
+        cursor.fetchmany = turso_fetchmany
 
         return cursor
 
