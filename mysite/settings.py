@@ -143,106 +143,70 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# Database configuration priority:
-# 1. TURSO_DATABASE_URL → Turso (SQLite edge database, NO CU limits!)
-# 2. DATABASE_URL → PostgreSQL (Neon, Supabase, etc.)
-# 3. Default → Local SQLite (development)
+# ============================================================================
+# TURSO DATABASE - NO FALLBACKS!
+# ============================================================================
+# This app ONLY uses Turso (SQLite edge database with NO CU limits).
+# No PostgreSQL, no Neon, no local SQLite fallback.
+# If Turso credentials are missing or invalid, the app will fail fast.
+# ============================================================================
 
 turso_database_url = os.environ.get('TURSO_DATABASE_URL')
 turso_auth_token = os.environ.get('TURSO_AUTH_TOKEN')
-database_url = os.environ.get('DATABASE_URL')
 
-if turso_database_url and turso_auth_token:
-    # Production: Use Turso (SQLite edge database with NO CU limits!)
-    # Turso uses libSQL protocol - requires custom connection handling
+if not turso_database_url or not turso_auth_token:
+    raise ValueError(
+        "\n"
+        "❌ CRITICAL ERROR: Turso database credentials not configured!\n"
+        "\n"
+        "This app requires Turso database credentials. No fallback database is available.\n"
+        "\n"
+        "Set these environment variables:\n"
+        "  TURSO_DATABASE_URL=libsql://your-db.turso.io\n"
+        "  TURSO_AUTH_TOKEN=your-turso-auth-token\n"
+        "\n"
+        "Get your credentials from: https://turso.tech/dashboard\n"
+        "  1. turso db show scheduler-db\n"
+        "  2. turso db tokens create scheduler-db\n"
+        "\n"
+        "For local development, add to .env file:\n"
+        "  TURSO_DATABASE_URL=libsql://scheduler-db-yourname.turso.io\n"
+        "  TURSO_AUTH_TOKEN=eyJhbGc...\n"
+    )
 
-    print(f"🔵 Turso configuration detected:")
-    print(f"   URL: {turso_database_url}")
-    print(f"   Token: {'*' * 20}...{turso_auth_token[-10:] if len(turso_auth_token) > 10 else '***'}")
+# Verify libsql_client is installed
+try:
+    import libsql_client
+except ImportError:
+    raise ImportError(
+        "\n"
+        "❌ CRITICAL ERROR: libsql-client package not installed!\n"
+        "\n"
+        "Install with:\n"
+        "  pip install 'libsql-client>=0.3.0'\n"
+        "\n"
+        "Or if using requirements.txt:\n"
+        "  pip install -r requirements.txt\n"
+    )
 
-    # Import libsql for Turso connection
-    try:
-        import libsql_client
+print("=" * 70)
+print("🔵 TURSO DATABASE CONFIGURATION")
+print("=" * 70)
+print(f"   URL: {turso_database_url}")
+print(f"   Token: {'*' * 20}...{turso_auth_token[-10:] if len(turso_auth_token) > 10 else '***'}")
+print(f"   Backend: calendarEditor.db_backends.turso")
+print("=" * 70)
 
-        # Create Turso client for manual queries if needed
-        TURSO_CLIENT = libsql_client.create_client(
-            url=turso_database_url,
-            auth_token=turso_auth_token
-        )
-
-        # For Django ORM, use embedded replica approach:
-        # This creates a local SQLite file that syncs with Turso
-        TURSO_DB_PATH = BASE_DIR / "turso_replica.db"
-
-        DATABASES = {
-            "default": {
-                "ENGINE": "django.db.backends.sqlite3",
-                "NAME": TURSO_DB_PATH,
-                # SQLite settings optimized for production
-                "OPTIONS": {
-                    "timeout": 20,
-                    "check_same_thread": False,  # Allow multi-threading
-                },
-            }
-        }
-
-        print(f"✓ Using Turso database: {turso_database_url}")
-
-    except ImportError as e:
-        print("⚠️ ERROR: libsql-client not installed!")
-        print(f"   Import error: {e}")
-        print("   Install with: pip install 'libsql-client>=0.3.0'")
-        print("   Falling back to local SQLite...")
-        DATABASES = {
-            "default": {
-                "ENGINE": "django.db.backends.sqlite3",
-                "NAME": BASE_DIR / "db.sqlite3",
-            }
-        }
-    except Exception as e:
-        print(f"⚠️ ERROR: Failed to connect to Turso: {e}")
-        print("   Falling back to local SQLite...")
-        DATABASES = {
-            "default": {
-                "ENGINE": "django.db.backends.sqlite3",
-                "NAME": BASE_DIR / "db.sqlite3",
-            }
-        }
-
-elif database_url:
-    # Check if user accidentally set DATABASE_URL to a Turso URL
-    if database_url.startswith('libsql://'):
-        raise ValueError(
-            "❌ ERROR: DATABASE_URL contains a Turso URL (libsql://)!\n"
-            "\n"
-            "Use these environment variables instead:\n"
-            "  TURSO_DATABASE_URL=libsql://your-db.turso.io\n"
-            "  TURSO_AUTH_TOKEN=your-token-here\n"
-            "\n"
-            "Remove 'libsql://' from DATABASE_URL or delete DATABASE_URL entirely."
-        )
-    # Production: Use PostgreSQL via DATABASE_URL (Neon, Supabase, etc.)
-    # Optimized for free tier: connections close immediately to allow database to sleep
-    DATABASES = {
-        "default": dj_database_url.parse(
-            database_url,
-            conn_max_age=0,  # Close connections immediately after each request (allows DB to sleep)
-            conn_health_checks=True  # Verify connections before use (Django 4.1+)
-        )
+DATABASES = {
+    "default": {
+        "ENGINE": "calendarEditor.db_backends.turso",
+        "TURSO_URL": turso_database_url,
+        "TURSO_TOKEN": turso_auth_token,
+        "NAME": ":memory:",  # Not used by Turso backend, but required by Django
     }
-    # Connection options compatible with pooled connections (Neon, Supabase pooler)
-    DATABASES["default"]["OPTIONS"] = {
-        "connect_timeout": 10,  # 10 second connection timeout
-        "sslmode": "require"  # Require SSL for secure connections
-    }
-else:
-    # Local development: SQLite in project directory
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+}
+
+print("✅ Turso database configured successfully")
 
 
 # Password validation
