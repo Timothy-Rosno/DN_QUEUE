@@ -5,8 +5,18 @@ Uses synchronous HTTP requests to Turso's REST API.
 
 from django.db.backends.sqlite3.base import DatabaseWrapper as SQLiteDatabaseWrapper
 from django.db.backends.sqlite3.base import DatabaseClient, DatabaseIntrospection, DatabaseOperations
+from django.db.backends.sqlite3.features import DatabaseFeatures as SQLiteDatabaseFeatures
 import requests
 import json
+
+
+class DatabaseFeatures(SQLiteDatabaseFeatures):
+    """
+    Turso database features.
+    Disable RETURNING clause support as Turso HTTP API doesn't support it.
+    """
+    can_return_columns_from_insert = False
+    can_return_rows_from_bulk_insert = False
 
 
 class DatabaseWrapper(SQLiteDatabaseWrapper):
@@ -18,6 +28,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
     """
     vendor = 'turso'
     display_name = 'Turso (libSQL)'
+    features_class = DatabaseFeatures
 
     def __init__(self, settings_dict, alias='default'):
         super().__init__(settings_dict, alias)
