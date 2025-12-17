@@ -206,11 +206,27 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                 cursor._turso_result = result
 
                 # Convert rows to tuples for Django compatibility
+                # Turso can return rows as dicts OR arrays - handle both
+                cols = result.get('cols', []) if isinstance(result, dict) else []
                 raw_rows = result.get('rows', []) if isinstance(result, dict) else []
-                cursor._turso_rows = [
-                    tuple(row) if isinstance(row, (list, tuple)) else row
-                    for row in raw_rows
-                ]
+
+                if raw_rows and len(raw_rows) > 0:
+                    first_row = raw_rows[0]
+                    if isinstance(first_row, dict):
+                        # Rows are dicts - convert to tuples using column order
+                        cursor._turso_rows = [
+                            tuple(row.get(col) for col in cols)
+                            for row in raw_rows
+                        ]
+                    else:
+                        # Rows are arrays - convert to tuples
+                        cursor._turso_rows = [
+                            tuple(row) if isinstance(row, (list, tuple)) else row
+                            for row in raw_rows
+                        ]
+                else:
+                    cursor._turso_rows = []
+
                 cursor._turso_row_index = 0
 
                 return cursor
