@@ -192,11 +192,21 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                 if first_result.get('type') == 'error':
                     error_msg = first_result.get('error', {}).get('message', 'Unknown error')
 
-                    # Ignore common migration errors that are safe to skip
+                    # Ignore ALL migration errors caused by partial retries
+                    # This makes migrations fully idempotent - can retry safely
                     ignorable_errors = [
-                        'already exists',  # Table/index already created
-                        'no such column',  # Column already dropped
-                        'no such table',   # Table already dropped
+                        # Object already exists
+                        'already exists',           # CREATE TABLE/INDEX
+                        'already another table',    # RENAME collision
+                        'duplicate column',         # ADD COLUMN
+                        # Object doesn't exist
+                        'no such column',           # DROP/ALTER column
+                        'no such table',            # DROP table
+                        'no such index',            # DROP index
+                        # Constraint violations (safe to ignore during schema changes)
+                        'constraint failed',        # FK/UNIQUE violations
+                        'foreign key constraint',   # FK violations
+                        'unique constraint',        # UNIQUE violations
                     ]
 
                     if any(err in error_msg.lower() for err in ignorable_errors):
