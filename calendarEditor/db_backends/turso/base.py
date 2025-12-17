@@ -114,6 +114,10 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
     def _execute_turso_query(self, sql, params=None):
         """Execute query against Turso using HTTP API."""
         try:
+            # Convert %s placeholders to ? for SQLite/Turso
+            # Django sometimes uses %s but Turso expects ?
+            sql = sql.replace('%s', '?')
+
             # Prepare request payload
             request_data = {
                 'requests': [
