@@ -1,26 +1,29 @@
 """
 Custom Django database backend for Turso (libSQL).
-Wraps libsql_client to work with Django's ORM.
+Uses synchronous HTTP requests to Turso's REST API.
 """
 
 from django.db.backends.sqlite3.base import DatabaseWrapper as SQLiteDatabaseWrapper
 from django.db.backends.sqlite3.base import DatabaseClient, DatabaseIntrospection, DatabaseOperations
-import libsql_client
+import requests
+import json
 
 
 class DatabaseWrapper(SQLiteDatabaseWrapper):
     """
     Django database backend for Turso.
 
-    Turso uses libSQL (SQLite-compatible) over HTTP/WebSockets.
-    This backend uses libsql_client to connect to Turso instead of local SQLite.
+    Turso uses libSQL (SQLite-compatible) over HTTP.
+    This backend uses HTTP REST API for synchronous operation with Django.
     """
     vendor = 'turso'
     display_name = 'Turso (libSQL)'
 
     def __init__(self, settings_dict, alias='default'):
         super().__init__(settings_dict, alias)
-        self.turso_client = None
+        self.turso_url = None
+        self.turso_token = None
+        self.turso_http_url = None
 
     def get_connection_params(self):
         """Get Turso connection parameters from settings."""
@@ -43,20 +46,45 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                 "}"
             )
 
+        # Convert libsql:// URL to https:// for HTTP API
+        # libsql://your-db.turso.io → https://your-db.turso.io
+        http_url = turso_url.replace('libsql://', 'https://')
+
         return {
             'url': turso_url,
             'auth_token': turso_token,
+            'http_url': http_url,
         }
 
     def get_new_connection(self, conn_params):
-        """Create connection to Turso using libsql_client."""
+        """Create connection to Turso using HTTP API."""
         try:
-            self.turso_client = libsql_client.create_client(
-                url=conn_params['url'],
-                auth_token=conn_params['auth_token']
+            self.turso_url = conn_params['url']
+            self.turso_token = conn_params['auth_token']
+            self.turso_http_url = conn_params['http_url']
+
+            # Test connection with a simple query
+            response = requests.post(
+                f"{self.turso_http_url}/v2/pipeline",
+                headers={
+                    'Authorization': f'Bearer {self.turso_token}',
+                    'Content-Type': 'application/json',
+                },
+                json={
+                    'requests': [
+                        {'type': 'execute', 'stmt': {'sql': 'SELECT 1'}}
+                    ]
+                },
+                timeout=10
             )
 
-            print(f"✅ Connected to Turso: {conn_params['url']}")
+            if response.status_code != 200:
+                raise ConnectionError(
+                    f"Turso connection test failed: {response.status_code}\n"
+                    f"Response: {response.text}"
+                )
+
+            print(f"✅ Connected to Turso via HTTP: {self.turso_url}")
 
             # Create an in-memory SQLite connection for Django's ORM
             # We'll intercept execute() to send queries to Turso instead
@@ -67,21 +95,62 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
 
             return conn
 
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to Turso: {e}")
         except Exception as e:
             raise ConnectionError(f"Failed to connect to Turso: {e}")
 
     def _execute_turso_query(self, sql, params=None):
-        """Execute query against Turso using libsql_client."""
+        """Execute query against Turso using HTTP API."""
         try:
-            # Convert Django query params to Turso format
+            # Prepare request payload
+            request_data = {
+                'requests': [
+                    {
+                        'type': 'execute',
+                        'stmt': {
+                            'sql': sql,
+                        }
+                    }
+                ]
+            }
+
+            # Add parameters if provided
             if params:
-                # libsql_client expects params as a list
-                result = self.turso_client.execute(sql, list(params))
-            else:
-                result = self.turso_client.execute(sql)
+                request_data['requests'][0]['stmt']['args'] = [
+                    {'type': 'text', 'value': str(p) if p is not None else None}
+                    for p in params
+                ]
 
-            return result
+            # Execute query via HTTP
+            response = requests.post(
+                f"{self.turso_http_url}/v2/pipeline",
+                headers={
+                    'Authorization': f'Bearer {self.turso_token}',
+                    'Content-Type': 'application/json',
+                },
+                json=request_data,
+                timeout=30
+            )
 
+            if response.status_code != 200:
+                raise Exception(
+                    f"Query failed with status {response.status_code}: {response.text}"
+                )
+
+            # Parse response
+            result_data = response.json()
+
+            # Extract results from response
+            if 'results' in result_data and len(result_data['results']) > 0:
+                result = result_data['results'][0]
+                if 'response' in result and 'result' in result['response']:
+                    return result['response']['result']
+
+            return {'rows': []}
+
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Turso HTTP request failed: {e}\nSQL: {sql}\nParams: {params}")
         except Exception as e:
             raise Exception(f"Turso query failed: {e}\nSQL: {sql}\nParams: {params}")
 
@@ -124,10 +193,8 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
 
     def close(self):
         """Close Turso connection."""
-        if self.turso_client:
-            try:
-                self.turso_client.close()
-            except:
-                pass
-            self.turso_client = None
+        # HTTP connections are stateless, nothing to close
+        self.turso_url = None
+        self.turso_token = None
+        self.turso_http_url = None
         super().close()
