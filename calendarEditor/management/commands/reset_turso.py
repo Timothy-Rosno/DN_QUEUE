@@ -65,5 +65,22 @@ class Command(BaseCommand):
             # Re-enable foreign key constraints
             cursor.execute("PRAGMA foreign_keys = ON")
 
+            # Force cleanup with VACUUM
+            self.stdout.write("   Running VACUUM to clean up...")
+            cursor.execute("VACUUM")
+
+            # Verify everything is gone
+            cursor.execute("""
+                SELECT COUNT(*) FROM sqlite_master
+                WHERE type IN ('table', 'index', 'view', 'trigger')
+                AND name NOT LIKE 'sqlite_%'
+            """)
+            remaining = cursor.fetchone()[0]
+
+            if remaining > 0:
+                self.stdout.write(self.style.WARNING(f"   [WARN] {remaining} objects still remain!"))
+            else:
+                self.stdout.write("   [OK] Database is completely clean")
+
             self.stdout.write(self.style.SUCCESS(f"[OK] Dropped {total} objects successfully"))
             self.stdout.write("   Ready for migrations!")
