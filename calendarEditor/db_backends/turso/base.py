@@ -229,14 +229,27 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                 # We need to extract just the 'value' field from each cell
                 if raw_rows and len(raw_rows) > 0:
                     print(f"   Converting Turso rows - extracting 'value' from each cell")
+
+                    def extract_value(cell):
+                        """Extract value from Turso's wrapped format."""
+                        if isinstance(cell, dict):
+                            if 'value' in cell:
+                                return cell['value']
+                            # Fallback: if dict doesn't have 'value', return the dict itself
+                            return cell
+                        # Cell is already a raw value
+                        return cell
+
                     cursor._turso_rows = [
-                        tuple(
-                            cell['value'] if isinstance(cell, dict) and 'value' in cell else cell
-                            for cell in row
-                        )
+                        tuple(extract_value(cell) for cell in row)
                         for row in raw_rows
                     ]
                     print(f"   Converted rows: {cursor._turso_rows}")
+                    print(f"   First converted row type: {type(cursor._turso_rows[0]) if cursor._turso_rows else 'N/A'}")
+                    print(f"   First converted row: {cursor._turso_rows[0] if cursor._turso_rows else 'N/A'}")
+                    if cursor._turso_rows and len(cursor._turso_rows[0]) > 0:
+                        print(f"   First cell type: {type(cursor._turso_rows[0][0])}")
+                        print(f"   First cell value: {cursor._turso_rows[0][0]}")
                 else:
                     cursor._turso_rows = []
 
