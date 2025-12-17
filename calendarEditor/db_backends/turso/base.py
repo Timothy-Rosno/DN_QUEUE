@@ -141,6 +141,12 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
             # Parse response
             result_data = response.json()
 
+            # DEBUG: Print raw HTTP response
+            import json
+            print(f"\n📡 DEBUG Raw Turso HTTP Response:")
+            print(f"   SQL: {sql[:100]}")
+            print(f"   Response: {json.dumps(result_data, indent=2)[:500]}")
+
             # Turso v2 pipeline response format:
             # {
             #   "results": [
@@ -205,25 +211,38 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                 # Store result and prepare for fetch operations
                 cursor._turso_result = result
 
-                # Convert rows to tuples for Django compatibility
-                # Turso can return rows as dicts OR arrays - handle both
+                # DEBUG: Print what Turso actually returns
                 cols = result.get('cols', []) if isinstance(result, dict) else []
                 raw_rows = result.get('rows', []) if isinstance(result, dict) else []
 
+                print(f"\n🔍 DEBUG Turso Response:")
+                print(f"   SQL: {sql[:100]}")
+                print(f"   Cols: {cols}")
+                print(f"   Raw rows type: {type(raw_rows)}")
+                print(f"   Raw rows count: {len(raw_rows) if raw_rows else 0}")
+                if raw_rows and len(raw_rows) > 0:
+                    print(f"   First row type: {type(raw_rows[0])}")
+                    print(f"   First row: {raw_rows[0]}")
+
+                # Convert rows to tuples for Django compatibility
+                # Turso can return rows as dicts OR arrays - handle both
                 if raw_rows and len(raw_rows) > 0:
                     first_row = raw_rows[0]
                     if isinstance(first_row, dict):
                         # Rows are dicts - convert to tuples using column order
+                        print(f"   Converting dict rows using cols: {cols}")
                         cursor._turso_rows = [
                             tuple(row.get(col) for col in cols)
                             for row in raw_rows
                         ]
                     else:
                         # Rows are arrays - convert to tuples
+                        print(f"   Converting array rows to tuples")
                         cursor._turso_rows = [
                             tuple(row) if isinstance(row, (list, tuple)) else row
                             for row in raw_rows
                         ]
+                    print(f"   Converted rows: {cursor._turso_rows}")
                 else:
                     cursor._turso_rows = []
 
