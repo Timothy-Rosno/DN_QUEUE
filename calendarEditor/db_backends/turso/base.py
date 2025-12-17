@@ -8,6 +8,7 @@ from django.db.backends.sqlite3.base import DatabaseClient, DatabaseIntrospectio
 from django.db.backends.sqlite3.features import DatabaseFeatures as SQLiteDatabaseFeatures
 import requests
 import json
+import time
 
 
 class DatabaseFeatures(SQLiteDatabaseFeatures):
@@ -114,6 +115,10 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
     def _execute_turso_query(self, sql, params=None):
         """Execute query against Turso using HTTP API."""
         try:
+            # Rate limit to avoid "Database connections limit exceeded"
+            # Turso free tier has concurrency limits
+            time.sleep(0.05)  # 50ms delay = max 20 queries/sec
+
             # Convert %s placeholders to ? for SQLite/Turso
             # Django sometimes uses %s but Turso expects ?
             sql = sql.replace('%s', '?')
