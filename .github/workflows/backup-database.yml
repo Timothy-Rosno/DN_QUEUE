@@ -58,13 +58,14 @@ jobs:
             exit 1
           fi
 
-      - name: Keep only last 8 weeks of backups
+      - name: Keep only last 90 days of backups
         run: |
           echo "Cleaning up old backups..."
 
-          # Keep only the 8 most recent backup files
+          # Keep only the 90 most recent backup files (approximately 3 months of daily backups)
+          # At 1-5 MB per backup, 90 backups = 90-450 MB (acceptable for GitHub)
           cd backups
-          ls -t database_backup_*.json | tail -n +9 | xargs -r rm
+          ls -t database_backup_*.json | tail -n +91 | xargs -r rm
 
           remaining=$(ls -1 database_backup_*.json 2>/dev/null | wc -l)
           echo "Backups remaining: ${remaining}"
