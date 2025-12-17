@@ -287,6 +287,11 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
 
                 cursor._turso_row_index = 0
 
+                # Set lastrowid for INSERT queries
+                # Django needs this to get the ID of newly created objects
+                if result.get('last_insert_rowid') is not None:
+                    cursor.lastrowid = int(result['last_insert_rowid'])
+
                 return cursor
             except Exception as e:
                 # For errors, provide helpful context
