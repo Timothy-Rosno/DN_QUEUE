@@ -191,6 +191,13 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                 # Check if query succeeded
                 if first_result.get('type') == 'error':
                     error_msg = first_result.get('error', {}).get('message', 'Unknown error')
+
+                    # Ignore "already exists" errors during migrations
+                    # These happen when migrations are retried after partial failure
+                    if 'already exists' in error_msg.lower():
+                        print(f"   [WARN] Skipping: {error_msg}")
+                        return {'rows': [], 'cols': []}
+
                     raise Exception(f"Turso query error: {error_msg}")
 
                 # Extract result data
