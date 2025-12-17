@@ -287,10 +287,13 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
 
                 cursor._turso_row_index = 0
 
-                # Set lastrowid for INSERT queries
+                # Store lastrowid for INSERT queries
                 # Django needs this to get the ID of newly created objects
+                # Can't set cursor.lastrowid directly (readonly), so store in custom attr
                 if result.get('last_insert_rowid') is not None:
-                    cursor.lastrowid = int(result['last_insert_rowid'])
+                    cursor._turso_last_insert_id = int(result['last_insert_rowid'])
+                else:
+                    cursor._turso_last_insert_id = None
 
                 return cursor
             except Exception as e:
@@ -337,6 +340,16 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
             return original_fetchmany(size)
 
         cursor.fetchmany = turso_fetchmany
+
+        # Override lastrowid to return Turso's last_insert_rowid
+        original_getattribute = type(cursor).__getattribute__
+
+        def custom_getattribute(self, name):
+            if name == 'lastrowid' and hasattr(self, '_turso_last_insert_id'):
+                return self._turso_last_insert_id
+            return original_getattribute(self, name)
+
+        type(cursor).__getattribute__ = custom_getattribute
 
         return cursor
 
