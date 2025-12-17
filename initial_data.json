@@ -105,9 +105,7 @@
     "model": "userRegistration.userprofile",
     "pk": 2,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "phone_number": "",
       "department": "",
       "notes": "",
@@ -126,9 +124,7 @@
     "model": "userRegistration.userprofile",
     "pk": 15,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "phone_number": "ghgggghghgPhone",
       "department": "Number",
       "notes": "",
@@ -147,9 +143,7 @@
     "model": "userRegistration.userprofile",
     "pk": 26,
     "fields": {
-      "user": [
-        "Pluto"
-      ],
+      "user": "Pluto",
       "phone_number": "",
       "department": "",
       "notes": "",
@@ -170,9 +164,7 @@
     "model": "userRegistration.userprofile",
     "pk": 27,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "phone_number": "",
       "department": "",
       "notes": "",
@@ -193,9 +185,7 @@
     "model": "userRegistration.userprofile",
     "pk": 28,
     "fields": {
-      "user": [
-        "TimTim"
-      ],
+      "user": "TimTim",
       "phone_number": "",
       "department": "",
       "notes": "",
@@ -216,9 +206,7 @@
     "model": "userRegistration.userprofile",
     "pk": 31,
     "fields": {
-      "user": [
-        "BrycelynnREAL"
-      ],
+      "user": "BrycelynnREAL",
       "phone_number": "",
       "department": "",
       "notes": "",
@@ -401,9 +389,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 61,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -437,9 +423,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 62,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -473,9 +457,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 66,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "test",
       "description": "dsdsdsdsdsdsdsdsdsd",
       "required_min_temp": 0.01,
@@ -509,9 +491,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 79,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -545,9 +525,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 81,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "title": "HANSIFNSOAINS",
       "description": "HANSIFNSOAINSHANSIFNSOAINS",
       "required_min_temp": 0.01,
@@ -581,9 +559,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 82,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "funny",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -617,9 +593,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 83,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -653,9 +627,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 84,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "funny",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -689,9 +661,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 85,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Delete",
       "description": "DeleteDeleteDeleteDeleteDeleteDelete",
       "required_min_temp": 4.0,
@@ -725,9 +695,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 90,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Delete",
       "description": "DeleteDeleteDeleteDeleteDeleteDelete",
       "required_min_temp": 4.0,
@@ -761,9 +729,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 91,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "title": "funny",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -797,9 +763,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 92,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "title": "funny AGAIN",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -833,9 +797,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 93,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "title": "funny YEET",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -869,9 +831,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 94,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "title": "funny HAHAHA",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -905,9 +865,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 95,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "title": "funny",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -941,9 +899,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 96,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "title": "HANSIFNSOAINS",
       "description": "HANSIFNSOAINSHANSIFNSOAINS",
       "required_min_temp": 0.01,
@@ -977,9 +933,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 97,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -1013,9 +967,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 98,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -1049,9 +1001,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 99,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -1085,9 +1035,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 100,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -1121,9 +1069,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 101,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -1157,9 +1103,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 102,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -1193,9 +1137,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 103,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Delete",
       "description": "DeleteDeleteDeleteDeleteDeleteDelete",
       "required_min_temp": 11.0,
@@ -1229,9 +1171,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 104,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -1265,9 +1205,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 105,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -1301,9 +1239,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 106,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -1337,9 +1273,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 107,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -1373,9 +1307,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 108,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -1409,9 +1341,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 109,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -1445,9 +1375,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 110,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -1481,9 +1409,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 111,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -1517,9 +1443,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 112,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -1553,9 +1477,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 114,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -1589,9 +1511,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 115,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -1625,9 +1545,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 116,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -1661,9 +1579,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 117,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -1697,9 +1613,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 118,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -1733,9 +1647,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 119,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -1769,9 +1681,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 120,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -1805,9 +1715,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 121,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -1841,9 +1749,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 122,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -1877,9 +1783,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 123,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "funny",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -1913,9 +1817,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 124,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -1949,9 +1851,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 125,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -1985,9 +1885,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 126,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2021,9 +1919,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 127,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2057,9 +1953,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 128,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2093,9 +1987,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 130,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "funny",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -2129,9 +2021,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 131,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "funny",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -2165,9 +2055,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 132,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2201,9 +2089,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 133,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2237,9 +2123,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 134,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2273,9 +2157,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 135,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2309,9 +2191,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 136,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2345,9 +2225,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 138,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Delete",
       "description": "DeleteDeleteDeleteDeleteDeleteDelete",
       "required_min_temp": 4.0,
@@ -2381,9 +2259,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 139,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2417,9 +2293,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 140,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2453,9 +2327,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 141,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2489,9 +2361,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 142,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2525,9 +2395,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 143,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2561,9 +2429,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 144,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2597,9 +2463,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 145,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2633,9 +2497,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 146,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2669,9 +2531,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 147,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2705,9 +2565,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 149,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2741,9 +2599,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 150,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2777,9 +2633,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 151,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2813,9 +2667,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 152,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2849,9 +2701,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 153,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2885,9 +2735,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 154,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2921,9 +2769,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 161,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2957,9 +2803,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 162,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -2993,9 +2837,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 163,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -3029,9 +2871,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 164,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -3065,9 +2905,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 165,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -3101,9 +2939,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 166,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -3137,9 +2973,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 167,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "funny",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -3173,9 +3007,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 168,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -3209,9 +3041,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 169,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "HANSIFNSOAINS",
       "description": "HANSIFNSOAINSHANSIFNSOAINS",
       "required_min_temp": 0.01,
@@ -3245,9 +3075,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 170,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "Delete",
       "description": "DeleteDeleteDeleteDeleteDeleteDelete",
       "required_min_temp": 1.0,
@@ -3281,9 +3109,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 171,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "HANSIFNSOAINS",
       "description": "HANSIFNSOAINSHANSIFNSOAINS",
       "required_min_temp": 0.01,
@@ -3317,9 +3143,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 172,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "funny",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -3353,9 +3177,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 173,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "funny",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -3389,9 +3211,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 174,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "funny",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -3425,9 +3245,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 178,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "title": "CHange to rush job by clicking rush job after loading",
       "description": "Charcter limit almost lol",
       "required_min_temp": 5.0,
@@ -3461,9 +3279,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 179,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "title": "funny",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -3497,9 +3313,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 180,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "title": "HANSIFNSOAINS",
       "description": "HANSIFNSOAINSHANSIFNSOAINS",
       "required_min_temp": 0.01,
@@ -3533,9 +3347,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 181,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -3569,9 +3381,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 182,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "title": "HANSIFNSOAINS",
       "description": "HANSIFNSOAINSHANSIFNSOAINS",
       "required_min_temp": 0.01,
@@ -3605,9 +3415,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 183,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -3641,9 +3449,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 184,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -3677,9 +3483,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 185,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -3713,9 +3517,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 186,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -3749,9 +3551,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 187,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -3785,9 +3585,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 188,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "title": "CHange to rush job by clicking rush job after loading",
       "description": "Charcter limit almost lol",
       "required_min_temp": 5.0,
@@ -3821,9 +3619,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 189,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "title": "Any machine yes admin",
       "description": "Not a measurement that's real, but can go to any machine",
       "required_min_temp": 7.0,
@@ -3857,9 +3653,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 190,
     "fields": {
-      "user": [
-        "BrycelynnREAL"
-      ],
+      "user": "BrycelynnREAL",
       "title": "funny",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -3893,9 +3687,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 191,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "title": "Delete",
       "description": "DeleteDeleteDeleteDeleteDeleteDelete",
       "required_min_temp": 2.0,
@@ -3929,9 +3721,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 192,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "title": "HANSIFNSOAINS",
       "description": "HANSIFNSOAINSHANSIFNSOAINS",
       "required_min_temp": 0.01,
@@ -3965,9 +3755,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 193,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -4001,9 +3789,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 194,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "title": "funny",
       "description": "SO SO SO SO SO SO FUNNY",
       "required_min_temp": 0.01,
@@ -4037,9 +3823,7 @@
     "model": "calendarEditor.queueentry",
     "pk": 195,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "title": "Capser",
       "description": "Cabbsppbepbererereree",
       "required_min_temp": 4.0,
@@ -5137,9 +4921,7 @@
     "model": "calendarEditor.notificationpreference",
     "pk": 3,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "notify_public_preset_created": false,
       "notify_public_preset_edited": false,
       "notify_public_preset_deleted": false,
@@ -5172,9 +4954,7 @@
     "model": "calendarEditor.notificationpreference",
     "pk": 12,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "notify_public_preset_created": false,
       "notify_public_preset_edited": false,
       "notify_public_preset_deleted": false,
@@ -5207,9 +4987,7 @@
     "model": "calendarEditor.notificationpreference",
     "pk": 21,
     "fields": {
-      "user": [
-        "Pluto"
-      ],
+      "user": "Pluto",
       "notify_public_preset_created": false,
       "notify_public_preset_edited": false,
       "notify_public_preset_deleted": false,
@@ -5238,9 +5016,7 @@
     "model": "calendarEditor.notificationpreference",
     "pk": 22,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "notify_public_preset_created": false,
       "notify_public_preset_edited": false,
       "notify_public_preset_deleted": false,
@@ -5269,9 +5045,7 @@
     "model": "calendarEditor.notificationpreference",
     "pk": 23,
     "fields": {
-      "user": [
-        "TimTim"
-      ],
+      "user": "TimTim",
       "notify_public_preset_created": false,
       "notify_public_preset_edited": false,
       "notify_public_preset_deleted": false,
@@ -5302,9 +5076,7 @@
     "model": "calendarEditor.notificationpreference",
     "pk": 24,
     "fields": {
-      "user": [
-        "BrycelynnREAL"
-      ],
+      "user": "BrycelynnREAL",
       "notify_public_preset_created": false,
       "notify_public_preset_edited": false,
       "notify_public_preset_deleted": false,
@@ -5333,9 +5105,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 5,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 6,
       "related_queue_entry": 83,
       "measurement_date": "2025-10-29T02:22:16.368Z",
@@ -5353,9 +5123,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 9,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 5,
       "related_queue_entry": 84,
       "measurement_date": "2025-10-29T17:07:03.114Z",
@@ -5373,9 +5141,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 10,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 6,
       "related_queue_entry": 85,
       "measurement_date": "2025-10-29T17:21:21.411Z",
@@ -5393,9 +5159,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 14,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 5,
       "related_queue_entry": 82,
       "measurement_date": "2025-10-29T19:53:27.911Z",
@@ -5413,9 +5177,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 15,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "machine": 5,
       "related_queue_entry": 91,
       "measurement_date": "2025-10-29T21:54:09.167Z",
@@ -5433,9 +5195,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 16,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "machine": 8,
       "related_queue_entry": 79,
       "measurement_date": "2025-10-29T21:55:01.627Z",
@@ -5453,9 +5213,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 18,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 90,
       "measurement_date": "2025-10-29T22:06:44.652Z",
@@ -5473,9 +5231,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 19,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 97,
       "measurement_date": "2025-10-29T22:07:13.283Z",
@@ -5493,9 +5249,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 20,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 102,
       "measurement_date": "2025-10-29T22:08:53.768Z",
@@ -5513,9 +5267,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 21,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 99,
       "measurement_date": "2025-10-29T22:09:07.840Z",
@@ -5533,9 +5285,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 22,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 101,
       "measurement_date": "2025-10-29T22:09:09.316Z",
@@ -5553,9 +5303,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 23,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 104,
       "measurement_date": "2025-10-29T22:09:10.351Z",
@@ -5573,9 +5321,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 24,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 100,
       "measurement_date": "2025-10-29T22:09:11.499Z",
@@ -5593,9 +5339,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 25,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 105,
       "measurement_date": "2025-10-29T22:09:13.133Z",
@@ -5613,9 +5357,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 26,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 106,
       "measurement_date": "2025-10-29T22:10:21.794Z",
@@ -5633,9 +5375,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 27,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 108,
       "measurement_date": "2025-10-29T22:26:31.178Z",
@@ -5653,9 +5393,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 28,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 109,
       "measurement_date": "2025-10-29T22:27:26.603Z",
@@ -5673,9 +5411,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 29,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 110,
       "measurement_date": "2025-10-29T22:27:28.104Z",
@@ -5693,9 +5429,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 30,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 111,
       "measurement_date": "2025-10-29T22:28:15.755Z",
@@ -5713,9 +5447,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 31,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 114,
       "measurement_date": "2025-10-29T22:40:05.303Z",
@@ -5733,9 +5465,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 32,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 112,
       "measurement_date": "2025-10-29T22:42:49.439Z",
@@ -5753,9 +5483,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 33,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 115,
       "measurement_date": "2025-10-29T22:43:06.579Z",
@@ -5773,9 +5501,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 34,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 116,
       "measurement_date": "2025-10-29T22:45:42.871Z",
@@ -5793,9 +5519,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 35,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 117,
       "measurement_date": "2025-10-29T22:49:34.594Z",
@@ -5813,9 +5537,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 36,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 119,
       "measurement_date": "2025-10-29T22:50:05.222Z",
@@ -5833,9 +5555,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 37,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 121,
       "measurement_date": "2025-10-29T23:08:52.582Z",
@@ -5853,9 +5573,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 38,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 120,
       "measurement_date": "2025-10-29T23:08:53.583Z",
@@ -5873,9 +5591,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 39,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 122,
       "measurement_date": "2025-10-29T23:08:55.100Z",
@@ -5893,9 +5609,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 40,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 125,
       "measurement_date": "2025-10-29T23:18:28.356Z",
@@ -5913,9 +5627,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 41,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 127,
       "measurement_date": "2025-10-29T23:18:35.219Z",
@@ -5933,9 +5645,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 42,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 126,
       "measurement_date": "2025-10-29T23:18:56.136Z",
@@ -5953,9 +5663,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 43,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 128,
       "measurement_date": "2025-10-29T23:18:57.588Z",
@@ -5973,9 +5681,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 44,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 5,
       "related_queue_entry": 123,
       "measurement_date": "2025-10-30T00:01:18.621Z",
@@ -5993,9 +5699,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 45,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 5,
       "related_queue_entry": 130,
       "measurement_date": "2025-10-30T16:19:28.703Z",
@@ -6013,9 +5717,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 46,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "machine": 4,
       "related_queue_entry": 95,
       "measurement_date": "2025-10-30T16:38:23.642Z",
@@ -6033,9 +5735,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 47,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 134,
       "measurement_date": "2025-10-30T21:10:48.619Z",
@@ -6053,9 +5753,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 48,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 139,
       "measurement_date": "2025-10-30T21:10:52.251Z",
@@ -6073,9 +5771,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 49,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 5,
       "related_queue_entry": 140,
       "measurement_date": "2025-10-31T19:54:25.203Z",
@@ -6093,9 +5789,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 50,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 143,
       "measurement_date": "2025-11-01T20:17:31.898Z",
@@ -6113,9 +5807,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 51,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 6,
       "related_queue_entry": 132,
       "measurement_date": "2025-11-01T20:44:51.005Z",
@@ -6133,9 +5825,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 52,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 144,
       "measurement_date": "2025-11-01T20:52:56.483Z",
@@ -6153,9 +5843,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 53,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 144,
       "measurement_date": "2025-11-01T20:52:56Z",
@@ -6186,9 +5874,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 54,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 149,
       "measurement_date": "2025-11-01T21:17:52.155Z",
@@ -6206,9 +5892,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 55,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 133,
       "measurement_date": "2025-11-01T21:22:37.618Z",
@@ -6226,9 +5910,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 56,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 5,
       "related_queue_entry": 131,
       "measurement_date": "2025-11-01T23:35:37.618Z",
@@ -6246,9 +5928,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 58,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 5,
       "related_queue_entry": 147,
       "measurement_date": "2025-11-01T23:35:54.266Z",
@@ -6266,9 +5946,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 59,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 150,
       "measurement_date": "2025-11-01T23:40:34.598Z",
@@ -6286,9 +5964,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 60,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 151,
       "measurement_date": "2025-11-01T23:40:38.636Z",
@@ -6306,9 +5982,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 61,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 152,
       "measurement_date": "2025-11-01T23:40:42.383Z",
@@ -6326,9 +6000,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 62,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 138,
       "measurement_date": "2025-11-03T22:58:30.701Z",
@@ -6346,9 +6018,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 63,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 7,
       "related_queue_entry": 142,
       "measurement_date": "2025-11-03T23:53:45.547Z",
@@ -6366,9 +6036,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 64,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 161,
       "measurement_date": "2025-11-03T23:53:47.382Z",
@@ -6386,9 +6054,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 65,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 162,
       "measurement_date": "2025-11-03T23:54:08.905Z",
@@ -6406,9 +6072,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 66,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 166,
       "measurement_date": "2025-11-04T03:28:10.800Z",
@@ -6426,9 +6090,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 67,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 8,
       "related_queue_entry": 163,
       "measurement_date": "2025-11-04T22:12:09.534Z",
@@ -6446,9 +6108,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 68,
     "fields": {
-      "user": [
-        "Casper"
-      ],
+      "user": "Casper",
       "machine": 7,
       "related_queue_entry": 178,
       "measurement_date": "2025-11-05T15:55:56.377Z",
@@ -6466,9 +6126,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 69,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 4,
       "related_queue_entry": 145,
       "measurement_date": "2025-11-06T22:11:50.215Z",
@@ -6486,9 +6144,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 70,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 6,
       "related_queue_entry": 136,
       "measurement_date": "2025-11-06T22:12:03.814Z",
@@ -6506,9 +6162,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 71,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 4,
       "related_queue_entry": 146,
       "measurement_date": "2025-11-06T22:12:09.265Z",
@@ -6526,9 +6180,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 72,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 6,
       "related_queue_entry": 141,
       "measurement_date": "2025-11-06T22:12:12.198Z",
@@ -6546,9 +6198,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 73,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 4,
       "related_queue_entry": 153,
       "measurement_date": "2025-11-06T22:12:13.664Z",
@@ -6566,9 +6216,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 74,
     "fields": {
-      "user": [
-        "admin"
-      ],
+      "user": "admin",
       "machine": 6,
       "related_queue_entry": 154,
       "measurement_date": "2025-11-06T22:12:14.981Z",
@@ -6586,9 +6234,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 75,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "machine": 8,
       "related_queue_entry": 184,
       "measurement_date": "2025-11-11T04:34:53.125Z",
@@ -6606,9 +6252,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 76,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "machine": 8,
       "related_queue_entry": 185,
       "measurement_date": "2025-11-11T04:35:30.617Z",
@@ -6626,9 +6270,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 77,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "machine": 6,
       "related_queue_entry": 191,
       "measurement_date": "2025-11-11T04:41:50.778Z",
@@ -6646,9 +6288,7 @@
     "model": "calendarEditor.archivedmeasurement",
     "pk": 78,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "machine": 7,
       "related_queue_entry": 188,
       "measurement_date": "2025-11-11T04:41:52.529Z",
@@ -6666,9 +6306,7 @@
     "model": "calendarEditor.onetimelogintoken",
     "pk": 52,
     "fields": {
-      "user": [
-        "BrycelynnREAL"
-      ],
+      "user": "BrycelynnREAL",
       "token": "ExRzTgpoGew4GrMAjvoPhXOU9bO8XMlFBCyd-Z9wOZ8",
       "notification": 526,
       "redirect_url": "/schedule/check-in-check-out/",
@@ -6682,9 +6320,7 @@
     "model": "calendarEditor.onetimelogintoken",
     "pk": 53,
     "fields": {
-      "user": [
-        "BrycelynnREAL"
-      ],
+      "user": "BrycelynnREAL",
       "token": "M0nx_gpEF3B2JLQR7TQRUyKCaOQ_013UVS6YyGgGneI",
       "notification": 528,
       "redirect_url": "/schedule/check-in-check-out/",
@@ -6698,9 +6334,7 @@
     "model": "calendarEditor.onetimelogintoken",
     "pk": 54,
     "fields": {
-      "user": [
-        "BrycelynnREAL"
-      ],
+      "user": "BrycelynnREAL",
       "token": "5wXlC_uc03kIcLtAjdNk18MmHHEoY5lh9rMTI1bW18U",
       "notification": 530,
       "redirect_url": "/schedule/check-in-check-out/",
@@ -6714,9 +6348,7 @@
     "model": "calendarEditor.onetimelogintoken",
     "pk": 55,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "token": "qfxk1TQYtqkiqX_mvRIgDE_Y0O8qWrzmFMA9ztj8J4M",
       "notification": 533,
       "redirect_url": "/schedule/check-in-check-out/",
@@ -6730,9 +6362,7 @@
     "model": "calendarEditor.onetimelogintoken",
     "pk": 56,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "token": "8Qt5_-Sp7s9GkFUWKFiKlEVkdoC0eX6BgohKfuOU0mE",
       "notification": 547,
       "redirect_url": "/schedule/check-in-check-out/",
@@ -6746,9 +6376,7 @@
     "model": "calendarEditor.onetimelogintoken",
     "pk": 57,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "token": "4d_EWA2irQlBvib1mnhPxOvMiGCq7o3o-8WjsvqwMz0",
       "notification": 549,
       "redirect_url": "/schedule/admin-rush-jobs-review/",
@@ -6762,9 +6390,7 @@
     "model": "calendarEditor.onetimelogintoken",
     "pk": 58,
     "fields": {
-      "user": [
-        "TimmyRosno"
-      ],
+      "user": "TimmyRosno",
       "token": "EVHnufTNchs4zbonhM2Abk7yelXykdv1MViXeN9UmOg",
       "notification": 550,
       "redirect_url": "/schedule/check-in-check-out/",
