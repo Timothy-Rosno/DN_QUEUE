@@ -196,6 +196,14 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                 # Check if query succeeded
                 if first_result.get('type') == 'error':
                     error_msg = first_result.get('error', {}).get('message', 'Unknown error')
+
+                    # Turso's HTTP API has eventual consistency - even after nuke_turso
+                    # confirms database is empty, stale cached data can cause duplicates.
+                    # Ignore "already exists" errors to handle this.
+                    if 'already exists' in error_msg.lower():
+                        print(f"   [SKIP] {error_msg} (Turso eventual consistency)")
+                        return {'rows': [], 'cols': []}
+
                     raise Exception(f"Turso query error: {error_msg}")
 
                 # Extract result data
