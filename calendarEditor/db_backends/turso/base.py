@@ -206,6 +206,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                         'duplicate column',         # ADD COLUMN
                         # Object doesn't exist
                         'no such column',           # DROP/ALTER column
+                        'has no column',            # SELECT from column that doesn't exist
                         'no such table',            # DROP table
                         'no such index',            # DROP index
                         # Constraint violations (safe to ignore during schema changes)
