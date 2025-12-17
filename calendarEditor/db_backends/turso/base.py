@@ -116,8 +116,8 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
         """Execute query against Turso using HTTP API."""
         try:
             # Rate limit to avoid "Database connections limit exceeded"
-            # Turso free tier has concurrency limits
-            time.sleep(0.05)  # 50ms delay = max 20 queries/sec
+            # Turso free tier has strict concurrency limits
+            time.sleep(0.2)  # 200ms delay = max 5 queries/sec
 
             # Convert %s placeholders to ? for SQLite/Turso
             # Django sometimes uses %s but Turso expects ?
