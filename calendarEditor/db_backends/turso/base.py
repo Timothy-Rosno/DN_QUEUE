@@ -198,24 +198,24 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
         original_execute = cursor.execute
 
         def turso_execute(sql, params=None):
-            # Send ALL queries to Turso (including PRAGMAs)
+            # Send ALL queries to Turso (including PRAGMAs and introspection)
             try:
                 result = self._execute_turso_query(sql, params)
 
                 # Store result and prepare for fetch operations
                 cursor._turso_result = result
-                cursor._turso_rows = result.get('rows', []) if isinstance(result, dict) else []
+
+                # Convert rows to tuples for Django compatibility
+                raw_rows = result.get('rows', []) if isinstance(result, dict) else []
+                cursor._turso_rows = [
+                    tuple(row) if isinstance(row, (list, tuple)) else row
+                    for row in raw_rows
+                ]
                 cursor._turso_row_index = 0
 
                 return cursor
             except Exception as e:
-                # For certain introspection queries, use local SQLite
-                if 'sqlite_master' in sql.lower() and 'SELECT' in sql.upper():
-                    # Let Django introspect the schema from local memory
-                    # (we'll sync schema from Turso separately)
-                    return original_execute(sql, params)
-
-                # For errors, try to provide helpful context
+                # For errors, provide helpful context
                 raise Exception(f"Turso query failed: {e}\nSQL: {sql}")
 
         cursor.execute = turso_execute
@@ -228,10 +228,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                 if cursor._turso_row_index < len(cursor._turso_rows):
                     row = cursor._turso_rows[cursor._turso_row_index]
                     cursor._turso_row_index += 1
-                    # Convert row to tuple if it's a list
-                    if isinstance(row, list):
-                        return tuple(row)
-                    return row
+                    return row  # Already a tuple
                 return None
             return original_fetchone()
 
@@ -244,8 +241,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
             if hasattr(cursor, '_turso_rows'):
                 rows = cursor._turso_rows[cursor._turso_row_index:]
                 cursor._turso_row_index = len(cursor._turso_rows)
-                # Convert rows to tuples if needed
-                return [tuple(row) if isinstance(row, list) else row for row in rows]
+                return rows  # Already tuples
             return original_fetchall()
 
         cursor.fetchall = turso_fetchall
@@ -258,7 +254,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                 end_index = min(cursor._turso_row_index + size, len(cursor._turso_rows))
                 rows = cursor._turso_rows[cursor._turso_row_index:end_index]
                 cursor._turso_row_index = end_index
-                return [tuple(row) if isinstance(row, list) else row for row in rows]
+                return rows  # Already tuples
             return original_fetchmany(size)
 
         cursor.fetchmany = turso_fetchmany
