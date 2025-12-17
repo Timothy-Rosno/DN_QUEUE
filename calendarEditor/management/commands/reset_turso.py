@@ -10,7 +10,7 @@ class Command(BaseCommand):
     help = 'Drop all tables in Turso database to prepare for fresh migrations'
 
     def handle(self, *args, **options):
-        self.stdout.write("=Ñ  Resetting Turso database...")
+        self.stdout.write("[RESET] Resetting Turso database...")
 
         with connection.cursor() as cursor:
             # Get all table names
@@ -21,7 +21,7 @@ class Command(BaseCommand):
             tables = [row[0] for row in cursor.fetchall()]
 
             if not tables:
-                self.stdout.write(self.style.SUCCESS(" Database is already empty"))
+                self.stdout.write(self.style.SUCCESS("[OK] Database is already empty"))
                 return
 
             self.stdout.write(f"   Found {len(tables)} tables: {', '.join(tables)}")
@@ -37,5 +37,5 @@ class Command(BaseCommand):
             # Re-enable foreign key constraints
             cursor.execute("PRAGMA foreign_keys = ON")
 
-            self.stdout.write(self.style.SUCCESS(f" Dropped {len(tables)} tables successfully"))
+            self.stdout.write(self.style.SUCCESS(f"[OK] Dropped {len(tables)} tables successfully"))
             self.stdout.write("   Ready for migrations!")
