@@ -225,23 +225,17 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                     print(f"   First row: {raw_rows[0]}")
 
                 # Convert rows to tuples for Django compatibility
-                # Turso can return rows as dicts OR arrays - handle both
+                # CRITICAL: Turso wraps each value in {'type': 'text', 'value': actual_value}
+                # We need to extract just the 'value' field from each cell
                 if raw_rows and len(raw_rows) > 0:
-                    first_row = raw_rows[0]
-                    if isinstance(first_row, dict):
-                        # Rows are dicts - convert to tuples using column order
-                        print(f"   Converting dict rows using cols: {cols}")
-                        cursor._turso_rows = [
-                            tuple(row.get(col) for col in cols)
-                            for row in raw_rows
-                        ]
-                    else:
-                        # Rows are arrays - convert to tuples
-                        print(f"   Converting array rows to tuples")
-                        cursor._turso_rows = [
-                            tuple(row) if isinstance(row, (list, tuple)) else row
-                            for row in raw_rows
-                        ]
+                    print(f"   Converting Turso rows - extracting 'value' from each cell")
+                    cursor._turso_rows = [
+                        tuple(
+                            cell['value'] if isinstance(cell, dict) and 'value' in cell else cell
+                            for cell in row
+                        )
+                        for row in raw_rows
+                    ]
                     print(f"   Converted rows: {cursor._turso_rows}")
                 else:
                     cursor._turso_rows = []
