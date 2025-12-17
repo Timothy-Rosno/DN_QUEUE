@@ -64,3 +64,4 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.ERROR(f"[FAIL] Still have objects after {max_passes} passes!"))
         self.stdout.write("   You may need to manually clear the database.")
+        raise SystemExit(1)  # Exit with error code so migrations don't run

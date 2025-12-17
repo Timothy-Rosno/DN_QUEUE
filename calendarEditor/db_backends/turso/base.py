@@ -196,29 +196,6 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                 # Check if query succeeded
                 if first_result.get('type') == 'error':
                     error_msg = first_result.get('error', {}).get('message', 'Unknown error')
-
-                    # Ignore ALL migration errors caused by partial retries
-                    # This makes migrations fully idempotent - can retry safely
-                    ignorable_errors = [
-                        # Object already exists
-                        'already exists',           # CREATE TABLE/INDEX
-                        'already another table',    # RENAME collision
-                        'duplicate column',         # ADD COLUMN
-                        # Object doesn't exist
-                        'no such column',           # DROP/ALTER column
-                        'has no column',            # SELECT from column that doesn't exist
-                        'no such table',            # DROP table
-                        'no such index',            # DROP index
-                        # Constraint violations (safe to ignore during schema changes)
-                        'constraint failed',        # FK/UNIQUE violations
-                        'foreign key constraint',   # FK violations
-                        'unique constraint',        # UNIQUE violations
-                    ]
-
-                    if any(err in error_msg.lower() for err in ignorable_errors):
-                        print(f"   [WARN] Skipping: {error_msg}")
-                        return {'rows': [], 'cols': []}
-
                     raise Exception(f"Turso query error: {error_msg}")
 
                 # Extract result data
