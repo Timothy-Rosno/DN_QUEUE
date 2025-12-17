@@ -4,6 +4,7 @@ Loops multiple times to handle dependencies.
 """
 from django.core.management.base import BaseCommand
 from django.db import connection
+import time
 
 
 class Command(BaseCommand):
@@ -27,6 +28,21 @@ class Command(BaseCommand):
 
                 if not objects:
                     self.stdout.write(self.style.SUCCESS(f"[OK] Database is EMPTY after {pass_num - 1} passes"))
+                    # Wait for Turso to fully process all DROPs before returning
+                    self.stdout.write("   Waiting 5 seconds for Turso to sync...")
+                    time.sleep(5)
+
+                    # Double-check database is still empty
+                    cursor.execute("""
+                        SELECT name, type FROM sqlite_master
+                        WHERE name NOT LIKE 'sqlite_%'
+                    """)
+                    remaining = cursor.fetchall()
+                    if remaining:
+                        self.stdout.write(self.style.WARNING(f"   [WARN] Found {len(remaining)} objects after sync delay!"))
+                        continue  # Go to next pass
+
+                    self.stdout.write("   [VERIFIED] Database is truly empty")
                     return
 
                 self.stdout.write(f"   Found {len(objects)} objects")
@@ -61,6 +77,10 @@ class Command(BaseCommand):
                         self.stdout.write(f"   [SKIP] {obj_type} {name}: {e}")
 
                 self.stdout.write(f"   Dropped {dropped}/{len(objects)} objects")
+
+                # Wait for Turso to process DROPs before next pass
+                if pass_num < max_passes:
+                    time.sleep(1)  # 1 second between passes
 
         self.stdout.write(self.style.ERROR(f"[FAIL] Still have objects after {max_passes} passes!"))
         self.stdout.write("   You may need to manually clear the database.")
