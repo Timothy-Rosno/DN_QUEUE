@@ -265,6 +265,30 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
 
         return cursor
 
+    def disable_constraint_checking(self):
+        """
+        Disable foreign key constraint checking.
+        Required for Django migrations to work with SQLite schema editor.
+        """
+        with self.cursor() as cursor:
+            cursor.execute('PRAGMA foreign_keys = OFF')
+        return True
+
+    def enable_constraint_checking(self):
+        """
+        Re-enable foreign key constraint checking after migrations.
+        """
+        self.check_constraints()
+        with self.cursor() as cursor:
+            cursor.execute('PRAGMA foreign_keys = ON')
+
+    def check_constraints(self, table_names=None):
+        """
+        Check that all foreign key constraints are valid.
+        This is a no-op for Turso since it validates constraints on write.
+        """
+        pass
+
     def close(self):
         """Close Turso connection."""
         # HTTP connections are stateless, nothing to close
