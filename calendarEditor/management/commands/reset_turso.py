@@ -13,29 +13,57 @@ class Command(BaseCommand):
         self.stdout.write("[RESET] Resetting Turso database...")
 
         with connection.cursor() as cursor:
-            # Get all table names
+            # Get all objects (tables, indexes, views, triggers)
             cursor.execute("""
-                SELECT name FROM sqlite_master
-                WHERE type='table' AND name NOT LIKE 'sqlite_%'
+                SELECT name, type FROM sqlite_master
+                WHERE type IN ('table', 'index', 'view', 'trigger')
+                AND name NOT LIKE 'sqlite_%'
             """)
-            tables = [row[0] for row in cursor.fetchall()]
+            objects = cursor.fetchall()
 
-            if not tables:
+            if not objects:
                 self.stdout.write(self.style.SUCCESS("[OK] Database is already empty"))
                 return
 
-            self.stdout.write(f"   Found {len(tables)} tables: {', '.join(tables)}")
+            # Separate by type
+            indexes = [obj[0] for obj in objects if obj[1] == 'index']
+            views = [obj[0] for obj in objects if obj[1] == 'view']
+            triggers = [obj[0] for obj in objects if obj[1] == 'trigger']
+            tables = [obj[0] for obj in objects if obj[1] == 'table']
+
+            total = len(objects)
+            self.stdout.write(f"   Found {total} objects:")
+            if indexes:
+                self.stdout.write(f"     - {len(indexes)} indexes")
+            if views:
+                self.stdout.write(f"     - {len(views)} views")
+            if triggers:
+                self.stdout.write(f"     - {len(triggers)} triggers")
+            if tables:
+                self.stdout.write(f"     - {len(tables)} tables")
 
             # Disable foreign key constraints
             cursor.execute("PRAGMA foreign_keys = OFF")
 
-            # Drop each table
+            # Drop in order: indexes, views, triggers, then tables
+            for idx in indexes:
+                self.stdout.write(f"   Dropping index {idx}...")
+                cursor.execute(f'DROP INDEX IF EXISTS "{idx}"')
+
+            for view in views:
+                self.stdout.write(f"   Dropping view {view}...")
+                cursor.execute(f'DROP VIEW IF EXISTS "{view}"')
+
+            for trigger in triggers:
+                self.stdout.write(f"   Dropping trigger {trigger}...")
+                cursor.execute(f'DROP TRIGGER IF EXISTS "{trigger}"')
+
             for table in tables:
-                self.stdout.write(f"   Dropping {table}...")
+                self.stdout.write(f"   Dropping table {table}...")
                 cursor.execute(f'DROP TABLE IF EXISTS "{table}"')
 
             # Re-enable foreign key constraints
             cursor.execute("PRAGMA foreign_keys = ON")
 
-            self.stdout.write(self.style.SUCCESS(f"[OK] Dropped {len(tables)} tables successfully"))
+            self.stdout.write(self.style.SUCCESS(f"[OK] Dropped {total} objects successfully"))
             self.stdout.write("   Ready for migrations!")
