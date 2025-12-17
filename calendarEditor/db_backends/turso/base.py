@@ -137,10 +137,15 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
 
             # Add parameters if provided
             if params:
-                request_data['requests'][0]['stmt']['args'] = [
-                    {'type': 'text', 'value': str(p) if p is not None else None}
-                    for p in params
-                ]
+                args = []
+                for p in params:
+                    if p is None:
+                        # NULL values use type 'null' with no value field
+                        args.append({'type': 'null'})
+                    else:
+                        # All other values converted to text
+                        args.append({'type': 'text', 'value': str(p)})
+                request_data['requests'][0]['stmt']['args'] = args
 
             # Execute query via HTTP
             response = requests.post(
