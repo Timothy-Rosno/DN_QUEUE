@@ -192,9 +192,14 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                 if first_result.get('type') == 'error':
                     error_msg = first_result.get('error', {}).get('message', 'Unknown error')
 
-                    # Ignore "already exists" errors during migrations
-                    # These happen when migrations are retried after partial failure
-                    if 'already exists' in error_msg.lower():
+                    # Ignore common migration errors that are safe to skip
+                    ignorable_errors = [
+                        'already exists',  # Table/index already created
+                        'no such column',  # Column already dropped
+                        'no such table',   # Table already dropped
+                    ]
+
+                    if any(err in error_msg.lower() for err in ignorable_errors):
                         print(f"   [WARN] Skipping: {error_msg}")
                         return {'rows': [], 'cols': []}
 
