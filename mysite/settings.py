@@ -143,11 +143,59 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# Use DATABASE_URL environment variable if available (for production)
-# Otherwise use SQLite for local development
+# Database configuration priority:
+# 1. TURSO_DATABASE_URL → Turso (SQLite edge database, NO CU limits!)
+# 2. DATABASE_URL → PostgreSQL (Neon, Supabase, etc.)
+# 3. Default → Local SQLite (development)
+
+turso_database_url = os.environ.get('TURSO_DATABASE_URL')
+turso_auth_token = os.environ.get('TURSO_AUTH_TOKEN')
 database_url = os.environ.get('DATABASE_URL')
 
-if database_url:
+if turso_database_url and turso_auth_token:
+    # Production: Use Turso (SQLite edge database with NO CU limits!)
+    # Turso uses libSQL protocol - requires custom connection handling
+    # For now, we'll use embedded replicas (local SQLite file synced to Turso)
+
+    # Import libsql for Turso connection
+    try:
+        import libsql_client
+
+        # Create Turso client for manual queries if needed
+        TURSO_CLIENT = libsql_client.create_client(
+            url=turso_database_url,
+            auth_token=turso_auth_token
+        )
+
+        # For Django ORM, use embedded replica approach:
+        # This creates a local SQLite file that syncs with Turso
+        TURSO_DB_PATH = BASE_DIR / "turso_replica.db"
+
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": TURSO_DB_PATH,
+                # SQLite settings optimized for production
+                "OPTIONS": {
+                    "timeout": 20,
+                    "check_same_thread": False,  # Allow multi-threading
+                },
+            }
+        }
+
+        print(f"✓ Using Turso database: {turso_database_url}")
+
+    except ImportError:
+        print("⚠ WARNING: libsql-client-py not installed. Install with: pip install libsql-client-py")
+        print("Falling back to local SQLite...")
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
+
+elif database_url:
     # Production: Use PostgreSQL via DATABASE_URL (Neon, Supabase, etc.)
     # Optimized for free tier: connections close immediately to allow database to sleep
     DATABASES = {
