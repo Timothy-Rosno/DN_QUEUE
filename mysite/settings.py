@@ -155,7 +155,10 @@ database_url = os.environ.get('DATABASE_URL')
 if turso_database_url and turso_auth_token:
     # Production: Use Turso (SQLite edge database with NO CU limits!)
     # Turso uses libSQL protocol - requires custom connection handling
-    # For now, we'll use embedded replicas (local SQLite file synced to Turso)
+
+    print(f"🔵 Turso configuration detected:")
+    print(f"   URL: {turso_database_url}")
+    print(f"   Token: {'*' * 20}...{turso_auth_token[-10:] if len(turso_auth_token) > 10 else '***'}")
 
     # Import libsql for Turso connection
     try:
@@ -185,9 +188,20 @@ if turso_database_url and turso_auth_token:
 
         print(f"✓ Using Turso database: {turso_database_url}")
 
-    except ImportError:
-        print("⚠ WARNING: libsql-client-py not installed. Install with: pip install libsql-client-py")
-        print("Falling back to local SQLite...")
+    except ImportError as e:
+        print("⚠️ ERROR: libsql-client not installed!")
+        print(f"   Import error: {e}")
+        print("   Install with: pip install 'libsql-client>=0.3.0'")
+        print("   Falling back to local SQLite...")
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
+    except Exception as e:
+        print(f"⚠️ ERROR: Failed to connect to Turso: {e}")
+        print("   Falling back to local SQLite...")
         DATABASES = {
             "default": {
                 "ENGINE": "django.db.backends.sqlite3",
@@ -196,6 +210,17 @@ if turso_database_url and turso_auth_token:
         }
 
 elif database_url:
+    # Check if user accidentally set DATABASE_URL to a Turso URL
+    if database_url.startswith('libsql://'):
+        raise ValueError(
+            "❌ ERROR: DATABASE_URL contains a Turso URL (libsql://)!\n"
+            "\n"
+            "Use these environment variables instead:\n"
+            "  TURSO_DATABASE_URL=libsql://your-db.turso.io\n"
+            "  TURSO_AUTH_TOKEN=your-token-here\n"
+            "\n"
+            "Remove 'libsql://' from DATABASE_URL or delete DATABASE_URL entirely."
+        )
     # Production: Use PostgreSQL via DATABASE_URL (Neon, Supabase, etc.)
     # Optimized for free tier: connections close immediately to allow database to sleep
     DATABASES = {
