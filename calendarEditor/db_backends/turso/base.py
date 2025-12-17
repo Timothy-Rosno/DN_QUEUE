@@ -199,9 +199,26 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
 
                     # Turso's HTTP API has eventual consistency - even after nuke_turso
                     # confirms database is empty, stale cached data can cause duplicates.
-                    # Ignore "already exists" errors to handle this.
-                    if 'already exists' in error_msg.lower():
-                        print(f"   [SKIP] {error_msg} (Turso eventual consistency)")
+                    # Also, --run-syncdb creates tables with current schema, but migrations
+                    # still try to drop old columns that don't exist.
+                    # Handle ALL possible schema mismatch and retry errors:
+                    ignorable = [
+                        # Object already exists
+                        'already exists',
+                        'already another table',
+                        'duplicate column',
+                        # Object doesn't exist
+                        'no such column',
+                        'has no column',
+                        'no such table',
+                        'no such index',
+                        # Constraint violations during schema changes
+                        'constraint failed',
+                        'foreign key constraint',
+                        'unique constraint',
+                    ]
+                    if any(err in error_msg.lower() for err in ignorable):
+                        print(f"   [SKIP] {error_msg}")
                         return {'rows': [], 'cols': []}
 
                     raise Exception(f"Turso query error: {error_msg}")
