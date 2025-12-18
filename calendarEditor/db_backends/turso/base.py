@@ -115,6 +115,9 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
     def _execute_turso_query(self, sql, params=None):
         """Execute query against Turso using HTTP API."""
         try:
+            # Log query for debugging hangs
+            print(f"[TURSO] Executing: {sql[:100]}...")
+
             # No rate limiting needed for normal web traffic
             # (only migrations hit connection limits)
 
@@ -146,16 +149,20 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                         args.append({'type': 'text', 'value': str(p)})
                 request_data['requests'][0]['stmt']['args'] = args
 
-            # Execute query via HTTP
-            response = requests.post(
-                f"{self.turso_http_url}/v2/pipeline",
-                headers={
-                    'Authorization': f'Bearer {self.turso_token}',
-                    'Content-Type': 'application/json',
-                },
-                json=request_data,
-                timeout=30
-            )
+            # Execute query via HTTP with aggressive timeout
+            try:
+                response = requests.post(
+                    f"{self.turso_http_url}/v2/pipeline",
+                    headers={
+                        'Authorization': f'Bearer {self.turso_token}',
+                        'Content-Type': 'application/json',
+                    },
+                    json=request_data,
+                    timeout=5  # 5 second timeout - fail fast
+                )
+            except requests.exceptions.Timeout:
+                print(f"TIMEOUT executing SQL: {sql[:200]}")
+                raise Exception(f"Turso query timeout (5s): {sql[:200]}")
 
             if response.status_code != 200:
                 raise Exception(
