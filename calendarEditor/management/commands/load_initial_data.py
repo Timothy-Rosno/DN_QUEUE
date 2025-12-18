@@ -39,6 +39,7 @@ class Command(BaseCommand):
         # Load the fixture
         self.stdout.write('Loading initial data from initial_data.json...')
         try:
+            # Fixture uses integer pks for all foreign keys
             call_command('loaddata', 'initial_data.json', verbosity=2)
             self.stdout.write(
                 self.style.SUCCESS(
