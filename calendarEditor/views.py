@@ -49,27 +49,22 @@ def home(request):
     machines = machines.order_by('name')
 
     # Build machine status overview (for all machines, ignoring filters)
-    all_machines = Machine.objects.all().order_by('name')
+    # OPTIMIZED: Prefetch all queue entries to avoid N+1 queries
+    from django.db.models import Prefetch
+    all_machines = Machine.objects.prefetch_related(
+        Prefetch('queue_entries',
+                 queryset=QueueEntry.objects.select_related('user').filter(
+                     Q(status='running') | Q(status='queued')
+                 ).order_by('queue_position'),
+                 to_attr='prefetched_entries')
+    ).order_by('name')
+
     machine_status_data = []
     for machine in all_machines:
-        # Get running job
-        running_job = QueueEntry.objects.filter(
-            assigned_machine=machine,
-            status='running'
-        ).select_related('user').first()
-
-        # Get on-deck job (position #1)
-        on_deck_job = QueueEntry.objects.filter(
-            assigned_machine=machine,
-            status='queued',
-            queue_position=1
-        ).select_related('user').first()
-
-        # Get queue count
-        queue_count = QueueEntry.objects.filter(
-            assigned_machine=machine,
-            status='queued'
-        ).count()
+        # Use prefetched data instead of separate queries
+        running_job = next((e for e in machine.prefetched_entries if e.status == 'running'), None)
+        on_deck_job = next((e for e in machine.prefetched_entries if e.status == 'queued' and e.queue_position == 1), None)
+        queue_count = sum(1 for e in machine.prefetched_entries if e.status == 'queued')
 
         machine_status_data.append({
             'machine': machine,
@@ -81,6 +76,15 @@ def home(request):
         })
 
     # Get queue and running entry data only for authenticated users
+    # OPTIMIZED: Prefetch queue entries for filtered machines
+    machines = machines.prefetch_related(
+        Prefetch('queue_entries',
+                 queryset=QueueEntry.objects.select_related('user').filter(
+                     Q(status='running') | Q(status='queued')
+                 ).order_by('queue_position'),
+                 to_attr='prefetched_queue')
+    )
+
     machine_data = []
     for machine in machines:
         wait_time = machine.get_estimated_wait_time()
@@ -100,31 +104,20 @@ def home(request):
 
         # Only fetch queue details if user is logged in
         if request.user.is_authenticated:
+            # Use prefetched data instead of separate queries
+            queued_entries = [e for e in machine.prefetched_queue if e.status == 'queued']
+
             # Get top 3 queue entries
-            queue_entries = list(QueueEntry.objects.filter(
-                assigned_machine=machine,
-                status='queued'
-            ).order_by('queue_position')[:3])
+            queue_entries = queued_entries[:3]
 
             # If user has an entry beyond position 3, add it
-            user_entry = QueueEntry.objects.filter(
-                assigned_machine=machine,
-                status='queued',
-                user=request.user,
-                queue_position__gt=3
-            ).first()
-
-            if user_entry:
-                queue_entries.append(user_entry)
+            user_entries_beyond_3 = [e for e in queued_entries if e.user_id == request.user.id and e.queue_position and e.queue_position > 3]
+            if user_entries_beyond_3:
+                queue_entries.append(user_entries_beyond_3[0])
 
             data['queue_entries'] = queue_entries
-
-            data['running_entry'] = QueueEntry.objects.filter(
-                assigned_machine=machine,
-                status='running'
-            ).first()
-
-            data['queue_count'] = machine.get_queue_count()
+            data['running_entry'] = next((e for e in machine.prefetched_queue if e.status == 'running'), None)
+            data['queue_count'] = len(queued_entries)
 
         machine_data.append(data)
 
