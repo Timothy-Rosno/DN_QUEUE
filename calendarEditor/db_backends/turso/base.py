@@ -269,9 +269,14 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                             return None
                         # Regular values: {'type': 'text', 'value': '...'} -> return value
                         if 'value' in cell:
-                            return cell['value']
-                        # Fallback: return dict as-is (shouldn't happen)
-                        return cell
+                            value = cell['value']
+                            # Ensure strings are actually strings (not None, not empty)
+                            if value == '':
+                                return None  # Empty string -> NULL for Django
+                            return value
+                        # Fallback: if dict has no 'value', return None
+                        return None
+                    # Non-dict values: return as-is
                     return cell
 
                 if raw_rows and len(raw_rows) > 0:
