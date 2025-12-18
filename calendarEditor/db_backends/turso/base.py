@@ -119,11 +119,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
             # Check cache for SELECT queries (reduces N+1 overhead)
             cache_key = (sql, str(params)) if params else (sql, None)
             if sql.strip().upper().startswith('SELECT') and cache_key in self._query_cache:
-                print(f"[CACHE HIT] {sql[:80]}...")
                 return self._query_cache[cache_key]
-
-            # Log query for debugging hangs
-            print(f"[TURSO] Executing: {sql[:100]}...")
 
             # No rate limiting needed for normal web traffic
             # (only migrations hit connection limits)

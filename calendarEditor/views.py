@@ -63,8 +63,8 @@ def home(request):
                      to_attr='prefetched_entries')
         ).order_by('name'))
 
-        # Cache for 30 seconds
-        cache.set(cache_key, all_machines, 30)
+        # Cache for 60 seconds (balance between freshness and performance)
+        cache.set(cache_key, all_machines, 60)
 
     # Base queryset (apply filters to cached data)
     if status_filter != 'all':
@@ -166,8 +166,8 @@ def fridge_list(request):
             machine.queue_count = sum(1 for e in machine.prefetched_queue if e.status == 'queued')
             machines.append(machine)
 
-        # Cache for 30 seconds
-        cache.set(cache_key, machines, 30)
+        # Cache for 60 seconds (balance between freshness and performance)
+        cache.set(cache_key, machines, 60)
 
     context = {
         'machines': machines,
@@ -200,8 +200,8 @@ def public_queue(request):
                      to_attr='prefetched_entries')
         ).order_by('name'))
 
-        # Cache for 30 seconds
-        cache.set(cache_key, all_machines, 30)
+        # Cache for 60 seconds (balance between freshness and performance)
+        cache.set(cache_key, all_machines, 60)
 
     # Apply filters to cached data
     if status_filter != 'all':
