@@ -261,12 +261,17 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
 
                 # Convert rows to tuples for Django compatibility
                 # CRITICAL: Turso wraps each value in {'type': 'text', 'value': actual_value}
-                # We need to extract just the 'value' field from each cell
+                # NULL values are {'type': 'null'} with no 'value' key
                 def extract_value(cell):
                     """Extract value from Turso's wrapped format."""
                     if isinstance(cell, dict):
+                        # NULL values: {'type': 'null'} -> return None
+                        if cell.get('type') == 'null':
+                            return None
+                        # Regular values: {'type': 'text', 'value': '...'} -> return value
                         if 'value' in cell:
                             return cell['value']
+                        # Fallback: return dict as-is (shouldn't happen)
                         return cell
                     return cell
 
