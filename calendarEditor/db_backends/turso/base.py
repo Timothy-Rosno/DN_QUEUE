@@ -36,6 +36,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
         self.turso_url = None
         self.turso_token = None
         self.turso_http_url = None
+        self._query_cache = {}  # Simple cache for identical queries
 
     def get_connection_params(self):
         """Get Turso connection parameters from settings."""
@@ -115,6 +116,12 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
     def _execute_turso_query(self, sql, params=None):
         """Execute query against Turso using HTTP API."""
         try:
+            # Check cache for SELECT queries (reduces N+1 overhead)
+            cache_key = (sql, str(params)) if params else (sql, None)
+            if sql.strip().upper().startswith('SELECT') and cache_key in self._query_cache:
+                print(f"[CACHE HIT] {sql[:80]}...")
+                return self._query_cache[cache_key]
+
             # Log query for debugging hangs
             print(f"[TURSO] Executing: {sql[:100]}...")
 
@@ -228,15 +235,24 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                     result = first_result['response']['result']
 
                     # Return rows in the expected format
-                    return {
+                    result_data = {
                         'rows': result.get('rows', []),
                         'cols': result.get('cols', []),
                         'affected_row_count': result.get('affected_row_count', 0),
                         'last_insert_rowid': result.get('last_insert_rowid'),
                     }
 
+                    # Cache SELECT results to avoid N+1 queries
+                    if sql.strip().upper().startswith('SELECT'):
+                        self._query_cache[cache_key] = result_data
+
+                    return result_data
+
             # Empty result
-            return {'rows': [], 'cols': []}
+            empty = {'rows': [], 'cols': []}
+            if sql.strip().upper().startswith('SELECT'):
+                self._query_cache[cache_key] = empty
+            return empty
 
         except requests.exceptions.RequestException as e:
             raise Exception(f"Turso HTTP request failed: {e}\nSQL: {sql}\nParams: {params}")
