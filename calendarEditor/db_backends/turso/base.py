@@ -373,7 +373,5 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
     def close(self):
         """Close Turso connection."""
         # HTTP connections are stateless, nothing to close
-        self.turso_url = None
-        self.turso_token = None
-        self.turso_http_url = None
+        # Keep credentials so connection can be reused without re-initialization
         super().close()
