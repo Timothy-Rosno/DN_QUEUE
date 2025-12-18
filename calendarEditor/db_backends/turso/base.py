@@ -36,7 +36,8 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
         self.turso_url = None
         self.turso_token = None
         self.turso_http_url = None
-        self._query_cache = {}  # Simple cache for identical queries
+        self._query_cache = {}  # Cache query results with timestamps
+        self._session = requests.Session()  # HTTP connection pooling for speed
 
     def get_connection_params(self):
         """Get Turso connection parameters from settings."""
@@ -76,8 +77,8 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
             self.turso_token = conn_params['auth_token']
             self.turso_http_url = conn_params['http_url']
 
-            # Test connection with a simple query
-            response = requests.post(
+            # Test connection with a simple query (using session for connection pooling)
+            response = self._session.post(
                 f"{self.turso_http_url}/v2/pipeline",
                 headers={
                     'Authorization': f'Bearer {self.turso_token}',
@@ -116,10 +117,16 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
     def _execute_turso_query(self, sql, params=None):
         """Execute query against Turso using HTTP API."""
         try:
-            # Check cache for SELECT queries (reduces N+1 overhead)
+            # Check cache for SELECT queries with 60-second TTL
+            import time
             cache_key = (sql, str(params)) if params else (sql, None)
             if sql.strip().upper().startswith('SELECT') and cache_key in self._query_cache:
-                return self._query_cache[cache_key]
+                cached_result, cached_time = self._query_cache[cache_key]
+                if time.time() - cached_time < 60:  # 60 second cache
+                    return cached_result
+                else:
+                    # Expired, remove from cache
+                    del self._query_cache[cache_key]
 
             # No rate limiting needed for normal web traffic
             # (only migrations hit connection limits)
@@ -152,9 +159,9 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                         args.append({'type': 'text', 'value': str(p)})
                 request_data['requests'][0]['stmt']['args'] = args
 
-            # Execute query via HTTP with aggressive timeout
+            # Execute query via HTTP using session (connection pooling)
             try:
-                response = requests.post(
+                response = self._session.post(
                     f"{self.turso_http_url}/v2/pipeline",
                     headers={
                         'Authorization': f'Bearer {self.turso_token}',
@@ -238,16 +245,16 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                         'last_insert_rowid': result.get('last_insert_rowid'),
                     }
 
-                    # Cache SELECT results to avoid N+1 queries
+                    # Cache SELECT results with timestamp (60 second TTL)
                     if sql.strip().upper().startswith('SELECT'):
-                        self._query_cache[cache_key] = result_data
+                        self._query_cache[cache_key] = (result_data, time.time())
 
                     return result_data
 
             # Empty result
             empty = {'rows': [], 'cols': []}
             if sql.strip().upper().startswith('SELECT'):
-                self._query_cache[cache_key] = empty
+                self._query_cache[cache_key] = (empty, time.time())
             return empty
 
         except requests.exceptions.RequestException as e:
