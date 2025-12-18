@@ -166,12 +166,6 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
             # Parse response
             result_data = response.json()
 
-            # DEBUG: Print raw HTTP response
-            import json
-            print(f"\n📡 DEBUG Raw Turso HTTP Response:")
-            print(f"   SQL: {sql[:100]}")
-            print(f"   Response: {json.dumps(result_data, indent=2)[:500]}")
-
             # Turso v2 pipeline response format:
             # {
             #   "results": [
@@ -218,7 +212,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                         'unique constraint',
                     ]
                     if any(err in error_msg.lower() for err in ignorable):
-                        print(f"   [SKIP] {error_msg}")
+                        # Silently skip ignorable errors (eventual consistency, schema mismatches)
                         return {'rows': [], 'cols': []}
 
                     raise Exception(f"Turso query error: {error_msg}")
@@ -261,45 +255,26 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                 # Store result and prepare for fetch operations
                 cursor._turso_result = result
 
-                # DEBUG: Print what Turso actually returns
+                # Extract rows and columns
                 cols = result.get('cols', []) if isinstance(result, dict) else []
                 raw_rows = result.get('rows', []) if isinstance(result, dict) else []
-
-                print(f"\n🔍 DEBUG Turso Response:")
-                print(f"   SQL: {sql[:100]}")
-                print(f"   Cols: {cols}")
-                print(f"   Raw rows type: {type(raw_rows)}")
-                print(f"   Raw rows count: {len(raw_rows) if raw_rows else 0}")
-                if raw_rows and len(raw_rows) > 0:
-                    print(f"   First row type: {type(raw_rows[0])}")
-                    print(f"   First row: {raw_rows[0]}")
 
                 # Convert rows to tuples for Django compatibility
                 # CRITICAL: Turso wraps each value in {'type': 'text', 'value': actual_value}
                 # We need to extract just the 'value' field from each cell
-                if raw_rows and len(raw_rows) > 0:
-                    print(f"   Converting Turso rows - extracting 'value' from each cell")
-
-                    def extract_value(cell):
-                        """Extract value from Turso's wrapped format."""
-                        if isinstance(cell, dict):
-                            if 'value' in cell:
-                                return cell['value']
-                            # Fallback: if dict doesn't have 'value', return the dict itself
-                            return cell
-                        # Cell is already a raw value
+                def extract_value(cell):
+                    """Extract value from Turso's wrapped format."""
+                    if isinstance(cell, dict):
+                        if 'value' in cell:
+                            return cell['value']
                         return cell
+                    return cell
 
+                if raw_rows and len(raw_rows) > 0:
                     cursor._turso_rows = [
                         tuple(extract_value(cell) for cell in row)
                         for row in raw_rows
                     ]
-                    print(f"   Converted rows: {cursor._turso_rows}")
-                    print(f"   First converted row type: {type(cursor._turso_rows[0]) if cursor._turso_rows else 'N/A'}")
-                    print(f"   First converted row: {cursor._turso_rows[0] if cursor._turso_rows else 'N/A'}")
-                    if cursor._turso_rows and len(cursor._turso_rows[0]) > 0:
-                        print(f"   First cell type: {type(cursor._turso_rows[0][0])}")
-                        print(f"   First cell value: {cursor._turso_rows[0][0]}")
                 else:
                     cursor._turso_rows = []
 
