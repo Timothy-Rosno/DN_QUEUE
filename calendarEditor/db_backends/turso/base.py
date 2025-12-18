@@ -18,6 +18,30 @@ class DatabaseOperations(SQLiteDatabaseOperations):
     Override datetime operations to use native SQLite functions instead of Django's custom functions.
     """
 
+    def adapt_booleanfield_value(self, value):
+        """
+        Transform a boolean value to its database representation.
+        Ensure True/False are consistently converted to 1/0 for queries.
+        """
+        if value is None:
+            return None
+        return 1 if value else 0
+
+    def convert_booleanfield_value(self, value, expression, connection):
+        """
+        Convert database value to Python boolean.
+        Handle both integer (0/1) and text ('True'/'False') representations.
+        """
+        if value in (1, 0):
+            return bool(value)
+        # Handle text-stored boolean values (inconsistency in Turso storage)
+        if isinstance(value, str):
+            if value.lower() in ('true', '1', 'yes'):
+                return True
+            elif value.lower() in ('false', '0', 'no', ''):
+                return False
+        return bool(value) if value is not None else value
+
     def date_extract_sql(self, lookup_type, sql, params):
         """
         Extract date components using native SQLite strftime instead of custom functions.
