@@ -1,0 +1,39 @@
+{
+  "export_date": "2025-12-18T00:52:07.873424",
+  "export_type": "full_database_backup",
+  "django_version": "4.2.25",
+  "models": {
+    "auth.User": {
+      "error": "maximum recursion depth exceeded in comparison",
+      "count": 0
+    },
+    "userRegistration.UserProfile": {
+      "error": "maximum recursion depth exceeded in comparison",
+      "count": 0
+    },
+    "calendarEditor.Machine": {
+      "error": "maximum recursion depth exceeded in comparison",
+      "count": 0
+    },
+    "calendarEditor.QueuePreset": {
+      "error": "maximum recursion depth exceeded in comparison",
+      "count": 0
+    },
+    "calendarEditor.QueueEntry": {
+      "error": "maximum recursion depth exceeded in comparison",
+      "count": 0
+    },
+    "calendarEditor.ArchivedMeasurement": {
+      "error": "maximum recursion depth exceeded in comparison",
+      "count": 0
+    },
+    "calendarEditor.NotificationPreference": {
+      "error": "maximum recursion depth exceeded in comparison",
+      "count": 0
+    },
+    "calendarEditor.Notification": {
+      "error": "maximum recursion depth exceeded in comparison",
+      "count": 0
+    }
+  }
+}
