@@ -274,7 +274,7 @@ class QueueEntry(models.Model):
     # Connection requirements
     required_dc_lines = models.IntegerField(default=0, help_text="Number of DC lines needed")
     required_rf_lines = models.IntegerField(default=0, help_text="Number of RF lines needed")
-    required_daughterboard = models.CharField(max_length=100, blank=True, help_text="Required daughterboard type (leave blank for any)")
+    required_daughterboard = models.CharField(max_length=100, blank=True, default='', help_text="Required daughterboard type (leave blank for any)")
 
     # Optical requirements
     requires_optical = models.BooleanField(default=False, help_text="Does this experiment require optical capabilities?")
@@ -285,7 +285,7 @@ class QueueEntry(models.Model):
 
     # Assignment
     assigned_machine = models.ForeignKey(Machine, on_delete=models.SET_NULL, null=True, blank=True, related_name='queue_entries')
-    machine_name_text = models.CharField(max_length=100, blank=True, help_text="Machine name as text (preserved after machine deletion)")
+    machine_name_text = models.CharField(max_length=100, blank=True, default='', help_text="Machine name as text (preserved after machine deletion)")
     queue_position = models.IntegerField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='queued')
 
@@ -306,7 +306,7 @@ class QueueEntry(models.Model):
     checkin_reminder_snoozed_until = models.DateTimeField(null=True, blank=True, help_text="When the check-in reminder snooze expires (user clicked notification link)")
 
     # Additional info
-    special_requirements = models.TextField(blank=True, help_text="Any special requirements or notes", validators=[MaxLengthValidator(500)])
+    special_requirements = models.TextField(blank=True, default='', help_text="Any special requirements or notes", validators=[MaxLengthValidator(500)])
 
     # Rush job information
     is_rush_job = models.BooleanField(default=False, help_text="Is this a rush job requiring priority review?")
@@ -414,7 +414,7 @@ class QueuePreset(models.Model):
     # Connection requirements
     required_dc_lines = models.IntegerField(default=0, help_text="Number of DC lines needed")
     required_rf_lines = models.IntegerField(default=0, help_text="Number of RF lines needed")
-    required_daughterboard = models.CharField(max_length=100, blank=True, help_text="Required daughterboard type (leave blank for any)")
+    required_daughterboard = models.CharField(max_length=100, blank=True, default='', help_text="Required daughterboard type (leave blank for any)")
 
     # Optical requirements
     requires_optical = models.BooleanField(default=False, help_text="Does this experiment require optical capabilities?")
