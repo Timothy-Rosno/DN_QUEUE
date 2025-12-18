@@ -363,11 +363,14 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
         cursor.fetchmany = turso_fetchmany
 
         # Override lastrowid to return Turso's last_insert_rowid
-        original_getattribute = type(cursor).__getattribute__
+        # Use object.__getattribute__ to avoid recursion
+        original_getattribute = object.__getattribute__
 
         def custom_getattribute(self, name):
-            if name == 'lastrowid' and hasattr(self, '_turso_last_insert_id'):
-                return self._turso_last_insert_id
+            if name == 'lastrowid':
+                # Check dict directly to avoid recursion
+                if '_turso_last_insert_id' in object.__getattribute__(self, '__dict__'):
+                    return object.__getattribute__(self, '_turso_last_insert_id')
             return original_getattribute(self, name)
 
         type(cursor).__getattribute__ = custom_getattribute

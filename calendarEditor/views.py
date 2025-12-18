@@ -24,57 +24,34 @@ from .notifications import auto_clear_notifications
 
 
 # ====================
-# CACHE MANAGEMENT
-# ====================
-
-def invalidate_machine_caches():
-    """Invalidate all machine-related caches when data changes."""
-    from django.core.cache import cache
-    cache.delete('home_all_machines_v1')
-    cache.delete('fridge_list_machines_v1')
-    cache.delete('public_queue_all_machines_v1')
-
-
-# ====================
 # PUBLIC DISPLAY VIEWS (formerly calendarDisplay app)
 # ====================
 
 def home(request):
     """Home page showing live machine status and queue. Simplified view for quick overview."""
-    from django.db.models import Q
-    from django.core.cache import cache
+    from django.db.models import Q, Prefetch
 
     # Get filter parameters
     status_filter = request.GET.get('status', 'all')
     machine_filter = request.GET.get('machine', 'all')
 
-    # Try to get all machines with prefetched data from cache
-    cache_key = 'home_all_machines_v1'
-    all_machines = cache.get(cache_key)
+    # Fetch all machines with prefetched data (fresh from database - no caching)
+    all_machines = Machine.objects.prefetch_related(
+        Prefetch('queue_entries',
+                 queryset=QueueEntry.objects.select_related('user').filter(
+                     Q(status='running') | Q(status='queued')
+                 ).order_by('queue_position'),
+                 to_attr='prefetched_entries')
+    ).order_by('name')
 
-    if all_machines is None:
-        # Cache miss - fetch from database
-        from django.db.models import Prefetch
-        all_machines = list(Machine.objects.prefetch_related(
-            Prefetch('queue_entries',
-                     queryset=QueueEntry.objects.select_related('user').filter(
-                         Q(status='running') | Q(status='queued')
-                     ).order_by('queue_position'),
-                     to_attr='prefetched_entries')
-        ).order_by('name'))
-
-        # Cache for 60 seconds (balance between freshness and performance)
-        cache.set(cache_key, all_machines, 60)
-
-    # Base queryset (apply filters to cached data)
+    # Apply filters
+    machines = all_machines
     if status_filter != 'all':
-        machines = [m for m in all_machines if m.current_status == status_filter]
-    elif machine_filter != 'all':
-        machines = [m for m in all_machines if str(m.id) == machine_filter]
-    else:
-        machines = all_machines
+        machines = machines.filter(current_status=status_filter)
+    if machine_filter != 'all':
+        machines = machines.filter(id=machine_filter)
 
-    # Build machine status overview data (using cached prefetched data)
+    # Build machine status overview data (using prefetched data)
     machine_status_data = []
     for machine in all_machines:
         # Use prefetched data instead of separate queries
@@ -142,32 +119,23 @@ def home(request):
 def fridge_list(request):
     """Fridge specifications page showing detailed specs for all machines."""
     from django.db.models import Count, Q, Prefetch
-    from django.core.cache import cache
 
-    # Try to get cached machines data
-    cache_key = 'fridge_list_machines_v1'
-    machines = cache.get(cache_key)
+    # Fetch from database with optimized query (no caching)
+    machines_qs = Machine.objects.prefetch_related(
+        Prefetch('queue_entries',
+                 queryset=QueueEntry.objects.select_related('user').filter(
+                     Q(status='running') | Q(status='queued')
+                 ),
+                 to_attr='prefetched_queue')
+    ).order_by('name')
 
-    if machines is None:
-        # Cache miss - fetch from database with optimized query
-        machines_qs = Machine.objects.prefetch_related(
-            Prefetch('queue_entries',
-                     queryset=QueueEntry.objects.select_related('user').filter(
-                         Q(status='running') | Q(status='queued')
-                     ),
-                     to_attr='prefetched_queue')
-        ).order_by('name')
-
-        # Add running_job and queue_count to each machine
-        machines = []
-        for machine in machines_qs:
-            running_job = next((e for e in machine.prefetched_queue if e.status == 'running'), None)
-            machine.running_job = running_job
-            machine.queue_count = sum(1 for e in machine.prefetched_queue if e.status == 'queued')
-            machines.append(machine)
-
-        # Cache for 60 seconds (balance between freshness and performance)
-        cache.set(cache_key, machines, 60)
+    # Add running_job and queue_count to each machine
+    machines = []
+    for machine in machines_qs:
+        running_job = next((e for e in machine.prefetched_queue if e.status == 'running'), None)
+        machine.running_job = running_job
+        machine.queue_count = sum(1 for e in machine.prefetched_queue if e.status == 'queued')
+        machines.append(machine)
 
     context = {
         'machines': machines,
@@ -180,36 +148,26 @@ def fridge_list(request):
 def public_queue(request):
     """Public queue page showing full queue for all machines with filters."""
     from django.db.models import Q, Count, Prefetch
-    from django.core.cache import cache
 
     # Get filter parameters
     status_filter = request.GET.get('status', 'all')
     machine_filter = request.GET.get('machine', 'all')
 
-    # Try to get all machines with prefetched data from cache
-    cache_key = 'public_queue_all_machines_v1'
-    all_machines = cache.get(cache_key)
+    # Fetch all machines with prefetched data (fresh from database - no caching)
+    all_machines = Machine.objects.prefetch_related(
+        Prefetch('queue_entries',
+                 queryset=QueueEntry.objects.select_related('user').filter(
+                     Q(status='running') | Q(status='queued')
+                 ).order_by('queue_position'),
+                 to_attr='prefetched_entries')
+    ).order_by('name')
 
-    if all_machines is None:
-        # Cache miss - fetch from database with prefetch
-        all_machines = list(Machine.objects.prefetch_related(
-            Prefetch('queue_entries',
-                     queryset=QueueEntry.objects.select_related('user').filter(
-                         Q(status='running') | Q(status='queued')
-                     ).order_by('queue_position'),
-                     to_attr='prefetched_entries')
-        ).order_by('name'))
-
-        # Cache for 60 seconds (balance between freshness and performance)
-        cache.set(cache_key, all_machines, 60)
-
-    # Apply filters to cached data
+    # Apply filters
+    machines = all_machines
     if status_filter != 'all':
-        machines = [m for m in all_machines if m.current_status == status_filter]
-    elif machine_filter != 'all':
-        machines = [m for m in all_machines if str(m.id) == machine_filter]
-    else:
-        machines = all_machines
+        machines = machines.filter(current_status=status_filter)
+    if machine_filter != 'all':
+        machines = machines.filter(id=machine_filter)
 
     # Build machine status overview (shows all machines regardless of filters)
     machine_status_data = []
@@ -288,9 +246,6 @@ def submit_queue_entry(request):
                 queue_entry.estimated_duration_hours = best_machine.cooldown_hours * 2
                 # Assign to queue
                 if assign_to_queue(queue_entry):
-                    # Invalidate machine caches since queue data changed
-                    invalidate_machine_caches()
-
                     # Broadcast queue update to all connected users (gracefully fails if Redis unavailable)
                     try:
                         channel_layer = get_channel_layer()
@@ -565,9 +520,6 @@ def cancel_queue_entry(request, pk):
         if machine:
             reorder_queue(machine)
 
-        # Invalidate machine caches since queue data changed
-        invalidate_machine_caches()
-
         # If the canceled job was running, notify the next user that the machine is now available
         if machine and was_running and machine.current_status == 'idle':
                 next_entry = QueueEntry.objects.filter(
@@ -672,9 +624,6 @@ def check_in_job(request, entry_id):
     # NOTE: reorder_queue() internally calls check_and_notify_on_deck_status()
     from .matching_algorithm import reorder_queue
     reorder_queue(machine)
-
-    # Invalidate machine caches since queue data changed
-    invalidate_machine_caches()
 
     # Set checkout reminder due time (replaces Celery scheduled task)
     # Reminder will be sent every 2 hours (except 12 AM - 6 AM) until checkout
@@ -791,9 +740,6 @@ def check_out_job(request, entry_id):
 
     machine.current_user = None
     machine.save()
-
-    # Invalidate machine caches since queue data changed
-    invalidate_machine_caches()
 
     print(f"[USER CHECKOUT] Completed checkout for {queue_entry.title} on {machine.name}")
     print(f"[USER CHECKOUT] Machine status after checkout: {machine.current_status}, is_available: {machine.is_available}")
