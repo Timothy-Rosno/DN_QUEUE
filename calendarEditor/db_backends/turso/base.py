@@ -241,7 +241,8 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                         'unique constraint',
                     ]
                     if any(err in error_msg.lower() for err in ignorable):
-                        # Silently skip ignorable errors (eventual consistency, schema mismatches)
+                        # Log ignorable errors for debugging (eventual consistency, schema mismatches)
+                        print(f"[TURSO WARNING] Ignoring error: {error_msg}")
                         return {'rows': [], 'cols': []}
 
                     raise Exception(f"Turso query error: {error_msg}")
@@ -301,18 +302,35 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                 # CRITICAL: Turso wraps each value in {'type': 'text', 'value': actual_value}
                 # NULL values are {'type': 'null'} with no 'value' key
                 def extract_value(cell):
-                    """Extract value from Turso's wrapped format."""
+                    """Extract value from Turso's wrapped format with proper type conversion."""
                     if isinstance(cell, dict):
                         # NULL values: {'type': 'null'} -> return None
                         if cell.get('type') == 'null':
                             return None
-                        # Regular values: {'type': 'text', 'value': '...'} -> return value
+                        # Regular values: convert based on type field
                         if 'value' in cell:
                             value = cell['value']
-                            # Ensure strings are actually strings (not None, not empty)
-                            if value == '':
-                                return None  # Empty string -> NULL for Django
-                            return value
+                            cell_type = cell.get('type', 'text')
+
+                            # Convert to proper Python type based on Turso's type field
+                            if cell_type == 'integer':
+                                try:
+                                    return int(value) if value != '' else None
+                                except (ValueError, TypeError):
+                                    return None
+                            elif cell_type == 'float':
+                                try:
+                                    return float(value) if value != '' else None
+                                except (ValueError, TypeError):
+                                    return None
+                            elif cell_type == 'blob':
+                                try:
+                                    import base64
+                                    return base64.b64decode(value)
+                                except Exception:
+                                    return None
+                            else:  # text or unknown type
+                                return value if value != '' else None
                         # Fallback: if dict has no 'value', return None
                         return None
                     # Non-dict values: return as-is
@@ -335,6 +353,13 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                     cursor._turso_last_insert_id = int(result['last_insert_rowid'])
                 else:
                     cursor._turso_last_insert_id = None
+
+                # Store affected_row_count for rowcount property
+                # Django ORM needs this to verify UPDATE/DELETE succeeded
+                if result.get('affected_row_count') is not None:
+                    cursor._turso_affected_rows = int(result['affected_row_count'])
+                else:
+                    cursor._turso_affected_rows = 0
 
                 return cursor
             except Exception as e:
@@ -381,6 +406,16 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
             return original_fetchmany(size)
 
         cursor.fetchmany = turso_fetchmany
+
+        # Override rowcount to return Turso's affected_row_count
+        # Django ORM requires this to verify UPDATE/DELETE operations succeeded
+        def get_rowcount(self):
+            if '_turso_affected_rows' in object.__getattribute__(self, '__dict__'):
+                return object.__getattribute__(self, '_turso_affected_rows')
+            return -1  # Default SQLite behavior when no modification occurred
+
+        # Set rowcount as a property on the cursor class
+        type(cursor).rowcount = property(get_rowcount)
 
         # Override lastrowid to return Turso's last_insert_rowid
         # Use object.__getattribute__ to avoid recursion
