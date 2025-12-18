@@ -388,22 +388,20 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                     # confirms database is empty, stale cached data can cause duplicates.
                     # Also, --run-syncdb creates tables with current schema, but migrations
                     # still try to drop old columns that don't exist.
-                    # Handle ALL possible schema mismatch and retry errors:
+                    # Handle ONLY schema mismatch errors during migrations, NOT data integrity errors:
                     ignorable = [
-                        # Object already exists
+                        # Object already exists (during migrations)
                         'already exists',
                         'already another table',
                         'duplicate column',
-                        # Object doesn't exist
+                        # Object doesn't exist (during migrations)
                         'no such column',
                         'has no column',
                         'no such table',
                         'no such index',
-                        # Constraint violations during schema changes
-                        'constraint failed',
-                        'foreign key constraint',
-                        'unique constraint',
                     ]
+                    # IMPORTANT: Do NOT ignore constraint failures - these are real errors!
+                    # NOT NULL, UNIQUE, FOREIGN KEY constraints indicate data problems
                     if any(err in error_msg.lower() for err in ignorable):
                         # Log ignorable errors for debugging (eventual consistency, schema mismatches)
                         print(f"[TURSO WARNING] Ignoring error: {error_msg}")
