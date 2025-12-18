@@ -147,15 +147,28 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                 ]
             }
 
-            # Add parameters if provided
+            # Add parameters with proper type detection
             if params:
                 args = []
                 for p in params:
                     if p is None:
                         # NULL values use type 'null' with no value field
                         args.append({'type': 'null'})
+                    elif isinstance(p, bool):
+                        # Boolean → integer (SQLite stores as 0/1)
+                        args.append({'type': 'integer', 'value': str(int(p))})
+                    elif isinstance(p, int):
+                        # Integer → integer type
+                        args.append({'type': 'integer', 'value': str(p)})
+                    elif isinstance(p, float):
+                        # Float → float type
+                        args.append({'type': 'float', 'value': str(p)})
+                    elif isinstance(p, bytes):
+                        # Bytes → blob (base64 encoded)
+                        import base64
+                        args.append({'type': 'blob', 'value': base64.b64encode(p).decode('utf-8')})
                     else:
-                        # All other values converted to text
+                        # Everything else (str, datetime, etc.) → text
                         args.append({'type': 'text', 'value': str(p)})
                 request_data['requests'][0]['stmt']['args'] = args
 
