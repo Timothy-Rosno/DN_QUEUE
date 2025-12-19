@@ -1,0 +1,1437 @@
+{
+  "export_date": "2025-12-18T23:18:11.084687",
+  "export_type": "full_database_backup",
+  "django_version": "4.2.25",
+  "models": {
+    "auth.User": [
+      {
+        "model": "auth.user",
+        "pk": 1,
+        "fields": {
+          "password": "pbkdf2_sha256$600000$LFQ5ed8mPXCOisrvOoGUbl$lgrd7rMMNOo4rcVuJvCEu5yh6sgOifbwUM6TwZkNQfc=",
+          "last_login": "2025-12-18T18:50:35.143Z",
+          "is_superuser": true,
+          "username": "admin",
+          "first_name": "",
+          "last_name": "",
+          "email": "trialsfree403@gmail.com",
+          "is_staff": true,
+          "is_active": true,
+          "date_joined": "2025-10-11T00:46:41.768Z",
+          "groups": [],
+          "user_permissions": []
+        }
+      },
+      {
+        "model": "auth.user",
+        "pk": 4,
+        "fields": {
+          "password": "pbkdf2_sha256$600000$YEFNXIUOt8jf1hi1SOxSmT$RmToj6O2pi6ymDl7I9thu9K2+Dk1ikovrcbtXuSRprs=",
+          "last_login": "2025-12-18T21:25:59.799Z",
+          "is_superuser": false,
+          "username": "TimmyRosno",
+          "first_name": "Timmy",
+          "last_name": "Rosno",
+          "email": "trosno@uark.edu",
+          "is_staff": true,
+          "is_active": true,
+          "date_joined": "2025-11-06T15:27:47.253Z",
+          "groups": [],
+          "user_permissions": []
+        }
+      }
+    ],
+    "userRegistration.UserProfile": [
+      {
+        "model": "userRegistration.userprofile",
+        "pk": 2,
+        "fields": {
+          "user": 1,
+          "phone_number": "",
+          "organization": "",
+          "organization_other": "",
+          "department": "",
+          "department_other": "",
+          "notes": "",
+          "status": "pending",
+          "is_approved": false,
+          "approved_by": null,
+          "approved_at": null,
+          "slack_member_id": "",
+          "security_question": "custom",
+          "security_question_custom": "Bruh",
+          "security_answer_hash": "",
+          "created_at": "2025-10-13T11:46:36.774Z",
+          "updated_at": "2025-10-29T16:44:16.860Z"
+        }
+      },
+      {
+        "model": "userRegistration.userprofile",
+        "pk": 27,
+        "fields": {
+          "user": 4,
+          "phone_number": "addddd",
+          "organization": "",
+          "organization_other": "",
+          "department": "",
+          "department_other": "",
+          "notes": "",
+          "status": "pending",
+          "is_approved": true,
+          "approved_by": 1,
+          "approved_at": "2025-11-06T15:30:34.505Z",
+          "slack_member_id": "U087ZTF1YG3",
+          "security_question": "",
+          "security_question_custom": "",
+          "security_answer_hash": "pbkdf2_sha256$600000$kfBSYgzMPo7sox0vjwjjDg$1v91LUC/Q7hkrDdLZ2SAIRKQNO6q85RTaYozehAMhdw=",
+          "created_at": "2025-11-06T15:27:47.810Z",
+          "updated_at": "2025-12-18T21:37:23.524Z"
+        }
+      }
+    ],
+    "calendarEditor.Machine": [
+      {
+        "model": "calendarEditor.machine",
+        "pk": 8,
+        "fields": {
+          "name": "CryoCore",
+          "ip_address": "192.168.10.105",
+          "api_type": "quantum_design",
+          "api_port": 47101,
+          "cached_temperature": null,
+          "cached_online": false,
+          "last_temp_update": "2025-11-11T12:51:36.740Z",
+          "min_temp": 4.0,
+          "max_temp": 350.0,
+          "b_field_x": 0.0,
+          "b_field_y": 0.0,
+          "b_field_z": 0.0,
+          "b_field_direction": "none",
+          "dc_lines": 12,
+          "rf_lines": 2,
+          "daughterboard_type": "Montana Puck",
+          "optical_capabilities": "under_construction",
+          "cooldown_hours": 2,
+          "current_status": "idle",
+          "is_available": true,
+          "current_user": null,
+          "estimated_available_time": null,
+          "description": "Basic cryogenic system (note: RF lines currently broken)",
+          "location": "NANO 324",
+          "created_at": "2025-10-20T17:34:57.197Z",
+          "updated_at": "2025-12-19T05:14:24.088Z"
+        }
+      },
+      {
+        "model": "calendarEditor.machine",
+        "pk": 5,
+        "fields": {
+          "name": "Griffin",
+          "ip_address": "10.3.118.54",
+          "api_type": "port5001",
+          "api_port": null,
+          "cached_temperature": 0.009059,
+          "cached_online": false,
+          "last_temp_update": "2025-11-11T12:51:39.746Z",
+          "min_temp": 0.01,
+          "max_temp": 300.0,
+          "b_field_x": 0.0,
+          "b_field_y": 0.0,
+          "b_field_z": 12.0,
+          "b_field_direction": "parallel_perpendicular",
+          "dc_lines": 48,
+          "rf_lines": 32,
+          "daughterboard_type": "QBoard I or QBoard II",
+          "optical_capabilities": "with_work",
+          "cooldown_hours": 24,
+          "current_status": "idle",
+          "is_available": true,
+          "current_user": null,
+          "estimated_available_time": "2025-11-11T17:55:39.247Z",
+          "description": "High-field cryogenic system with optical capabilities (requires setup)",
+          "location": "NANO 325",
+          "created_at": "2025-10-20T17:34:57.193Z",
+          "updated_at": "2025-11-10T18:28:51.645Z"
+        }
+      },
+      {
+        "model": "calendarEditor.machine",
+        "pk": 4,
+        "fields": {
+          "name": "Hidalgo",
+          "ip_address": "10.3.118.25",
+          "api_type": "port5001",
+          "api_port": null,
+          "cached_temperature": 5.2306875,
+          "cached_online": false,
+          "last_temp_update": "2025-11-11T12:51:42.754Z",
+          "min_temp": 0.01,
+          "max_temp": 300.0,
+          "b_field_x": 1.0,
+          "b_field_y": 1.0,
+          "b_field_z": 6.0,
+          "b_field_direction": "parallel_perpendicular",
+          "dc_lines": 48,
+          "rf_lines": 32,
+          "daughterboard_type": "QBoard II",
+          "optical_capabilities": "none",
+          "cooldown_hours": 24,
+          "current_status": "idle",
+          "is_available": true,
+          "current_user": null,
+          "estimated_available_time": null,
+          "description": "Advanced cryogenic system with versatile B-field capabilities",
+          "location": "NANO 324",
+          "created_at": "2025-10-20T17:34:57.191Z",
+          "updated_at": "2025-11-11T04:40:26.138Z"
+        }
+      },
+      {
+        "model": "calendarEditor.machine",
+        "pk": 6,
+        "fields": {
+          "name": "Kiutra",
+          "ip_address": "",
+          "api_type": "none",
+          "api_port": null,
+          "cached_temperature": null,
+          "cached_online": true,
+          "last_temp_update": null,
+          "min_temp": 0.1,
+          "max_temp": 220.0,
+          "b_field_x": 0.0,
+          "b_field_y": 0.0,
+          "b_field_z": 5.0,
+          "b_field_direction": "parallel_perpendicular",
+          "dc_lines": 48,
+          "rf_lines": 6,
+          "daughterboard_type": "QBoard II",
+          "optical_capabilities": "none",
+          "cooldown_hours": 24,
+          "current_status": "running",
+          "is_available": true,
+          "current_user": 4,
+          "estimated_available_time": "2025-11-14T04:42:28.368Z",
+          "description": "Compact cryogenic refrigerator with moderate B-field",
+          "location": "NANO 324",
+          "created_at": "2025-10-20T17:34:57.194Z",
+          "updated_at": "2025-11-11T04:42:28.368Z"
+        }
+      },
+      {
+        "model": "calendarEditor.machine",
+        "pk": 7,
+        "fields": {
+          "name": "Opticool",
+          "ip_address": "192.168.10.103",
+          "api_type": "quantum_design",
+          "api_port": 47101,
+          "cached_temperature": null,
+          "cached_online": false,
+          "last_temp_update": "2025-11-11T12:51:39.067Z",
+          "min_temp": 2.0,
+          "max_temp": 350.0,
+          "b_field_x": 0.0,
+          "b_field_y": 0.0,
+          "b_field_z": 7.0,
+          "b_field_direction": "perpendicular",
+          "dc_lines": 16,
+          "rf_lines": 6,
+          "daughterboard_type": "QBoard I",
+          "optical_capabilities": "under_construction",
+          "cooldown_hours": 24,
+          "current_status": "running",
+          "is_available": true,
+          "current_user": 4,
+          "estimated_available_time": "2025-11-14T04:48:19Z",
+          "description": "Optical cryostat with perpendicular B-field and optical capabilities",
+          "location": "NANO 325",
+          "created_at": "2025-10-20T17:34:57.196Z",
+          "updated_at": "2025-11-11T04:48:19Z"
+        }
+      }
+    ],
+    "calendarEditor.QueuePreset": [
+      {
+        "model": "calendarEditor.queuepreset",
+        "pk": 42,
+        "fields": {
+          "name": "Delete",
+          "display_name": "Delete - (Auth. Delete) - (Ed. Delete Oct-29-2025)",
+          "creator": null,
+          "creator_username": "Delete",
+          "is_public": false,
+          "last_edited_by": null,
+          "last_edited_at": "2025-10-29T17:10:15.726Z",
+          "created_at": "2025-10-29T17:10:15.726Z",
+          "title": "Delete",
+          "description": "DeleteDeleteDeleteDeleteDeleteDelete",
+          "required_min_temp": null,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 0.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 0,
+          "required_rf_lines": 0,
+          "required_daughterboard": "",
+          "requires_optical": false,
+          "estimated_duration_hours": null
+        }
+      },
+      {
+        "model": "calendarEditor.queuepreset",
+        "pk": 46,
+        "fields": {
+          "name": "HAHAHAHAHA - copy",
+          "display_name": "HAHAHAHAHA - copy - (Auth. Casper) - (Ed. Casper Nov-04-2025)",
+          "creator": null,
+          "creator_username": "Casper",
+          "is_public": false,
+          "last_edited_by": null,
+          "last_edited_at": "2025-11-04T20:16:24.212Z",
+          "created_at": "2025-11-04T20:16:24.212Z",
+          "title": "funny",
+          "description": "SO SO SO SO SO SO FUNNY",
+          "required_min_temp": 0.01,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 0.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 0,
+          "required_rf_lines": 0,
+          "required_daughterboard": "",
+          "requires_optical": false,
+          "estimated_duration_hours": null
+        }
+      },
+      {
+        "model": "calendarEditor.queuepreset",
+        "pk": 41,
+        "fields": {
+          "name": "HANSIFNSOAINS - copy",
+          "display_name": "HANSIFNSOAINS - copy - (Auth. Casper) - (Ed. Casper Oct-28-2025)",
+          "creator": null,
+          "creator_username": "Casper",
+          "is_public": false,
+          "last_edited_by": null,
+          "last_edited_at": "2025-10-28T18:33:12.644Z",
+          "created_at": "2025-10-28T18:33:12.644Z",
+          "title": "HANSIFNSOAINS",
+          "description": "HANSIFNSOAINSHANSIFNSOAINS",
+          "required_min_temp": 0.01,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 0.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 0,
+          "required_rf_lines": 0,
+          "required_daughterboard": "",
+          "requires_optical": false,
+          "estimated_duration_hours": null
+        }
+      },
+      {
+        "model": "calendarEditor.queuepreset",
+        "pk": 36,
+        "fields": {
+          "name": "Hidalgo Force",
+          "display_name": "Hidalgo Force - (Auth. timothyrosno) - (Ed. timothyrosno Oct-27-2025)",
+          "creator": null,
+          "creator_username": "timothyrosno",
+          "is_public": false,
+          "last_edited_by": null,
+          "last_edited_at": "2025-10-27T17:13:36.085Z",
+          "created_at": "2025-10-27T17:13:36.086Z",
+          "title": "Hidalgo only",
+          "description": "Only Hidalgo por favor",
+          "required_min_temp": 0.01,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 0.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 0,
+          "required_rf_lines": 0,
+          "required_daughterboard": "",
+          "requires_optical": false,
+          "estimated_duration_hours": null
+        }
+      },
+      {
+        "model": "calendarEditor.queuepreset",
+        "pk": 32,
+        "fields": {
+          "name": "TTTTTh",
+          "display_name": "TTTTTh - (Auth. admin) - (Ed. admin Nov-04-2025)",
+          "creator": 1,
+          "creator_username": "admin",
+          "is_public": false,
+          "last_edited_by": 1,
+          "last_edited_at": "2025-11-04T04:28:08.396Z",
+          "created_at": "2025-10-25T14:16:55.302Z",
+          "title": "test",
+          "description": "",
+          "required_min_temp": null,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 0.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 48,
+          "required_rf_lines": 0,
+          "required_daughterboard": "QBoard I",
+          "requires_optical": false,
+          "estimated_duration_hours": null
+        }
+      },
+      {
+        "model": "calendarEditor.queuepreset",
+        "pk": 39,
+        "fields": {
+          "name": "Tatka",
+          "display_name": "Tatka - (Auth. timothyrosno) - (Ed. timothyrosno Oct-27-2025)",
+          "creator": null,
+          "creator_username": "timothyrosno",
+          "is_public": false,
+          "last_edited_by": null,
+          "last_edited_at": "2025-10-27T21:10:33.864Z",
+          "created_at": "2025-10-27T21:10:33.864Z",
+          "title": "Matka",
+          "description": "OAIUSBVOIABVOIABDOIVAB",
+          "required_min_temp": 1.0,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 0.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 0,
+          "required_rf_lines": 0,
+          "required_daughterboard": "",
+          "requires_optical": false,
+          "estimated_duration_hours": null
+        }
+      },
+      {
+        "model": "calendarEditor.queuepreset",
+        "pk": 43,
+        "fields": {
+          "name": "123456789012345678901234567890123456789012345678901234567890123456789012345",
+          "display_name": "12345678901234567890123456789012345678901234567890123456789012345678901234567890 - (Auth. Delete) - (Ed. admin Oct-29-2025)",
+          "creator": null,
+          "creator_username": "Delete",
+          "is_public": true,
+          "last_edited_by": 1,
+          "last_edited_at": "2025-10-29T17:18:14.725Z",
+          "created_at": "2025-10-29T17:11:05.676Z",
+          "title": "Delete",
+          "description": "DeleteDeleteDeleteDeleteDeleteDelete",
+          "required_min_temp": null,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 0.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 0,
+          "required_rf_lines": 0,
+          "required_daughterboard": "",
+          "requires_optical": false,
+          "estimated_duration_hours": null
+        }
+      },
+      {
+        "model": "calendarEditor.queuepreset",
+        "pk": 47,
+        "fields": {
+          "name": "Bruh Test",
+          "display_name": "Bruh Test - (Auth. TimTim) - (Ed. admin Nov-06-2025)",
+          "creator": null,
+          "creator_username": "TimTim",
+          "is_public": true,
+          "last_edited_by": 1,
+          "last_edited_at": "2025-11-06T15:47:09.295Z",
+          "created_at": "2025-11-06T15:46:44.646Z",
+          "title": "None",
+          "description": "",
+          "required_min_temp": null,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 0.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 0,
+          "required_rf_lines": 0,
+          "required_daughterboard": "",
+          "requires_optical": false,
+          "estimated_duration_hours": null
+        }
+      },
+      {
+        "model": "calendarEditor.queuepreset",
+        "pk": 40,
+        "fields": {
+          "name": "Casper7",
+          "display_name": "Casper7 - (Auth. Casper) - (Ed. timothyrosno Oct-28-2025)",
+          "creator": null,
+          "creator_username": "Casper",
+          "is_public": true,
+          "last_edited_by": null,
+          "last_edited_at": "2025-11-04T00:28:02.609Z",
+          "created_at": "2025-10-28T18:27:51.175Z",
+          "title": "Capser",
+          "description": "Cabbsppbepbererereree",
+          "required_min_temp": 4.0,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 0.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 0,
+          "required_rf_lines": 0,
+          "required_daughterboard": "",
+          "requires_optical": false,
+          "estimated_duration_hours": null
+        }
+      },
+      {
+        "model": "calendarEditor.queuepreset",
+        "pk": 37,
+        "fields": {
+          "name": "HAHAHAHAHA",
+          "display_name": "HAHAHAHAHA - (Auth. unknown) - (Ed. admin Oct-27-2025)",
+          "creator": 1,
+          "creator_username": "unknown",
+          "is_public": true,
+          "last_edited_by": 1,
+          "last_edited_at": "2025-10-27T20:45:05.157Z",
+          "created_at": "2025-10-27T20:45:05.157Z",
+          "title": "funny",
+          "description": "SO SO SO SO SO SO FUNNY",
+          "required_min_temp": 0.01,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 0.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 0,
+          "required_rf_lines": 0,
+          "required_daughterboard": "",
+          "requires_optical": false,
+          "estimated_duration_hours": null
+        }
+      },
+      {
+        "model": "calendarEditor.queuepreset",
+        "pk": 38,
+        "fields": {
+          "name": "HANSIFNSOAINS",
+          "display_name": "HANSIFNSOAINS - (Auth. unknown) - (Ed. timothyrosno Oct-27-2025)",
+          "creator": null,
+          "creator_username": "unknown",
+          "is_public": true,
+          "last_edited_by": null,
+          "last_edited_at": "2025-10-27T20:56:38.203Z",
+          "created_at": "2025-10-27T20:56:38.203Z",
+          "title": "HANSIFNSOAINS",
+          "description": "HANSIFNSOAINSHANSIFNSOAINS",
+          "required_min_temp": 0.01,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 0.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 0,
+          "required_rf_lines": 0,
+          "required_daughterboard": "",
+          "requires_optical": false,
+          "estimated_duration_hours": null
+        }
+      },
+      {
+        "model": "calendarEditor.queuepreset",
+        "pk": 44,
+        "fields": {
+          "name": "Happy",
+          "display_name": "Happy - (Auth. admin) - (Ed. admin Oct-31-2025)",
+          "creator": 1,
+          "creator_username": "admin",
+          "is_public": true,
+          "last_edited_by": 1,
+          "last_edited_at": "2025-11-01T21:20:32.571Z",
+          "created_at": "2025-10-31T20:03:36.380Z",
+          "title": "Sad no",
+          "description": "Tubular Tubular",
+          "required_min_temp": 4.0,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 4.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 2,
+          "required_rf_lines": 1,
+          "required_daughterboard": "QBoard II",
+          "requires_optical": false,
+          "estimated_duration_hours": null
+        }
+      },
+      {
+        "model": "calendarEditor.queuepreset",
+        "pk": 45,
+        "fields": {
+          "name": "Showing Rush Jobs",
+          "display_name": "Showing Rush Jobs - (Auth. timothyrosno) - (Ed. timothyrosno Nov-04-2025)",
+          "creator": null,
+          "creator_username": "timothyrosno",
+          "is_public": true,
+          "last_edited_by": null,
+          "last_edited_at": "2025-11-04T04:46:50.603Z",
+          "created_at": "2025-11-04T04:46:50.603Z",
+          "title": "CHange to rush job by clicking rush job after loading",
+          "description": "Charcter limit almost lol",
+          "required_min_temp": 5.0,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 1.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 1,
+          "required_rf_lines": 1,
+          "required_daughterboard": "",
+          "requires_optical": false,
+          "estimated_duration_hours": null
+        }
+      },
+      {
+        "model": "calendarEditor.queuepreset",
+        "pk": 35,
+        "fields": {
+          "name": "TimmyTestPublicNotGonnaDeleteEver",
+          "display_name": "TimmyTestPublicNotGonnaDeleteEver - (Auth. timothyrosno) - (Ed. admin Oct-27-2025)",
+          "creator": null,
+          "creator_username": "timothyrosno",
+          "is_public": true,
+          "last_edited_by": 1,
+          "last_edited_at": "2025-12-18T20:13:37.527Z",
+          "created_at": "2025-10-27T16:37:31.482Z",
+          "title": "Any machine yes admin",
+          "description": "Not a measurement that's real, but can go to any machine PLEASE PLEASE PLEASE PLEASE",
+          "required_min_temp": 7.0,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 0.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 0,
+          "required_rf_lines": 0,
+          "required_daughterboard": "",
+          "requires_optical": false,
+          "estimated_duration_hours": null
+        }
+      }
+    ],
+    "calendarEditor.QueueEntry": [
+      {
+        "model": "calendarEditor.queueentry",
+        "pk": 12,
+        "fields": {
+          "user": 1,
+          "title": "Any machine yes admin",
+          "description": "Not a measurement that's real, but can go to any machine PLEASE PLEASE PLEASE PLEASE",
+          "required_min_temp": 7.0,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 0.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 0,
+          "required_rf_lines": 0,
+          "required_daughterboard": "",
+          "requires_optical": false,
+          "estimated_duration_hours": 4.0,
+          "priority": 0,
+          "assigned_machine": 8,
+          "machine_name_text": "CryoCore",
+          "queue_position": null,
+          "status": "completed",
+          "submitted_at": "2025-12-18T20:13:43.329Z",
+          "started_at": "2025-12-19T05:14:06.385Z",
+          "completed_at": "2025-12-19T05:14:14.486Z",
+          "estimated_start_time": "2025-12-18T20:13:43.320Z",
+          "reminder_due_at": "2025-12-19T09:14:06.385Z",
+          "last_reminder_sent_at": null,
+          "reminder_snoozed_until": null,
+          "checkin_reminder_due_at": null,
+          "last_checkin_reminder_sent_at": null,
+          "checkin_reminder_snoozed_until": null,
+          "special_requirements": "",
+          "is_rush_job": false,
+          "rush_job_submitted_at": null,
+          "created_at": "2025-12-18T20:13:43.329Z",
+          "updated_at": "2025-12-19T05:14:14.486Z"
+        }
+      },
+      {
+        "model": "calendarEditor.queueentry",
+        "pk": 13,
+        "fields": {
+          "user": 1,
+          "title": "Test Check-In Entry",
+          "description": "Testing check-in functionality to find the 500 error that the user is experiencing.",
+          "required_min_temp": 10.0,
+          "required_max_temp": null,
+          "required_b_field_x": 0.0,
+          "required_b_field_y": 0.0,
+          "required_b_field_z": 0.0,
+          "required_b_field_direction": "",
+          "required_dc_lines": 0,
+          "required_rf_lines": 0,
+          "required_daughterboard": "",
+          "requires_optical": false,
+          "estimated_duration_hours": 2.0,
+          "priority": 0,
+          "assigned_machine": 8,
+          "machine_name_text": "CryoCore",
+          "queue_position": null,
+          "status": "completed",
+          "submitted_at": "2025-12-18T20:17:02.359Z",
+          "started_at": "2025-12-19T05:14:19.783Z",
+          "completed_at": "2025-12-19T05:14:23.973Z",
+          "estimated_start_time": "2025-12-19T11:14:06.532Z",
+          "reminder_due_at": "2025-12-19T07:14:19.783Z",
+          "last_reminder_sent_at": null,
+          "reminder_snoozed_until": null,
+          "checkin_reminder_due_at": null,
+          "last_checkin_reminder_sent_at": null,
+          "checkin_reminder_snoozed_until": null,
+          "special_requirements": "",
+          "is_rush_job": false,
+          "rush_job_submitted_at": null,
+          "created_at": "2025-12-18T20:17:02.359Z",
+          "updated_at": "2025-12-19T05:14:23.973Z"
+        }
+      }
+    ],
+    "calendarEditor.ArchivedMeasurement": [
+      {
+        "model": "calendarEditor.archivedmeasurement",
+        "pk": 91,
+        "fields": {
+          "user": 1,
+          "machine": 8,
+          "machine_name": "CryoCore",
+          "related_queue_entry": 13,
+          "measurement_date": "2025-12-19T05:14:23.973Z",
+          "title": "Test Check-In Entry",
+          "notes": "Testing check-in functionality to find the 500 error that the user is experiencing.",
+          "duration_hours": 0.0,
+          "preset_snapshot": null,
+          "uploaded_file": "",
+          "status": "completed",
+          "archived_at": "2025-12-19T05:14:24.024Z",
+          "created_at": "2025-12-19T05:14:24.024Z",
+          "updated_at": "2025-12-19T05:14:24.024Z"
+        }
+      },
+      {
+        "model": "calendarEditor.archivedmeasurement",
+        "pk": 90,
+        "fields": {
+          "user": 1,
+          "machine": 8,
+          "machine_name": "CryoCore",
+          "related_queue_entry": 12,
+          "measurement_date": "2025-12-19T05:14:14.486Z",
+          "title": "Any machine yes admin",
+          "notes": "Not a measurement that's real, but can go to any machine PLEASE PLEASE PLEASE PLEASE",
+          "duration_hours": 0.0,
+          "preset_snapshot": null,
+          "uploaded_file": "",
+          "status": "completed",
+          "archived_at": "2025-12-19T05:14:14.608Z",
+          "created_at": "2025-12-19T05:14:14.608Z",
+          "updated_at": "2025-12-19T05:14:14.608Z"
+        }
+      }
+    ],
+    "calendarEditor.NotificationPreference": [
+      {
+        "model": "calendarEditor.notificationpreference",
+        "pk": 3,
+        "fields": {
+          "user": 1,
+          "notify_public_preset_created": false,
+          "notify_public_preset_edited": false,
+          "notify_public_preset_deleted": false,
+          "notify_private_preset_edited": true,
+          "notify_followed_preset_edited": true,
+          "notify_followed_preset_deleted": true,
+          "notify_queue_added": true,
+          "notify_queue_position_change": false,
+          "notify_queue_cancelled": true,
+          "notify_on_deck": true,
+          "notify_ready_for_check_in": true,
+          "notify_checkin_reminder": true,
+          "notify_checkout_reminder": true,
+          "notify_machine_queue_changes": false,
+          "notify_admin_check_in": true,
+          "notify_admin_checkout": true,
+          "notify_admin_edit_entry": true,
+          "notify_admin_moved_entry": true,
+          "notify_machine_status_change": true,
+          "notify_account_approved": true,
+          "notify_account_unapproved": true,
+          "notify_account_promoted": true,
+          "notify_account_demoted": true,
+          "notify_account_info_changed": true,
+          "notify_admin_new_user": true,
+          "notify_admin_rush_job": true,
+          "notify_database_restored": true,
+          "email_notifications": true,
+          "in_app_notifications": true,
+          "created_at": "2025-10-26T01:31:05.209Z",
+          "updated_at": "2025-11-05T17:06:29.545Z",
+          "followed_presets": [
+            43,
+            37,
+            38
+          ]
+        }
+      },
+      {
+        "model": "calendarEditor.notificationpreference",
+        "pk": 22,
+        "fields": {
+          "user": 4,
+          "notify_public_preset_created": false,
+          "notify_public_preset_edited": false,
+          "notify_public_preset_deleted": false,
+          "notify_private_preset_edited": true,
+          "notify_followed_preset_edited": false,
+          "notify_followed_preset_deleted": false,
+          "notify_queue_added": false,
+          "notify_queue_position_change": true,
+          "notify_queue_cancelled": true,
+          "notify_on_deck": true,
+          "notify_ready_for_check_in": true,
+          "notify_checkin_reminder": false,
+          "notify_checkout_reminder": true,
+          "notify_machine_queue_changes": false,
+          "notify_admin_check_in": true,
+          "notify_admin_checkout": true,
+          "notify_admin_edit_entry": true,
+          "notify_admin_moved_entry": true,
+          "notify_machine_status_change": true,
+          "notify_account_approved": false,
+          "notify_account_unapproved": false,
+          "notify_account_promoted": false,
+          "notify_account_demoted": false,
+          "notify_account_info_changed": false,
+          "notify_admin_new_user": true,
+          "notify_admin_rush_job": true,
+          "notify_database_restored": true,
+          "email_notifications": true,
+          "in_app_notifications": true,
+          "created_at": "2025-11-06T15:30:58.606Z",
+          "updated_at": "2025-12-18T21:37:13.018Z",
+          "followed_presets": []
+        }
+      }
+    ],
+    "calendarEditor.Notification": [
+      {
+        "model": "calendarEditor.notification",
+        "pk": 659,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "admin_checkout",
+          "title": "Admin Check-Out",
+          "message": "Administrator TimmyRosno checked you out from \"Test Check-In Entry\" on CryoCore.",
+          "related_preset": null,
+          "related_queue_entry": 13,
+          "related_machine": 8,
+          "triggering_user": 4,
+          "is_read": false,
+          "created_at": "2025-12-19T05:14:24.166Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 658,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "admin_check_in",
+          "title": "Admin Check-In",
+          "message": "Administrator TimmyRosno checked you in to start \"Test Check-In Entry\" on CryoCore.",
+          "related_preset": null,
+          "related_queue_entry": 13,
+          "related_machine": 8,
+          "triggering_user": 4,
+          "is_read": true,
+          "created_at": "2025-12-19T05:14:19.973Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 657,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "admin_checkout",
+          "title": "Admin Check-Out",
+          "message": "Administrator TimmyRosno checked you out from \"Any machine yes admin\" on CryoCore.",
+          "related_preset": null,
+          "related_queue_entry": 12,
+          "related_machine": 8,
+          "triggering_user": 4,
+          "is_read": false,
+          "created_at": "2025-12-19T05:14:15.066Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 656,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "ready_for_check_in",
+          "title": "Ready for Check-In!",
+          "message": "The machine CryoCore is now available! You can check in to start your measurement \"Test Check-In Entry\".",
+          "related_preset": null,
+          "related_queue_entry": 13,
+          "related_machine": 8,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-19T05:14:14.688Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 655,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "admin_check_in",
+          "title": "Admin Check-In",
+          "message": "Administrator TimmyRosno checked you in to start \"Any machine yes admin\" on CryoCore.",
+          "related_preset": null,
+          "related_queue_entry": 12,
+          "related_machine": 8,
+          "triggering_user": 4,
+          "is_read": true,
+          "created_at": "2025-12-19T05:14:06.667Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 654,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "checkin_reminder",
+          "title": "Did You Forget to Check In?",
+          "message": "\"Any machine yes admin\" is ready for check-in on CryoCore. The machine is available now. (Click to snooze for 24 hours)",
+          "related_preset": null,
+          "related_queue_entry": 12,
+          "related_machine": 8,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-19T02:17:37.854Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 652,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "queue_added",
+          "title": "Queue Entry Added",
+          "message": "Your request \"Any machine yes admin\" has been added to CryoCore at position #1",
+          "related_preset": null,
+          "related_queue_entry": 12,
+          "related_machine": 8,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-18T20:13:44.302Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 651,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "ready_for_check_in",
+          "title": "Ready for Check-In!",
+          "message": "The machine CryoCore is now available. You can check in to start your measurement \"Any machine yes admin\"!",
+          "related_preset": null,
+          "related_queue_entry": 12,
+          "related_machine": 8,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-12-18T20:13:43.509Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 549,
+        "fields": {
+          "recipient": 4,
+          "notification_type": "admin_rush_job",
+          "title": "Rush Job Submitted",
+          "message": "TimmyRosno submitted a rush job request for \"Capser\" on Opticool. Review needed.",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": 4,
+          "is_read": true,
+          "created_at": "2025-11-11T04:47:15.764Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 548,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "admin_rush_job",
+          "title": "Rush Job Submitted",
+          "message": "TimmyRosno submitted a rush job request for \"Capser\" on Opticool. Review needed.",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": 4,
+          "is_read": true,
+          "created_at": "2025-11-11T04:47:15.526Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 547,
+        "fields": {
+          "recipient": 4,
+          "notification_type": "ready_for_check_in",
+          "title": "Ready for Check-In!",
+          "message": "The machine Opticool is now available. You can check in to start your measurement \"Capser\"!",
+          "related_preset": null,
+          "related_queue_entry": 195,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-11-11T04:47:15.278Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 545,
+        "fields": {
+          "recipient": 4,
+          "notification_type": "ready_for_check_in",
+          "title": "Ready for Check-In!",
+          "message": "The machine Kiutra is now available. You can check in to start your measurement \"Capser\"!",
+          "related_preset": null,
+          "related_queue_entry": 193,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-11-11T04:42:21.902Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 544,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "on_deck",
+          "title": "ON DECK - You're Next!",
+          "message": "Your request \"Any machine yes admin\" is now #1 in line for CryoCore. Get ready!",
+          "related_preset": null,
+          "related_queue_entry": 165,
+          "related_machine": 8,
+          "triggering_user": null,
+          "is_read": false,
+          "created_at": "2025-11-11T04:35:32.916Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 543,
+        "fields": {
+          "recipient": 4,
+          "notification_type": "ready_for_check_in",
+          "title": "Ready for Check-In!",
+          "message": "The machine CryoCore is now available. You can check in to start your measurement \"Any machine yes admin\"!",
+          "related_preset": null,
+          "related_queue_entry": 187,
+          "related_machine": 8,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-11-11T04:35:30.661Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 542,
+        "fields": {
+          "recipient": 4,
+          "notification_type": "on_deck",
+          "title": "ON DECK - You're Next!",
+          "message": "Your request \"Any machine yes admin\" is now #1 in line for CryoCore. Get ready!",
+          "related_preset": null,
+          "related_queue_entry": 187,
+          "related_machine": 8,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-11-11T04:35:12.156Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 541,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "queue_moved",
+          "title": "Queue Position Changed",
+          "message": "Your request \"Any machine yes admin\" was moved from position #1 due to a priority request taking precedence on CryoCore. We apologize for the inconvenience. You are now at position #2.",
+          "related_preset": null,
+          "related_queue_entry": 165,
+          "related_machine": 8,
+          "triggering_user": null,
+          "is_read": false,
+          "created_at": "2025-11-11T04:35:12.151Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 540,
+        "fields": {
+          "recipient": 4,
+          "notification_type": "admin_check_in",
+          "title": "Admin Check-In",
+          "message": "Administrator TimmyRosno checked you in to start \"Any machine yes admin\" on CryoCore.",
+          "related_preset": null,
+          "related_queue_entry": 185,
+          "related_machine": 8,
+          "triggering_user": 4,
+          "is_read": true,
+          "created_at": "2025-11-11T04:35:04.295Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 539,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "on_deck",
+          "title": "ON DECK - You're Next!",
+          "message": "Your request \"Any machine yes admin\" is now #1 in line for CryoCore. Get ready!",
+          "related_preset": null,
+          "related_queue_entry": 165,
+          "related_machine": 8,
+          "triggering_user": null,
+          "is_read": false,
+          "created_at": "2025-11-11T04:35:04.292Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 538,
+        "fields": {
+          "recipient": 4,
+          "notification_type": "on_deck",
+          "title": "ON DECK - You're Next!",
+          "message": "Your request \"Any machine yes admin\" is now #1 in line for CryoCore. Get ready!",
+          "related_preset": null,
+          "related_queue_entry": 185,
+          "related_machine": 8,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-11-11T04:35:00.991Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 537,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "queue_moved",
+          "title": "Queue Position Changed",
+          "message": "Your request \"Any machine yes admin\" was moved from position #1 due to a priority request taking precedence on CryoCore. We apologize for the inconvenience. You are now at position #2.",
+          "related_preset": null,
+          "related_queue_entry": 165,
+          "related_machine": 8,
+          "triggering_user": null,
+          "is_read": false,
+          "created_at": "2025-11-11T04:35:00.987Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 536,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "ready_for_check_in",
+          "title": "Ready for Check-In!",
+          "message": "The machine CryoCore is now available. You can check in to start your measurement \"Any machine yes admin\"!",
+          "related_preset": null,
+          "related_queue_entry": 165,
+          "related_machine": 8,
+          "triggering_user": null,
+          "is_read": false,
+          "created_at": "2025-11-11T04:34:53.178Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 535,
+        "fields": {
+          "recipient": 4,
+          "notification_type": "on_deck",
+          "title": "ON DECK - You're Next!",
+          "message": "Your request \"CHange to rush job by clicking rush job after loading\" is now #1 in line for Opticool. Get ready!",
+          "related_preset": null,
+          "related_queue_entry": 188,
+          "related_machine": 7,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-11-11T04:33:45.793Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 534,
+        "fields": {
+          "recipient": 4,
+          "notification_type": "on_deck",
+          "title": "ON DECK - You're Next!",
+          "message": "Your request \"Delete\" is now #1 in line for Kiutra. Get ready!",
+          "related_preset": null,
+          "related_queue_entry": 191,
+          "related_machine": 6,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-11-11T04:32:52.266Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 533,
+        "fields": {
+          "recipient": 4,
+          "notification_type": "admin_check_in",
+          "title": "Admin Check-In",
+          "message": "Administrator TimmyRosno checked you in to start \"Any machine yes admin\" on CryoCore.",
+          "related_preset": null,
+          "related_queue_entry": 184,
+          "related_machine": 8,
+          "triggering_user": 4,
+          "is_read": true,
+          "created_at": "2025-11-10T18:13:30.603Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 532,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "on_deck",
+          "title": "ON DECK - You're Next!",
+          "message": "Your request \"Any machine yes admin\" is now #1 in line for CryoCore. Get ready!",
+          "related_preset": null,
+          "related_queue_entry": 165,
+          "related_machine": 8,
+          "triggering_user": null,
+          "is_read": false,
+          "created_at": "2025-11-10T18:13:26.604Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 531,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "ready_for_check_in",
+          "title": "Ready for Check-In!",
+          "message": "The machine Griffin is now available. You can check in to start your measurement \"funny\"!",
+          "related_preset": null,
+          "related_queue_entry": 167,
+          "related_machine": 5,
+          "triggering_user": null,
+          "is_read": false,
+          "created_at": "2025-11-10T17:55:39.842Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 529,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "ready_for_check_in",
+          "title": "Ready for Check-In!",
+          "message": "The machine Griffin is now available. You can check in to start your measurement \"funny\"!",
+          "related_preset": null,
+          "related_queue_entry": 167,
+          "related_machine": 5,
+          "triggering_user": null,
+          "is_read": false,
+          "created_at": "2025-11-10T17:55:39.366Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 527,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "on_deck",
+          "title": "ON DECK - You're Next!",
+          "message": "Your request \"funny\" is now #1 in line for Griffin. Get ready!",
+          "related_preset": null,
+          "related_queue_entry": 167,
+          "related_machine": 5,
+          "triggering_user": null,
+          "is_read": false,
+          "created_at": "2025-11-10T17:55:34.560Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 525,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "queue_moved",
+          "title": "Queue Position Changed",
+          "message": "Your request \"funny\" was moved from position #1 due to a rush job taking precedence on Griffin. We apologize for the inconvenience. You are now at position #2.",
+          "related_preset": null,
+          "related_queue_entry": 167,
+          "related_machine": 5,
+          "triggering_user": null,
+          "is_read": false,
+          "created_at": "2025-11-10T17:55:16.646Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 523,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "admin_rush_job",
+          "title": "Rush Job Submitted",
+          "message": "BrycelynnREAL submitted a rush job request for \"funny\" on Griffin. Review needed.",
+          "related_preset": null,
+          "related_queue_entry": 190,
+          "related_machine": 5,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-11-10T17:54:45.172Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 521,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "admin_new_user",
+          "title": "New User Signup",
+          "message": "New user \"BrycelynnREAL\" has signed up and is pending approval.",
+          "related_preset": null,
+          "related_queue_entry": null,
+          "related_machine": null,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-11-10T17:53:17.780Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 514,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "on_deck",
+          "title": "ON DECK - You're Next!",
+          "message": "Your request \"Delete\" is now #1 in line for Hidalgo. Get ready!",
+          "related_preset": null,
+          "related_queue_entry": 170,
+          "related_machine": 4,
+          "triggering_user": null,
+          "is_read": false,
+          "created_at": "2025-11-06T23:06:14.126Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 510,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "on_deck",
+          "title": "ON DECK - You're Next!",
+          "message": "Your request \"funny\" is now #1 in line for Griffin. Get ready!",
+          "related_preset": null,
+          "related_queue_entry": 167,
+          "related_machine": 5,
+          "triggering_user": null,
+          "is_read": false,
+          "created_at": "2025-11-06T23:06:01.451Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 508,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "admin_rush_job",
+          "title": "Rush Job Submitted",
+          "message": "Test rush job notification",
+          "related_preset": null,
+          "related_queue_entry": 186,
+          "related_machine": 8,
+          "triggering_user": 4,
+          "is_read": true,
+          "created_at": "2025-11-06T23:02:26.140Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 507,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "admin_new_user",
+          "title": "New User Signup",
+          "message": "Test new user signup notification",
+          "related_preset": null,
+          "related_queue_entry": null,
+          "related_machine": null,
+          "triggering_user": 4,
+          "is_read": false,
+          "created_at": "2025-11-06T23:02:25.906Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 491,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "admin_rush_job",
+          "title": "Rush Job Submitted",
+          "message": "TimmyRosno submitted a rush job request for \"Any machine yes admin\" on CryoCore. Review needed.",
+          "related_preset": null,
+          "related_queue_entry": 189,
+          "related_machine": 8,
+          "triggering_user": 4,
+          "is_read": false,
+          "created_at": "2025-11-06T22:29:02.699Z"
+        }
+      },
+      {
+        "model": "calendarEditor.notification",
+        "pk": 488,
+        "fields": {
+          "recipient": 1,
+          "notification_type": "admin_new_user",
+          "title": "New User Signup",
+          "message": "New user \"Elizabeth\" has signed up and is pending approval.",
+          "related_preset": null,
+          "related_queue_entry": null,
+          "related_machine": null,
+          "triggering_user": null,
+          "is_read": true,
+          "created_at": "2025-11-06T22:28:15.864Z"
+        }
+      }
+    ]
+  }
+}
