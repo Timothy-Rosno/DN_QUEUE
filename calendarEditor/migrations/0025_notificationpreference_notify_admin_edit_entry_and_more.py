@@ -39,7 +39,7 @@ class Migration(migrations.Migration):
                     ("admin_checkout", "Admin Checked You Out"),
                     ("admin_edit_entry", "Admin Edited Your Entry"),
                     ("admin_new_user", "New User Signup"),
-                    ("admin_rush_job", "Rush Job Submitted"),
+                    ("admin_rush_job", "Rush Job/Special Request Submitted"),
                 ],
                 max_length=30,
             ),

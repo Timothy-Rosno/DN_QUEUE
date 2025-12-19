@@ -39,7 +39,7 @@ class Migration(migrations.Migration):
                     ("job_started", "Job Started"),
                     ("job_completed", "Job Completed"),
                     ("admin_new_user", "New User Signup"),
-                    ("admin_rush_job", "Rush Job Submitted"),
+                    ("admin_rush_job", "Rush Job/Special Request Submitted"),
                 ],
                 max_length=30,
             ),

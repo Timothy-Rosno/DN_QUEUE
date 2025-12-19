@@ -24,7 +24,7 @@ class CheckReminderMiddleware:
     - status is still 'running' (meaning user hasn't checked out yet)
     - current time is NOT between 12 AM - 6 AM (no reminders during night hours)
 
-    Reminders are sent every 2 hours until the user checks out.
+    Reminders are sent every 12 hours until the user checks out.
     Using database-level locking to prevent duplicate notifications.
     """
 
@@ -59,7 +59,7 @@ class CheckReminderMiddleware:
         """
         Check for and send any pending checkout reminders.
 
-        Sends reminders every 2 hours (except 12 AM - 6 AM Central Time) until user checks out.
+        Sends reminders every 12 hours (except 12 AM - 6 AM Central Time) until user checks out.
         Uses select_for_update() to prevent race conditions where multiple
         requests might try to send the same reminder simultaneously.
         """
@@ -101,7 +101,7 @@ class CheckReminderMiddleware:
                         else:
                             # Check if it's been at least 2 hours since last reminder
                             time_since_last = now - entry.last_reminder_sent_at
-                            if time_since_last >= timedelta(hours=2):
+                            if time_since_last >= timedelta(hours=12):
                                 should_send = True
 
                         if should_send:
@@ -124,7 +124,7 @@ class CheckReminderMiddleware:
         """
         Check for and send any pending check-in reminders.
 
-        Sends reminders every 6 hours (except 12 AM - 6 AM Central Time) until user checks in.
+        Sends reminders every 12 hours (except 12 AM - 6 AM Central Time) until user checks in.
         For entries at position #1 that haven't checked in yet.
         Uses select_for_update() to prevent race conditions.
         """
@@ -177,7 +177,7 @@ class CheckReminderMiddleware:
                         else:
                             # Check if it's been at least 6 hours since last reminder
                             time_since_last = now - entry.last_checkin_reminder_sent_at
-                            if time_since_last >= timedelta(hours=6):
+                            if time_since_last >= timedelta(hours=12):
                                 should_send = True
 
                         if should_send:

@@ -563,7 +563,7 @@ def notify_checkout_reminder(queue_entry):
     This notification is sent:
     - First time: when estimated duration expires
     - Repeat: every 2 hours (except 12 AM - 6 AM) until checkout
-    - Unless: user clicks the notification to snooze for 6 hours
+    - Unless: user clicks the notification to snooze for 48 hours
 
     Clicking the notification snoozes reminders for 6 hours.
     """
@@ -575,7 +575,7 @@ def notify_checkout_reminder(queue_entry):
             recipient=user,
             notification_type='checkout_reminder',
             title='Measurement Time Expired',
-            message=f'Predicted measurement time expired for "{queue_entry.title}" on {queue_entry.assigned_machine.name} -- did you forget to check out? (Click to snooze for 6 hours)',
+            message=f'Predicted measurement time expired for "{queue_entry.title}" on {queue_entry.assigned_machine.name} -- did you forget to check out? (Click to snooze for 48 hours)',
             related_queue_entry=queue_entry,
             related_machine=queue_entry.assigned_machine,
         )
@@ -587,8 +587,8 @@ def notify_checkin_reminder(queue_entry):
 
     This notification is sent:
     - First time: when entry becomes ready for check-in (machine available)
-    - Repeat: every 6 hours until check-in
-    - Unless: user clicks the notification to snooze for 24 hours
+    - Repeat: every 12 hours until check-in
+    - Unless: user clicks the notification to snooze for 48 hours
     - No time restrictions (sent 24/7)
 
     Clicking the notification snoozes reminders for 24 hours.
@@ -602,7 +602,7 @@ def notify_checkin_reminder(queue_entry):
             recipient=user,
             notification_type='checkin_reminder',
             title='Did You Forget to Check In?',
-            message=f'"{queue_entry.title}" is ready for check-in on {queue_entry.assigned_machine.name}. The machine is available now. (Click to snooze for 24 hours)',
+            message=f'"{queue_entry.title}" is ready for check-in on {queue_entry.assigned_machine.name}. The machine is available now. (Click to snooze for 48 hours)',
             related_queue_entry=queue_entry,
             related_machine=queue_entry.assigned_machine,
         )
@@ -886,10 +886,10 @@ def check_and_notify_on_deck_status(machine):
                 notify_ready_for_check_in(on_deck_entry)
                 print(f"[CHECK_ON_DECK] notify_ready_for_check_in completed")
 
-                # Initialize check-in reminder (send first reminder after 6 hours, then every 6 hours)
+                # Initialize check-in reminder (send first reminder after 12 hours, then every 12 hours)
                 from django.utils import timezone
                 from datetime import timedelta
-                on_deck_entry.checkin_reminder_due_at = timezone.now() + timedelta(hours=6)  # First reminder after 6 hours
+                on_deck_entry.checkin_reminder_due_at = timezone.now() + timedelta(hours=12)  # First reminder after 12 hours
                 on_deck_entry.last_checkin_reminder_sent_at = None  # Reset counter
                 on_deck_entry.checkin_reminder_snoozed_until = None  # Clear any snooze
                 on_deck_entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
@@ -971,7 +971,7 @@ def notify_admins_rush_job(queue_entry):
             create_notification(
                 recipient=admin,
                 notification_type='admin_rush_job',
-                title='Rush Job Submitted',
+                title='Rush Job/Special Request Submitted',
                 message=f'{queue_entry.user.username} submitted a rush job request for "{queue_entry.title}" on {queue_entry.assigned_machine.name}. Review needed.',
                 related_queue_entry=queue_entry,
                 related_machine=queue_entry.assigned_machine,
@@ -997,7 +997,7 @@ def notify_admins_rush_job_deleted(queue_entry_title, machine_name, deleting_use
             create_notification(
                 recipient=admin,
                 notification_type='admin_rush_job',
-                title='Rush Job Cancelled',
+                title='Rush Job/Special Request Cancelled',
                 message=f'{deleting_user.username} cancelled their rush job request: "{queue_entry_title}" for {machine_name}.',
                 triggering_user=deleting_user,
             )
@@ -1015,7 +1015,7 @@ def notify_admins_rush_job_approved(queue_entry, approving_admin):
     # Get all staff/admin users
     admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
 
-    title = 'Rush Job Approved'
+    title = 'Rush Job/Special Request Approved'
     message = f'✓ {approving_admin.username} approved rush job "{queue_entry.title}" by {queue_entry.user.username} on {queue_entry.assigned_machine.name}. Moved to position 1.'
 
     for admin in admin_users:
@@ -1038,7 +1038,7 @@ def notify_admins_rush_job_rejected(queue_entry, rejecting_admin, rejection_reas
     # Get all staff/admin users
     admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
 
-    title = 'Rush Job Rejected'
+    title = 'Rush Job/Special Request Rejected'
     message = f'✗ {rejecting_admin.username} rejected rush job "{queue_entry.title}" by {queue_entry.user.username}.\nReason: {rejection_reason}'
 
     for admin in admin_users:

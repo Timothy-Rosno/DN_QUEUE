@@ -1,7 +1,7 @@
 """
 Management command to diagnose and fix notification preferences.
 
-This command helps identify why notifications (especially Rush Jobs) might not be working.
+This command helps identify why notifications (especially Rush Job/Special Requests) might not be working.
 
 Usage:
     python manage.py check_notifications           # Check all notification settings

@@ -991,7 +991,7 @@ def reject_rush_job(request, entry_id):
         notifications.create_notification(
             recipient=entry.user,
             notification_type='queue_cancelled',
-            title=f'Rush Job Appeal Rejected: {entry.title}',
+            title=f'Rush Job/Special Request Appeal Rejected: {entry.title}',
             message=f'Your rush job appeal for "{entry.title}" has been rejected by {request.user.username}.\n\nReason: {rejection_message}\n\nYour job remains in the queue at its current position.',
             related_queue_entry=entry,
             related_machine=entry.assigned_machine,

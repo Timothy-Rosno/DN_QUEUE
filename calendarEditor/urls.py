@@ -85,7 +85,7 @@ urlpatterns = [
     path('admin-queue/check-out/<int:entry_id>/', admin_views.admin_check_out, name='admin_check_out'),
     path('admin-queue/undo-check-in/<int:entry_id>/', admin_views.admin_undo_check_in, name='admin_undo_check_in'),
 
-    # Rush Job Actions
+    # Rush Job/Special Request Actions
     path('admin-rush-jobs/approve/<int:entry_id>/', admin_views.approve_rush_job, name='approve_rush_job'),
     path('admin-rush-jobs/reject/<int:entry_id>/', admin_views.reject_rush_job, name='reject_rush_job'),
 

@@ -297,12 +297,12 @@ class QueueEntry(models.Model):
 
     # Checkout reminder tracking (replaces Celery scheduled tasks)
     reminder_due_at = models.DateTimeField(null=True, blank=True, help_text="When checkout reminder should be sent")
-    last_reminder_sent_at = models.DateTimeField(null=True, blank=True, help_text="When the last checkout reminder was sent (for repeat reminders every 2 hours)")
+    last_reminder_sent_at = models.DateTimeField(null=True, blank=True, help_text="When the last checkout reminder was sent (for repeat reminders every 12 hours)")
     reminder_snoozed_until = models.DateTimeField(null=True, blank=True, help_text="When the checkout reminder snooze expires (user clicked notification link)")
 
     # Check-in reminder tracking (for position #1 entries that haven't checked in yet)
     checkin_reminder_due_at = models.DateTimeField(null=True, blank=True, help_text="When check-in reminder should be sent (for ON DECK entries)")
-    last_checkin_reminder_sent_at = models.DateTimeField(null=True, blank=True, help_text="When the last check-in reminder was sent (for repeat reminders every 6 hours)")
+    last_checkin_reminder_sent_at = models.DateTimeField(null=True, blank=True, help_text="When the last check-in reminder was sent (for repeat reminders every 12 hours)")
     checkin_reminder_snoozed_until = models.DateTimeField(null=True, blank=True, help_text="When the check-in reminder snooze expires (user clicked notification link)")
 
     # Additional info
@@ -532,7 +532,7 @@ class Notification(models.Model):
         ('account_info_changed', 'Account Information Changed'),
         # Admin-specific notifications
         ('admin_new_user', 'New User Signup'),
-        ('admin_rush_job', 'Rush Job Submitted'),
+        ('admin_rush_job', 'Rush Job/Special Request Submitted'),
         # Database management notifications
         ('database_restored', 'Database Restored'),
     ]
@@ -581,13 +581,13 @@ class Notification(models.Model):
         elif self.notification_type in ['queue_moved', 'queue_added', 'queue_cancelled', 'admin_edit_entry']:
             return reverse('my_queue')
 
-        # Checkout Reminder - go to snooze endpoint (silences for 6 hours)
+        # Checkout Reminder - go to snooze endpoint (silences for 48 hours)
         elif self.notification_type == 'checkout_reminder':
             if self.related_queue_entry:
                 return reverse('snooze_checkout_reminder', kwargs={'entry_id': self.related_queue_entry.id})
             return reverse('check_in_check_out')
 
-        # Check-in Reminder - go to snooze endpoint (silences for 24 hours)
+        # Check-in Reminder - go to snooze endpoint (silences for 48 hours)
         elif self.notification_type == 'checkin_reminder':
             if self.related_queue_entry:
                 return reverse('snooze_checkin_reminder', kwargs={'entry_id': self.related_queue_entry.id})

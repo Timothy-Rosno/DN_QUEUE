@@ -129,7 +129,7 @@ class QueueEntryForm(forms.ModelForm):
             'description': 'Measurement Description',
             'required_b_field_direction': 'B-field Direction',
             'requires_optical': 'Requires Optical Capabilities (not yet used in matching)',
-            'is_rush_job': 'Rush Job Appeal',
+            'is_rush_job': 'Rush Job/Special Request Appeal',
         }
         help_texts = {
             'title': 'Name of the device being measured (minimum 3 characters)',
@@ -434,7 +434,7 @@ class NotificationPreferenceForm(forms.ModelForm):
             'in_app_notifications': 'In-App Notifications',
             # Admin notifications
             'notify_admin_new_user': 'New User Registrations',
-            'notify_admin_rush_job': 'Rush Job Requests',
+            'notify_admin_rush_job': 'Rush Job/Special Request Requests',
         }
         help_texts = {
             'notify_public_preset_created': 'Get notified when new public presets are created',

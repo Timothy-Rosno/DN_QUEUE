@@ -116,7 +116,7 @@ class Migration(migrations.Migration):
                     ("account_demoted", "Demoted from Staff"),
                     ("account_info_changed", "Account Information Changed"),
                     ("admin_new_user", "New User Signup"),
-                    ("admin_rush_job", "Rush Job Submitted"),
+                    ("admin_rush_job", "Rush Job/Special Request Submitted"),
                     ("database_restored", "Database Restored"),
                 ],
                 max_length=30,

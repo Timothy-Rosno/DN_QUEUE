@@ -299,7 +299,7 @@ def submit_queue_entry(request):
 
                     # Add rush job notification
                     if queue_entry.is_rush_job:
-                        success_msg += '<br><strong>Rush Job Appeal:</strong> Admins have been notified and will review your request.'
+                        success_msg += '<br><strong>Rush Job/Special Request Appeal:</strong> Admins have been notified and will review your request.'
                         # Send email notification to admins
                         send_rush_job_notification(queue_entry, request)
 
@@ -842,12 +842,12 @@ def snooze_checkout_reminder(request, entry_id):
         messages.info(request, 'This measurement is no longer running.')
         return redirect('check_in_check_out')
 
-    # Set snooze time to 6 hours from now
-    queue_entry.reminder_snoozed_until = timezone.now() + timedelta(hours=6)
+    # Set snooze time to 48 hours from now
+    queue_entry.reminder_snoozed_until = timezone.now() + timedelta(hours=48)
     queue_entry.save(update_fields=['reminder_snoozed_until'])
 
     # NOTE: Do NOT auto-clear notifications here - only clear when user actually checks out
-    messages.success(request, f'✅ Checkout reminder snoozed for 6 hours. You can continue your measurement on {queue_entry.assigned_machine.name}.')
+    messages.success(request, f'✅ Checkout reminder snoozed for 48 hours. You can continue your measurement on {queue_entry.assigned_machine.name}.')
     return redirect('check_in_check_out')
 
 
@@ -870,12 +870,12 @@ def snooze_checkin_reminder(request, entry_id):
         messages.info(request, 'This entry is no longer at position 1 or ready for check-in.')
         return redirect('check_in_check_out')
 
-    # Set snooze time to 24 hours from now
-    queue_entry.checkin_reminder_snoozed_until = timezone.now() + timedelta(hours=24)
+    # Set snooze time to 48 hours from now
+    queue_entry.checkin_reminder_snoozed_until = timezone.now() + timedelta(hours=48)
     queue_entry.save(update_fields=['checkin_reminder_snoozed_until'])
 
     # NOTE: Do NOT auto-clear notifications here - only clear when user actually checks in
-    messages.success(request, f'✅ Check-in reminder snoozed for 24 hours for "{queue_entry.title}" on {queue_entry.assigned_machine.name}.')
+    messages.success(request, f'✅ Check-in reminder snoozed for 48 hours for "{queue_entry.title}" on {queue_entry.assigned_machine.name}.')
     return redirect('check_in_check_out')
 
 
@@ -1131,7 +1131,7 @@ def delete_schedule(request, pk):
     })
 
 
-# ===== Rush Job Management =====
+# ===== Rush Job/Special Request Management =====
 
 def send_rush_job_notification(queue_entry, request):
     """
@@ -1152,7 +1152,7 @@ def send_rush_job_notification(queue_entry, request):
         return  # No admin emails to send to
 
     # Build email content
-    subject = f'Rush Job Appeal: {queue_entry.title} by {queue_entry.user.username}'
+    subject = f'Rush Job/Special Request Appeal: {queue_entry.title} by {queue_entry.user.username}'
 
     rush_job_url = request.build_absolute_uri(reverse('admin_rush_jobs'))
 
@@ -2486,7 +2486,7 @@ def api_check_reminders(request):
     middleware = CheckReminderMiddleware(lambda x: x)
 
     now = timezone.now()
-    two_hours_ago = now - timedelta(hours=2)
+    twelve_hours_ago = now - timedelta(hours=12)
 
     # Count pending reminders before (entries that need a reminder)
     pending_before = QueueEntry.objects.filter(
@@ -2494,7 +2494,7 @@ def api_check_reminders(request):
         Q(status='running') &  # Still running
         (
             Q(last_reminder_sent_at__isnull=True) |  # Never sent
-            Q(last_reminder_sent_at__lte=two_hours_ago)  # Sent 2+ hours ago
+            Q(last_reminder_sent_at__lte=twelve_hours_ago)  # Sent 12+ hours ago
         )
     ).count()
 
@@ -2505,13 +2505,13 @@ def api_check_reminders(request):
         # Count what's left after (should be fewer if any were sent)
         # Recalculate since last_reminder_sent_at was updated
         now_after = timezone.now()
-        two_hours_ago_after = now_after - timedelta(hours=2)
+        twelve_hours_ago_after = now_after - timedelta(hours=12)
         pending_after = QueueEntry.objects.filter(
             Q(reminder_due_at__lte=now_after) &
             Q(status='running') &
             (
                 Q(last_reminder_sent_at__isnull=True) |
-                Q(last_reminder_sent_at__lte=two_hours_ago_after)
+                Q(last_reminder_sent_at__lte=twelve_hours_ago_after)
             )
         ).count()
 
