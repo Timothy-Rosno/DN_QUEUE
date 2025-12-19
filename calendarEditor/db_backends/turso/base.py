@@ -503,8 +503,8 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                                     return True
                                 elif value == '0' or value == 'False' or value == 'false':
                                     return False
-                                elif value == '':
-                                    return None
+                                # IMPORTANT: Return empty strings as-is, don't convert to None
+                                # CharField fields should store empty strings, not NULL
                                 else:
                                     return value
                         # Fallback: if dict has no 'value', return None
