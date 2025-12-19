@@ -5,7 +5,7 @@
 {% block content %}
 <div class="card">
     <h1>Create Your Account</h1>
-    <p style="margin: 1rem 0;">Please fill out the form below to register.</p>
+    <p style="margin: 1rem 0;">Please fill out the form below to register. Fields are required unless otherwise stated.</p>
 
     <form method="post">
         {% csrf_token %}
@@ -20,10 +20,10 @@
             <label for="{{ profile_form.phone_number.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
                 {{ profile_form.phone_number.label }}
             </label>
-            {{ profile_form.phone_number }}
-            {% if profile_form.phone_number.help_text %}
+            <!-- {% if profile_form.phone_number.help_text %}
                 <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">{{ profile_form.phone_number.help_text }}</small>
-            {% endif %}
+            {% endif %} -->
+            {{ profile_form.phone_number }}
             {% if profile_form.phone_number.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ profile_form.phone_number.errors }}</div>
             {% endif %}
@@ -116,9 +116,9 @@
         <div style="margin-bottom: 1.5rem;">
             {{ profile_form.security_answer.label_tag }}
             {{ profile_form.security_answer }}
-            {% if profile_form.security_answer.help_text %}
+            <!-- {% if profile_form.security_answer.help_text %}
                 <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">{{ profile_form.security_answer.help_text }}</small>
-            {% endif %}
+            {% endif %} -->
         </div>
 
         <script>

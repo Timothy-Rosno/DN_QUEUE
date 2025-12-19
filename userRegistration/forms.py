@@ -10,12 +10,12 @@ class UserRegistrationForm(UserCreationForm):
         max_length=150,
         required=True,
         label='Username',
-        help_text='Slack Username preferred',
+        help_text='Slack username preferred (Churchill Lab)',
         validators=[],  # NO validators - allow ANY character
     )
     email = forms.EmailField(
         required=True,
-        help_text="Use the email tied to your Slack account in the Churchill Lab workspace."
+        help_text="Slack account email preferred (Churchill Lab)"
     )
     first_name = forms.CharField(
         max_length=30,
@@ -25,7 +25,7 @@ class UserRegistrationForm(UserCreationForm):
     last_name = forms.CharField(
         max_length=30,
         required=False,
-        help_text="optional - from Slack"
+        help_text="(Optional)"
     )
 
     class Meta:
@@ -59,7 +59,7 @@ class UserProfileForm(forms.ModelForm):
         max_length=200,
         required=False,
         widget=forms.TextInput(attrs={'autocomplete': 'off'}),
-        help_text="Your answer will be used for password recovery (case-insensitive)"
+        help_text="For password recovery"
     )
 
     class Meta:
