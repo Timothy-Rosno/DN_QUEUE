@@ -454,6 +454,22 @@ class QueuePreset(models.Model):
         # Admins can edit any public preset
         if user.is_staff and self.is_public:
             return True
+        # Superusers can delete private presets if creator is no longer an approved account
+        if user.is_superuser and not self.is_public:
+            from userRegistration.models import UserProfile
+            from django.contrib.auth.models import User
+            try:
+                # Check if creator username exists and has an approved account
+                creator_user = User.objects.get(username=self.creator_username)
+                if hasattr(creator_user, 'profile') and creator_user.profile.status == 'approved':
+                    # Creator is still approved, superuser cannot delete
+                    return False
+                else:
+                    # Creator exists but is not approved, superuser can delete
+                    return True
+            except User.DoesNotExist:
+                # Creator username doesn't exist, superuser can delete
+                return True
         return False
 
     def can_view(self, user):

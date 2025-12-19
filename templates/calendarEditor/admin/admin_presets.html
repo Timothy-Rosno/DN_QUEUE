@@ -134,9 +134,15 @@
                         </td>
                         <td style="white-space: nowrap;">
                             {% if preset.creator_username == current_user.username %}
+                                {# Creator can edit/delete their own presets #}
                                 <a href="{% url 'edit_preset' preset.id %}?from_admin=true" class="btn btn-sm" style="background-color: #3498db; color: white;">Edit</a>
                                 <button type="button" class="btn btn-sm btn-danger delete-preset-btn" data-preset-id="{{ preset.id }}" data-preset-name="{{ preset.name }}">Delete</button>
+                            {% elif current_user.is_superuser and not preset.creator_is_approved %}
+                                {# Superusers can delete orphaned presets (creator no longer approved) #}
+                                <a href="{% url 'view_preset' preset.id %}?from_admin=true" class="btn btn-sm" style="background-color: #7f8c8d; color: white;">View</a>
+                                <button type="button" class="btn btn-sm btn-danger delete-preset-btn" data-preset-id="{{ preset.id }}" data-preset-name="{{ preset.name }}" title="Author is no longer an approved account">Delete</button>
                             {% else %}
+                                {# Staff/admin can only view private presets #}
                                 <a href="{% url 'view_preset' preset.id %}?from_admin=true" class="btn btn-sm" style="background-color: #7f8c8d; color: white;">View</a>
                             {% endif %}
                         </td>

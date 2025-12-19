@@ -100,7 +100,8 @@ class UserProfileForm(forms.ModelForm):
             'notes': 'Notes',
         }
         help_texts = {
-            'phone_number': '(Optional)',
+            'phone_number': 'Required',
+            'organization': 'Required',
             'department': 'Required',
             'notes': '(Optional)',
         }

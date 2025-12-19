@@ -129,6 +129,7 @@
             const departmentField = document.getElementById('department-field');
             const departmentSelect = document.getElementById('{{ profile_form.department.id_for_label }}');
             const departmentOtherField = document.getElementById('department-other-field');
+            const registerButton = document.getElementById('registerButton');
 
             // Handle organization selection changes
             function toggleOrganizationFields() {
@@ -150,6 +151,9 @@
                     departmentSelect.value = '';
                     departmentOtherField.style.display = 'none';
                 }
+
+                // Revalidate form after changing fields
+                validateForm();
             }
 
             // Handle department selection changes
@@ -162,15 +166,78 @@
                 } else {
                     departmentOtherField.style.display = 'none';
                 }
+
+                // Revalidate form after changing fields
+                validateForm();
             }
 
-            // Add event listeners
+            // Form validation function
+            function validateForm() {
+                // Get all required fields
+                const username = document.getElementById('id_username');
+                const firstName = document.getElementById('id_first_name');
+                const email = document.getElementById('id_email');
+                const password1 = document.getElementById('id_password1');
+                const password2 = document.getElementById('id_password2');
+                const phoneNumber = document.getElementById('{{ profile_form.phone_number.id_for_label }}');
+                const organization = document.getElementById('{{ profile_form.organization.id_for_label }}');
+                const organizationOther = document.getElementById('{{ profile_form.organization_other.id_for_label }}');
+                const department = document.getElementById('{{ profile_form.department.id_for_label }}');
+                const departmentOther = document.getElementById('{{ profile_form.department_other.id_for_label }}');
+                const securityQuestionCustom = document.getElementById('{{ profile_form.security_question_custom.id_for_label }}');
+                const securityAnswer = document.getElementById('{{ profile_form.security_answer.id_for_label }}');
+
+                // Check if all base required fields are filled
+                let allFieldsFilled = true;
+
+                // Check user form fields
+                if (!username || !username.value.trim()) allFieldsFilled = false;
+                if (!firstName || !firstName.value.trim()) allFieldsFilled = false;
+                if (!email || !email.value.trim()) allFieldsFilled = false;
+                if (!password1 || !password1.value.trim()) allFieldsFilled = false;
+                if (!password2 || !password2.value.trim()) allFieldsFilled = false;
+
+                // Check profile form fields
+                if (!phoneNumber || !phoneNumber.value.trim()) allFieldsFilled = false;
+                if (!organization || !organization.value.trim()) allFieldsFilled = false;
+
+                // Check conditional fields based on organization selection
+                const orgValue = organization ? organization.value : '';
+                if (orgValue === 'other') {
+                    if (!organizationOther || !organizationOther.value.trim()) allFieldsFilled = false;
+                }
+                if (orgValue === 'uark') {
+                    if (!department || !department.value.trim()) allFieldsFilled = false;
+                    // Check if department is 'other' and requires department_other
+                    const deptValue = department ? department.value : '';
+                    if (deptValue === 'other') {
+                        if (!departmentOther || !departmentOther.value.trim()) allFieldsFilled = false;
+                    }
+                }
+
+                // Check security question fields
+                if (!securityQuestionCustom || !securityQuestionCustom.value.trim()) allFieldsFilled = false;
+                if (!securityAnswer || !securityAnswer.value.trim()) allFieldsFilled = false;
+
+                // Enable or disable the register button
+                registerButton.disabled = !allFieldsFilled;
+            }
+
+            // Add event listeners for validation
             organizationSelect.addEventListener('change', toggleOrganizationFields);
             departmentSelect.addEventListener('change', toggleDepartmentOtherField);
+
+            // Add validation event listeners to all form inputs
+            const formInputs = document.querySelectorAll('input, select, textarea');
+            formInputs.forEach(function(input) {
+                input.addEventListener('input', validateForm);
+                input.addEventListener('change', validateForm);
+            });
 
             // Initialize on page load
             toggleOrganizationFields();
             toggleDepartmentOtherField();
+            validateForm();
 
             // Character counter functionality for profile fields
             setupCharacterCounter('{{ profile_form.organization_other.id_for_label }}', 'organizationOtherCharCount', 'organizationOtherError', 100);
@@ -224,7 +291,7 @@
         </script>
 
         <div style="margin-top: 1.5rem;">
-            <button type="submit" class="btn">Register</button>
+            <button type="submit" class="btn" id="registerButton" disabled>Register</button>
             <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
         </div>
     </form>

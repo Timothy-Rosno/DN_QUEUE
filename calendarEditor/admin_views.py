@@ -1568,6 +1568,8 @@ def admin_presets(request):
     """Admin page for managing all presets (public and private)."""
     from .models import QueuePreset
     from django.db.models import Case, When, Value, CharField
+    from django.contrib.auth.models import User
+    from userRegistration.models import UserProfile
 
     # Get all presets, organized by public/private, then by creator username
     presets = QueuePreset.objects.select_related('creator').all().order_by(
@@ -1576,12 +1578,27 @@ def admin_presets(request):
         'name'  # Then by preset name
     )
 
+    # Check which creator usernames correspond to approved accounts
+    # This will be used to determine if superusers can delete orphaned presets
+    approved_usernames = set()
+    for user in User.objects.all():
+        try:
+            # Check if user has an approved profile
+            if hasattr(user, 'profile') and user.profile.status == 'approved':
+                approved_usernames.add(user.username)
+        except UserProfile.DoesNotExist:
+            # User has no profile, not approved
+            pass
+
     # Group presets by public/private and then by user
     public_presets = {}
     private_presets = {}
 
     for preset in presets:
         username = preset.creator_username or 'Unknown User'
+
+        # Add attribute to check if creator is still an approved account
+        preset.creator_is_approved = username in approved_usernames
 
         if preset.is_public:
             if username not in public_presets:
