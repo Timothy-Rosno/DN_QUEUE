@@ -69,7 +69,7 @@
             {% if form.title.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.title.errors }}</div>
             {% endif %}
-            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.title.help_text }}</small>
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.title.help_text }} <em style="color: #f39c12;">Note: Queue submissions require 3 characters minimum.</em></small>
         </div>
 
         <!-- Description Field -->
@@ -81,7 +81,7 @@
             {% if form.description.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.description.errors }}</div>
             {% endif %}
-            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.description.help_text }}</small>
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.description.help_text }} <em style="color: #f39c12;">Note: Queue submissions require 50 characters minimum.</em></small>
         </div>
 
         <!-- Temperature Fields -->
@@ -542,31 +542,78 @@
                 });
             });
 
-            // Description field validation (optional, but if provided must be at least 15 characters)
+            // Device name (title) field validation (optional, shows warning if < 3 chars for queue submission)
+            const titleField = document.querySelector('input[name="title"]');
+            if (titleField) {
+                const titleWarningDiv = document.createElement('div');
+                titleWarningDiv.style.cssText = 'color: #f39c12; font-size: 0.9rem; margin-top: 0.25rem; display: none;';
+                titleWarningDiv.className = 'input-validation-warning';
+                titleField.parentNode.insertBefore(titleWarningDiv, titleField.nextSibling);
+
+                function validateTitle() {
+                    const value = titleField.value.trim();
+                    const queueMinLength = 3;
+
+                    // Clear previous warning
+                    titleWarningDiv.textContent = '';
+                    titleWarningDiv.style.display = 'none';
+                    titleField.style.borderColor = '';
+
+                    // Show informative warning if entered but < 3 chars (doesn't block submission)
+                    if (value !== '' && value.length < queueMinLength) {
+                        titleWarningDiv.textContent = `Note: ${queueMinLength - value.length} more character(s) needed for queue submission`;
+                        titleWarningDiv.style.display = 'block';
+                        titleField.style.borderColor = '#f39c12';
+                    }
+
+                    return true; // Always return true, doesn't block
+                }
+
+                // Validate on blur
+                titleField.addEventListener('blur', function() {
+                    this.dataset.touched = 'true';
+                    validateTitle();
+                });
+
+                // Validate on Enter or Tab
+                titleField.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === 'Tab') {
+                        validateTitle();
+                    }
+                });
+
+                // Real-time validation after first interaction
+                titleField.addEventListener('input', function() {
+                    if (this.dataset.touched === 'true') {
+                        validateTitle();
+                    }
+                });
+            }
+
+            // Description field validation (optional, shows warning if < 50 chars for queue submission)
             if (descriptionField) {
-                const descErrorDiv = document.createElement('div');
-                descErrorDiv.style.cssText = 'color: #e74c3c; font-size: 0.9rem; margin-top: 0.25rem; display: none; font-weight: bold;';
-                descErrorDiv.className = 'input-validation-error';
-                descriptionField.parentNode.insertBefore(descErrorDiv, descriptionField.nextSibling);
+                const descWarningDiv = document.createElement('div');
+                descWarningDiv.style.cssText = 'color: #f39c12; font-size: 0.9rem; margin-top: 0.25rem; display: none;';
+                descWarningDiv.className = 'input-validation-warning';
+                descriptionField.parentNode.insertBefore(descWarningDiv, descriptionField.nextSibling);
 
                 function validateDescription() {
                     const value = descriptionField.value.trim();
-                    const minLength = 15;
+                    const queueMinLength = 50;
 
-                    // Clear previous error
-                    descErrorDiv.textContent = '';
-                    descErrorDiv.style.display = 'none';
+                    // Clear previous warning
+                    descWarningDiv.textContent = '';
+                    descWarningDiv.style.display = 'none';
                     descriptionField.style.borderColor = '';
 
-                    // Only validate if something is entered (optional field)
-                    if (value !== '' && value.length < minLength) {
-                        descErrorDiv.textContent = `Measurement Description: Must be at least ${minLength} characters if provided (currently ${value.length})`;
-                        descErrorDiv.style.display = 'block';
-                        descriptionField.style.borderColor = '#e74c3c';
-                        return false;
+                    // Show informative warning if entered but < 50 chars (doesn't block submission)
+                    if (value !== '' && value.length < queueMinLength) {
+                        descWarningDiv.textContent = `Note: ${queueMinLength - value.length} more character(s) needed for queue submission`;
+                        descWarningDiv.style.display = 'block';
+                        descriptionField.style.borderColor = '#f39c12';
                     }
 
-                    return true;
+                    return true; // Always return true, doesn't block
                 }
 
                 // Validate on blur
@@ -599,22 +646,16 @@
                 form.addEventListener('submit', function(e) {
                     let hasErrors = false;
 
-                    // Validate description (optional, but must be 15+ chars if provided)
+                    // Title validation on submit - just update warning, doesn't block
+                    if (titleField) {
+                        titleField.dataset.touched = 'true';
+                        validateTitle();
+                    }
+
+                    // Description validation on submit - just update warning, doesn't block
                     if (descriptionField) {
                         descriptionField.dataset.touched = 'true';
-                        const descValue = descriptionField.value.trim();
-                        const descErrorDiv = descriptionField.nextSibling;
-
-                        descErrorDiv.textContent = '';
-                        descErrorDiv.style.display = 'none';
-                        descriptionField.style.borderColor = '';
-
-                        if (descValue !== '' && descValue.length < 15) {
-                            descErrorDiv.textContent = `Measurement Description: Must be at least 15 characters if provided (currently ${descValue.length})`;
-                            descErrorDiv.style.display = 'block';
-                            descriptionField.style.borderColor = '#e74c3c';
-                            hasErrors = true;
-                        }
+                        validateDescription();
                     }
 
                     numberInputs.forEach(function(input) {
