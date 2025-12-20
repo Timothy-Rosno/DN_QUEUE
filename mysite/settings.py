@@ -209,6 +209,9 @@ DATABASES = {
 
 print("✅ Turso database configured successfully")
 
+# Turso database performance settings
+TURSO_QUERY_TIMEOUT = int(os.environ.get('TURSO_QUERY_TIMEOUT', 5))  # seconds
+TURSO_CONNECTION_TIMEOUT = int(os.environ.get('TURSO_CONNECTION_TIMEOUT', 10))  # seconds
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators

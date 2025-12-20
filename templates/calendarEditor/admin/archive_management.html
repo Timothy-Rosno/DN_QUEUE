@@ -3,217 +3,257 @@
 {% block title %}Database Management - Lab Equipment Queue{% endblock %}
 
 {% block content %}
+
+<style>
+    /* Collapsible card styles - fridges pattern */
+    .card-header {
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .card-details {
+        padding: 1.5rem;
+        border-top: 1px solid #ddd;
+        display: none;
+    }
+
+    .card-details.open {
+        display: block;
+    }
+
+    .expand-icon {
+        font-size: 1.2rem;
+        transition: transform 0.3s;
+        display: inline-block;
+    }
+
+    .expand-icon.open {
+        transform: rotate(180deg);
+    }
+</style>
+
 <div class="card">
     <h1>Database Management</h1>
     <p style="color: #7f8c8d; margin-top: 0.5rem;">Manage database storage and archived measurements.</p>
 </div>
 
-<!-- Storage Statistics -->
-<div class="card collapsible-card" style="border-left: 4px solid {% if storage_stats.status == 'critical' %}#e74c3c{% elif storage_stats.status == 'warning' %}#f39c12{% else %}#2ecc71{% endif %};" data-card-id="storage-stats">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin-top: 0; margin-bottom: 0;">Database Storage</h2>
-        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
+<!-- Turso Usage Metrics (Default: OPEN) -->
+<div class="card" style="border-left: 4px solid #1abc9c;">
+    <div class="card-header" onclick="toggleCard('turso-usage')">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; color: #1abc9c;">Turso Usage Metrics (Current Billing Cycle)</h2>
+            <span class="expand-icon open" id="icon-turso-usage">▼</span>
+        </div>
     </div>
-    <div class="card-content">
-
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;">
-        <div>
-            <p style="color: #7f8c8d; margin: 0;">Current Size</p>
-            <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">{{ storage_stats.current_size_mb }} MB</p>
-        </div>
-        <div>
-            <p style="color: #7f8c8d; margin: 0;">Maximum Size</p>
-            <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">{{ storage_stats.max_size_mb }} MB</p>
-        </div>
-        <div>
-            <p style="color: #7f8c8d; margin: 0;">Used</p>
-            <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0; color: {% if storage_stats.status == 'critical' %}#e74c3c{% elif storage_stats.status == 'warning' %}#f39c12{% else %}#2ecc71{% endif %};">
-                {{ storage_stats.used_percentage }}%
+    <div class="card-details open" id="details-turso-usage">
+        {% if turso_usage %}
+            <p style="color: #7f8c8d; margin-bottom: 1.5rem;">
+                Real-time usage data from Turso API.
+                <a href="https://turso.tech/app/{{ turso_org_slug }}/usage" target="_blank" style="color: #3498db;">View full dashboard →</a>
             </p>
-        </div>
-        <div>
-            <p style="color: #7f8c8d; margin: 0;">Available</p>
-            <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">{{ storage_stats.available_mb }} MB</p>
+
+            <!-- Rows Read -->
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Rows Read (Monthly)</strong>
+                    <span>{{ turso_usage.rows_read|floatformat:0 }} / {{ turso_limits.rows_read_monthly|floatformat:0 }}</span>
+                </div>
+                <div style="background: #ecf0f1; border-radius: 10px; height: 20px; overflow: hidden;">
+                    <div style="background: {% if turso_usage.rows_read_percent >= 90 %}#e74c3c{% elif turso_usage.rows_read_percent >= 75 %}#f39c12{% else %}#3498db{% endif %};
+                                height: 100%; width: {{ turso_usage.rows_read_percent|floatformat:1 }}%;"></div>
+                </div>
+                <small style="color: #7f8c8d;">{{ turso_usage.rows_read_percent|floatformat:1 }}% used</small>
+            </div>
+
+            <!-- Rows Written -->
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Rows Written (Monthly)</strong>
+                    <span>{{ turso_usage.rows_written|floatformat:0 }} / {{ turso_limits.rows_written_monthly|floatformat:0 }}</span>
+                </div>
+                <div style="background: #ecf0f1; border-radius: 10px; height: 20px; overflow: hidden;">
+                    <div style="background: {% if turso_usage.rows_written_percent >= 90 %}#e74c3c{% elif turso_usage.rows_written_percent >= 75 %}#f39c12{% else %}#9b59b6{% endif %};
+                                height: 100%; width: {{ turso_usage.rows_written_percent|floatformat:1 }}%;"></div>
+                </div>
+                <small style="color: #7f8c8d;">{{ turso_usage.rows_written_percent|floatformat:1 }}% used</small>
+            </div>
+
+            <!-- Storage -->
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>Storage</strong>
+                    <span>{{ turso_usage.storage_mb|floatformat:2 }} MB / {{ turso_limits.storage_mb|floatformat:0 }} MB</span>
+                </div>
+                <div style="background: #ecf0f1; border-radius: 10px; height: 20px; overflow: hidden;">
+                    <div style="background: {% if turso_usage.storage_percent >= 90 %}#e74c3c{% elif turso_usage.storage_percent >= 75 %}#f39c12{% else %}#1abc9c{% endif %};
+                                height: 100%; width: {{ turso_usage.storage_percent|floatformat:1 }}%;"></div>
+                </div>
+                <small style="color: #7f8c8d;">{{ turso_usage.storage_percent|floatformat:1 }}% used</small>
+            </div>
+
+            <!-- Databases -->
+            <div>
+                <strong>Total Databases:</strong> {{ turso_usage.databases }}
+            </div>
+        {% else %}
+            <p style="color: #e74c3c;">
+                Unable to fetch Turso usage metrics. Please verify these are set correctly in the Render environment:
+                <br><code>TURSO_ORG_SLUG</code> and <code>TURSO_API_TOKEN</code> environment variables.
+            </p>
+            <p style="color: #7f8c8d; font-size: 0.9rem;">
+                Get your organization slug from: <a href="https://turso.tech/dashboard" target="_blank">Turso Dashboard</a>
+            </p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Cloud Backups (GitHub) (Default: OPEN) -->
+<div class="card" style="border-left: 4px solid #f432f4;">
+    <div class="card-header" onclick="toggleCard('cloud-backups')">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; color: #f432f4;">Cloud Backups</h2>
+            <span class="expand-icon open" id="icon-cloud-backups">▼</span>
         </div>
     </div>
+    <div class="card-details open" id="details-cloud-backups">
+        <p style="color: #7f8c8d;">Automated nightly backups stored in GitHub. These run daily at 12:30 AM Central. Keeps the 90 most recent.</p>
 
-    <!-- Progress Bar -->
-    <div style="background: #ecf0f1; height: 30px; border-radius: 5px; overflow: hidden; margin: 1rem 0;">
-        <div style="
-            width: {{ storage_stats.used_percentage }}%;
-            height: 100%;
-            background: {% if storage_stats.status == 'critical' %}#e74c3c{% elif storage_stats.status == 'warning' %}#f39c12{% else %}#2ecc71{% endif %};
-            transition: width 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
+        <!-- Month selector dropdown -->
+        <div style="display: flex; align-items: center; gap: 1rem; margin: 1rem 0;">
+            <label for="cloudBackupMonthSelect" style="font-weight: bold; white-space: nowrap;">View month:</label>
+            <select id="cloudBackupMonthSelect" style="padding: 0.5rem; border: 2px solid #f432f4; border-radius: 5px; flex: 1; max-width: 200px;">
+                <option value="loading">Loading...</option>
+            </select>
+            <button id="openBackupSelectorBtn" class="btn" style="background: #3498db; padding: 0.5rem 1rem;">
+                Browse All
+            </button>
+        </div>
+
+        <!-- Horizontally scrollable card container -->
+        <div id="cloudBackupsScrollContainer" style="
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 1rem 0;
+            margin: 0 -1rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
         ">
-            {{ storage_stats.used_percentage }}%
+            <p style="color: #7f8c8d;"><em>Loading cloud backups...</em></p>
         </div>
-    </div>
 
-    {% if storage_stats.status == 'critical' %}
-    <div style="background: #fee; border-left: 4px solid #e74c3c; padding: 1rem; margin-top: 1rem;">
-        <strong style="color: #e74c3c;">CRITICAL:</strong> Database is at {{ storage_stats.used_percentage }}% capacity.
-        Please export and clear old archived measurements immediately.
-    </div>
-    {% elif storage_stats.status == 'warning' %}
-    <div style="background: #fef9e7; border-left: 4px solid #f39c12; padding: 1rem; margin-top: 1rem;">
-        <strong style="color: #f39c12;">WARNING:</strong> Database is at {{ storage_stats.used_percentage }}% capacity.
-        Consider exporting and clearing old archived measurements soon.
-    </div>
-    {% endif %}
+        <div id="cloudBackupsError" style="display: none; background: #fee; border-left: 4px solid #e74c3c; padding: 1rem; margin-top: 1rem;">
+        </div>
+
+        <p id="cloudBackupsCount" style="color: #7f8c8d; margin-top: 0.5rem; font-size: 0.9rem;"></p>
     </div>
 </div>
 
-<!-- Storage Breakdown -->
-<div class="card collapsible-card" data-card-id="storage-breakdown">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin-top: 0; margin-bottom: 0;">Storage Breakdown</h2>
-        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
-    </div>
-    <div class="card-content">
-    <p style="color: #7f8c8d; margin-bottom: 1rem;">Detailed breakdown of database storage by category.</p>
 
-    <div class="table-container">
-        <table class="styled-table">
-            <thead>
-                <tr>
-                    <th style="text-align: left;">Category</th>
-                    <th style="text-align: center;">Records</th>
-                    <th style="text-align: center;">Estimated Size</th>
-                    <th style="text-align: center;">Percentage</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for key, item in storage_breakdown.items %}
-                <tr>
-                    <td style="text-align: left;">{{ item.name }}</td>
-                    <td style="text-align: center;">{{ item.row_count|default:"0" }}</td>
-                    <td style="text-align: center;">{{ item.estimated_size_mb }} MB</td>
-                    <td style="text-align: center;">{{ item.percentage }}%</td>
-                </tr>
-                {% endfor %}
-                <tr style="border-top: 2px solid #34495e; font-weight: bold; background: #f8f9fa;">
-                    <td style="text-align: left;">Total Application Data</td>
-                    <td style="text-align: center;">—</td>
-                    <td style="text-align: center;">{{ total_estimated_mb }} MB</td>
-                    <td style="text-align: center;">100%</td>
-                </tr>
-                <tr style="background: #fff3cd;">
-                    <td style="text-align: left;">Database Overhead</td>
-                    <td style="text-align: center;">—</td>
-                    <td style="text-align: center;">{{ overhead_mb }} MB</td>
-                    <td style="text-align: center;">—</td>
-                </tr>
-                <tr style="border-top: 2px solid #34495e; font-weight: bold; background: #e8f5e9;">
-                    <td style="text-align: left;">Actual Database Size</td>
-                    <td style="text-align: center;">—</td>
-                    <td style="text-align: center;">{{ storage_stats.current_size_mb }} MB</td>
-                    <td style="text-align: center;">—</td>
-                </tr>
-            </tbody>
-        </table>
+<!-- Storage Breakdown (Default: COLLAPSED) -->
+<div class="card">
+    <div class="card-header" onclick="toggleCard('storage-breakdown')">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0;">Storage Breakdown</h2>
+            <span class="expand-icon" id="icon-storage-breakdown">▼</span>
+        </div>
     </div>
-
-    <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 1rem; margin-top: 1rem;">
-        <p style="margin: 0 0 0.5rem 0; color: #1976d2;">
-            <strong>About Database Overhead:</strong>
+    <div class="card-details" id="details-storage-breakdown">
+        <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.95rem;">
+            Estimated storage breakdown by model/table. Actual sizes may vary by ±20-30% due to SQLite indexes,
+            system tables (django_migrations, django_session, etc.), and database overhead.
         </p>
-        <p style="margin: 0; color: #1976d2; font-size: 0.95rem;">
-            The difference between application data ({{ total_estimated_mb }} MB) and actual database size ({{ storage_stats.current_size_mb }} MB)
-            is <strong>{{ overhead_mb }} MB</strong> of PostgreSQL overhead, which includes:
+        
+        <div class="table-container">
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th style="text-align: left;">Category</th>
+                        <th style="text-align: center;">Records</th>
+                        <th style="text-align: center;">Estimated Size</th>
+                        <th style="text-align: center;">Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, item in storage_breakdown.items %}
+                    <tr>
+                        <td style="text-align: left;">{{ item.name }}</td>
+                        <td style="text-align: center;">{{ item.row_count|default:"0" }}</td>
+                        <td style="text-align: center;">{{ item.estimated_size_mb }} MB</td>
+                        <td style="text-align: center;">{{ item.percentage }}%</td>
+                    </tr>
+                    {% endfor %}
+                    <tr style="border-top: 2px solid #34495e; font-weight: bold; background: #f8f9fa;">
+                        <td style="text-align: left;">Total Application Data</td>
+                        <td style="text-align: center;">—</td>
+                        <td style="text-align: center;">{{ total_estimated_mb }} MB</td>
+                        <td style="text-align: center;">100%</td>
+                    </tr>
+                    <tr style="border-top: 2px solid #34495e; font-weight: bold; background: #e8f5e9;">
+                        <td style="text-align: left;">Estimated Database Size</td>
+                        <td style="text-align: center;">—</td>
+                        <td style="text-align: center;">{{ storage_stats.current_size_mb }} MB</td>
+                        <td style="text-align: center;">—</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <p style="color: #7f8c8d; font-size: 0.9rem; margin-top: 1rem;">
+            <strong>Note:</strong> Estimates are based on average row sizes multiplied by record counts,
+            plus 40% overhead for SQLite indexes, WAL files, and system tables.
+            For exact storage usage, check the Turso dashboard above.
         </p>
-        <ul style="margin: 0.5rem 0 0 1.5rem; color: #1976d2; font-size: 0.95rem;">
-            <li><strong>Indexes</strong> - Primary keys, foreign keys, and custom indexes (typically 30-50% of total size)</li>
-            <li><strong>Django system tables</strong> - Migrations, sessions, permissions, content types, admin logs</li>
-            <li><strong>PostgreSQL overhead</strong> - TOAST storage, free space maps, visibility maps, dead tuples</li>
-        </ul>
-    </div>
     </div>
 </div>
-
-<!-- Archive Statistics -->
-<div class="card collapsible-card" data-card-id="archive-stats">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin-top: 0; margin-bottom: 0;">Archived Measurements</h2>
-        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
-    </div>
-    <div class="card-content">
-
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;">
-        <div>
-            <p style="color: #7f8c8d; margin: 0;">Total Records</p>
-            <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">{{ archive_count }}</p>
-        </div>
-        <div>
-            <p style="color: #7f8c8d; margin: 0;">Estimated Size</p>
-            <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">~{{ estimated_archive_size_mb }} MB</p>
+<!-- Import/Restore Database (Default: COLLAPSED) -->
+<div class="card" style="border-left: 4px solid #e67e22;">
+    <div class="card-header" onclick="toggleCard('import-restore')">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; color: #e67e22;">Import/Restore Database</h2>
+            <span class="expand-icon" id="icon-import-restore">▼</span>
         </div>
     </div>
-    </div>
-</div>
+    <div class="card-details" id="details-import-restore">
+        <p style="color: #7f8c8d;">Upload a backup file to restore database state.</p>
+        
+        <form id="importForm" style="margin-top: 1rem;">
+            {% csrf_token %}
+            <div style="margin-bottom: 1rem;">
+                <label for="backupFile" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                    Select Backup File (.json):
+                </label>
+                <input type="file" id="backupFile" name="backup_file" accept=".json" style="padding: 0.5rem; border: 2px solid #e67e22; border-radius: 5px;">
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label for="importMode" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                    Import Mode:
+                </label>
+                <select id="importMode" name="import_mode" style="padding: 0.5rem; border: 2px solid #e67e22; border-radius: 5px; width: 100%; max-width: 400px;">
+                    <option value="merge">Merge - Keep existing data, add new records (safer)</option>
+                    <option value="replace">Replace - Clear database and restore (WARNING: destructive)</option>
+                </select>
+            </div>
 
-<!-- Export Full Database Backup -->
-<div class="card collapsible-card" style="border-left: 4px solid #8e44ad;" data-card-id="export-full">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin-top: 0; margin-bottom: 0; color: #8e44ad;">Export Full Database Backup</h2>
-        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
-    </div>
-    <div class="card-content">
-    <p style="color: #7f8c8d;">Download a complete backup of the entire database for disaster recovery.</p>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" id="silentRestore" name="silent_restore" value="true" style="width: 18px; height: 18px; cursor: pointer;">
+                    <span style="font-weight: bold;">Silent Restore (don't notify users)</span>
+                </label>
+                <p style="color: #7f8c8d; margin: 0.5rem 0 0 0; font-size: 0.85rem; padding-left: 1.75rem;">
+                    When checked, users will NOT receive notifications about this database restore.
+                </p>
+            </div>
 
-    <div style="margin-top: 1rem;">
-        <a href="{% url 'admin_export_full_database' %}" class="btn" style="background: #8e44ad;">
-            Export Complete Database
-        </a>
-    </div>
+            <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.9rem;">
+                <strong>Merge mode:</strong> Existing records are preserved, only missing records are added.<br>
+                <strong>Replace mode:</strong> All data is cleared before restoring (except superusers).
+            </p>
 
-    <p style="color: #7f8c8d; margin-top: 1rem; font-size: 0.9rem;">
-        Includes all data: users, machines, queue entries, presets, archived measurements, and notifications.
-        Recommended before major system changes or monthly for backups.
-    </p>
-    </div>
-</div>
-
-<!-- Cloud Backups (GitHub) -->
-<div class="card collapsible-card" style="border-left: 4px solid #2ecc71;" data-card-id="cloud-backups">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin-top: 0; margin-bottom: 0; color: #2ecc71;">Cloud Backups</h2>
-        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
-    </div>
-    <div class="card-content">
-    <p style="color: #7f8c8d;">Automated nightly backups stored in GitHub. These run daily at 12:30 AM Central.</p>
-
-    <!-- Month selector dropdown -->
-    <div style="display: flex; align-items: center; gap: 1rem; margin: 1rem 0;">
-        <label for="cloudBackupMonthSelect" style="font-weight: bold; white-space: nowrap;">View month:</label>
-        <select id="cloudBackupMonthSelect" style="padding: 0.5rem; border: 2px solid #2ecc71; border-radius: 5px; flex: 1; max-width: 200px;">
-            <option value="loading">Loading...</option>
-        </select>
-        <button id="openBackupSelectorBtn" class="btn" style="background: #3498db; padding: 0.5rem 1rem;">
-            Browse All
-        </button>
-    </div>
-
-    <!-- Horizontally scrollable card container -->
-    <div id="cloudBackupsScrollContainer" style="
-        overflow-x: auto;
-        white-space: nowrap;
-        padding: 1rem 0;
-        margin: 0 -1rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
-    ">
-        <p style="color: #7f8c8d;"><em>Loading cloud backups...</em></p>
-    </div>
-
-    <div id="cloudBackupsError" style="display: none; background: #fee; border-left: 4px solid #e74c3c; padding: 1rem; margin-top: 1rem;">
-    </div>
-
-    <p id="cloudBackupsCount" style="color: #7f8c8d; margin-top: 0.5rem; font-size: 0.9rem;"></p>
+            <button type="button" id="openImportModal" class="btn" style="background: #e67e22;">
+                Import Database Backup
+            </button>
+        </form>
     </div>
 </div>
 
@@ -241,7 +281,119 @@
     </div>
 </div>
 
+<!-- Export Archived Measurements (Default: COLLAPSED) - Now includes Export Complete Database -->
+<div class="card" style="border-left: 4px solid #3498db;">
+    <div class="card-header" onclick="toggleCard('export-archive')">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; color: #3498db;">Download Backups</h2>
+            <span class="expand-icon" id="icon-export-archive">▼</span>
+        </div>
+    </div>
+    <div class="card-details" id="details-export-archive">
+        <h3 style="color: #3498db; margin-top: 0;">Export Complete Database</h3>
+        <p style="color: #7f8c8d;">Download {{ archive_count }} archived measurement records in .json or .csv format:</p>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <a href="{% url 'admin_export_archive' %}?format=json" class="btn" style="background: #3498db;">
+                JSON
+            </a>
+            <a href="{% url 'admin_export_archive' %}?format=csv" class="btn" style="background: #3498db;">
+                CSV
+            </a>
+        </div>
+        
+        <p style="color: #7f8c8d; margin-top: 1rem; font-size: 0.9rem;">
+            JSON preserves all data. CSV is easier to view in spreadsheets.
+        </p>
+        
+        <hr style="border: none; border-top: 2px solid #ecf0f1; margin: 2rem 0;">
+        
+        <!-- Export Complete Database (moved here) -->
+        <h3 style="color: #8e44ad; margin-top: 0;">Export Complete Database</h3>
+        <p style="color: #7f8c8d;">Download a complete backup of the entire database for disaster recovery.</p>
+        
+        <div style="margin-top: 1rem;">
+            <a href="{% url 'admin_export_full_database' %}" class="btn" style="background: #8e44ad;">
+                Export Complete Database
+            </a>
+        </div>
+        
+        <p style="color: #7f8c8d; margin-top: 1rem; font-size: 0.9rem;">
+            Includes all data: users, machines, queue entries, presets, archived measurements, and notifications.
+            Recommended before major system changes or monthly for backups.
+        </p>
+    </div>
+</div>
+
+<!-- Clear Archive (Danger Zone) (Default: OPEN) - Now includes archived measurements info -->
+<div class="card" style="border-left: 4px solid #e74c3c;">
+    <div class="card-header" onclick="toggleCard('clear-archive')">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; color: #e74c3c;">Clear Archive (Danger Zone)</h2>
+            <span class="expand-icon open" id="icon-clear-archive">▼</span>
+        </div>
+    </div>
+    <div class="card-details" id="details-clear-archive">
+        <!-- Archived Measurements Stats -->
+        <div style="background: #f8f9fa; border: 2px solid #dee2e6; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+            <h3 style="margin-top: 0; color: #495057;">Archived Measurements</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div>
+                    <p style="color: #7f8c8d; margin: 0;">Total Records</p>
+                    <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">{{ archive_count }}</p>
+                </div>
+                <div>
+                    <p style="color: #7f8c8d; margin: 0;">Estimated Size</p>
+                    <p style="font-size: 1.5rem; font-weight: bold; margin: 0.5rem 0;">~{{ estimated_archive_size_mb }} MB</p>
+                </div>
+            </div>
+        </div>
+
+        <p style="color: #7f8c8d;">Permanently delete all archived measurements to free up database space.</p>
+
+        {% if archive_count == 0 %}
+        <div style="background: #e8f5e9; border-left: 4px solid #2ecc71; padding: 1rem; margin: 1rem 0;">
+            <strong style="color: #2ecc71;">Archive is empty.</strong> No measurements to clear.
+        </div>
+        {% else %}
+        <div style="background: #fee; border: 2px solid #e74c3c; padding: 1.5rem; border-radius: 5px; margin-top: 1rem;">
+            <h3 style="margin-top: 0; color: #e74c3c;">WARNING: This action cannot be undone!</h3>
+
+            <ul style="color: #7f8c8d;">
+                <li>This will permanently delete <strong>{{ archive_count }} archived measurements</strong></li>
+                <li><strong>Automatic backup will be downloaded</strong> before deletion</li>
+                <li>All users will be notified that the archive was cleared</li>
+                <li>Users should contact you for old data if needed</li>
+            </ul>
+
+            <div style="margin-top: 1rem;">
+                <button id="openThanosModal" class="btn" style="background: #e74c3c;">
+                    Delete All {{ archive_count }} Archived Measurements
+                </button>
+                <a href="{% url 'admin_dashboard' %}" class="btn" style="background: #95a5a6; margin-left: 0.5rem;">
+                    Cancel
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
 <script>
+// Simple toggle function like fridges page
+function toggleCard(cardId) {
+    const details = document.getElementById('details-' + cardId);
+    const icon = document.getElementById('icon-' + cardId);
+
+    if (details.classList.contains('open')) {
+        details.classList.remove('open');
+        icon.classList.remove('open');
+    } else {
+        details.classList.add('open');
+        icon.classList.add('open');
+    }
+}
+
 // Cloud Backups with horizontal scroll and selector modal
 let allCloudBackups = [];
 let backupsByMonth = {};
@@ -411,7 +563,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div style="
                     display: inline-block;
                     background: #f8f9fa;
-                    border: 2px solid #2ecc71;
+                    border: 2px solid #f432f4;
                     border-radius: 8px;
                     padding: 1rem;
                     min-width: 200px;
@@ -531,117 +683,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
-<!-- Export Archive Measurements -->
-<div class="card collapsible-card" style="border-left: 4px solid #3498db;" data-card-id="export-archive">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin-top: 0; margin-bottom: 0; color: #3498db;">Export Archived Measurements</h2>
-        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
-    </div>
-    <div class="card-content">
-    <p style="color: #7f8c8d;">Download archived measurement records only.</p>
-
-    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-        <a href="{% url 'admin_export_archive' %}?format=json" class="btn" style="background: #3498db;">
-            Export as JSON ({{ archive_count }} records)
-        </a>
-        <a href="{% url 'admin_export_archive' %}?format=csv" class="btn" style="background: #27ae60;">
-            Export as CSV ({{ archive_count }} records)
-        </a>
-    </div>
-
-    <p style="color: #7f8c8d; margin-top: 1rem; font-size: 0.9rem;">
-        JSON format preserves all data. CSV format is easier to view in spreadsheets.
-    </p>
-    </div>
-</div>
-
-<!-- Import/Restore Database -->
-<div class="card collapsible-card" style="border-left: 4px solid #e67e22;" data-card-id="import-restore">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin-top: 0; margin-bottom: 0; color: #e67e22;">Import/Restore Database</h2>
-        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
-    </div>
-    <div class="card-content">
-    <p style="color: #7f8c8d;">Upload a backup file to restore database state.</p>
-
-    <form id="importForm" style="margin-top: 1rem;">
-        {% csrf_token %}
-        <div style="margin-bottom: 1rem;">
-            <label for="backupFile" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
-                Select Backup File (.json):
-            </label>
-            <input type="file" id="backupFile" name="backup_file" accept=".json" style="padding: 0.5rem; border: 2px solid #e67e22; border-radius: 5px;">
-        </div>
-
-        <div style="margin-bottom: 1rem;">
-            <label for="importMode" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
-                Import Mode:
-            </label>
-            <select id="importMode" name="import_mode" style="padding: 0.5rem; border: 2px solid #e67e22; border-radius: 5px; width: 100%; max-width: 400px;">
-                <option value="merge">Merge - Keep existing data, add new records (safer)</option>
-                <option value="replace">Replace - Clear database and restore (WARNING: destructive)</option>
-            </select>
-        </div>
-
-        <div style="margin-bottom: 1rem;">
-            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                <input type="checkbox" id="silentRestore" name="silent_restore" value="true" style="width: 18px; height: 18px; cursor: pointer;">
-                <span style="font-weight: bold;">Silent Restore (don't notify users)</span>
-            </label>
-            <p style="color: #7f8c8d; margin: 0.5rem 0 0 0; font-size: 0.85rem; padding-left: 1.75rem;">
-                When checked, users will NOT receive notifications about this database restore.
-            </p>
-        </div>
-
-        <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.9rem;">
-            <strong>Merge mode:</strong> Existing records are preserved, only missing records are added.<br>
-            <strong>Replace mode:</strong> All data is cleared before restoring (except superusers).
-        </p>
-
-        <button type="button" id="openImportModal" class="btn" style="background: #e67e22;">
-            Import Database Backup
-        </button>
-    </form>
-    </div>
-</div>
-
-<!-- Clear Archive -->
-<div class="card collapsible-card" style="border-left: 4px solid #e74c3c;" data-card-id="clear-archive">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin-top: 0; margin-bottom: 0; color: #e74c3c;">Clear Archive (Danger Zone)</h2>
-        <button class="collapse-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d; padding: 0.25rem 0.5rem;" title="Toggle collapse">−</button>
-    </div>
-    <div class="card-content">
-    <p style="color: #7f8c8d;">Permanently delete all archived measurements to free up database space.</p>
-
-    {% if archive_count == 0 %}
-    <div style="background: #e8f5e9; border-left: 4px solid #2ecc71; padding: 1rem; margin: 1rem 0;">
-        <strong style="color: #2ecc71;">Archive is empty.</strong> No measurements to clear.
-    </div>
-    {% else %}
-    <div style="background: #fee; border: 2px solid #e74c3c; padding: 1.5rem; border-radius: 5px; margin-top: 1rem;">
-        <h3 style="margin-top: 0; color: #e74c3c;">WARNING: This action cannot be undone!</h3>
-
-        <ul style="color: #7f8c8d;">
-            <li>This will permanently delete <strong>{{ archive_count }} archived measurements</strong></li>
-            <li><strong>Automatic backup will be downloaded</strong> before deletion</li>
-            <li>All users will be notified that the archive was cleared</li>
-            <li>Users should contact you for old data if needed</li>
-        </ul>
-
-        <div style="margin-top: 1rem;">
-            <button id="openThanosModal" class="btn" style="background: #e74c3c;">
-                Delete All {{ archive_count }} Archived Measurements
-            </button>
-            <a href="{% url 'admin_dashboard' %}" class="btn" style="background: #95a5a6; margin-left: 0.5rem;">
-                Cancel
-            </a>
-        </div>
-    </div>
-    {% endif %}
-    </div>
-</div>
 
 <!-- Thanos Delete Confirmation Modal -->
 {% load static %}
@@ -1070,39 +1111,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Enter') {
             btnYes.click();
         }
-    });
-});
-
-// Collapsible Cards functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const cards = document.querySelectorAll('.collapsible-card');
-
-    cards.forEach(card => {
-        const btn = card.querySelector('.collapse-btn');
-        const content = card.querySelector('.card-content');
-        const cardId = card.dataset.cardId;
-
-        // Load saved state from localStorage
-        const isCollapsed = localStorage.getItem(`card-collapsed-${cardId}`) === 'true';
-        if (isCollapsed) {
-            content.style.display = 'none';
-            btn.textContent = '+';
-        }
-
-        // Toggle collapse on click
-        btn.addEventListener('click', function() {
-            const isCurrentlyCollapsed = content.style.display === 'none';
-
-            if (isCurrentlyCollapsed) {
-                content.style.display = 'block';
-                btn.textContent = '−';
-                localStorage.setItem(`card-collapsed-${cardId}`, 'false');
-            } else {
-                content.style.display = 'none';
-                btn.textContent = '+';
-                localStorage.setItem(`card-collapsed-${cardId}`, 'true');
-            }
-        });
     });
 });
 </script>

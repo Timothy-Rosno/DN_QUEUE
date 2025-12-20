@@ -8,6 +8,8 @@ from django.urls import reverse
 from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.cache import never_cache
+from django.db import transaction
 from django.conf import settings
 from userRegistration.models import UserProfile
 from .models import Machine, QueueEntry, QueuePreset, ArchivedMeasurement, Notification, NotificationPreference
@@ -19,6 +21,7 @@ from .matching_algorithm import find_best_machine, get_compatible_machines, set_
 
 
 @staff_member_required
+@never_cache
 def admin_dashboard(request):
     """Main admin dashboard with overview stats."""
     # Get stats - exclude staff/superusers from pending count
@@ -50,6 +53,7 @@ def admin_dashboard(request):
 
 
 @staff_member_required
+@never_cache
 def admin_users(request):
     """User management page with improved status filtering."""
     # Get filter from query params
@@ -447,6 +451,7 @@ def admin_edit_user_info(request, user_id=None):
 
 
 @staff_member_required
+@never_cache
 def admin_machines(request):
     """Machine management page."""
     machines = Machine.objects.all().annotate(
@@ -754,6 +759,7 @@ def admin_cancel_entry(request, entry_id):
 
 
 @staff_member_required
+@never_cache
 def admin_queue(request):
     """Queue management page with machine overview."""
     # Get filter from query params
@@ -867,6 +873,7 @@ def admin_queue(request):
 
 
 @staff_member_required
+@never_cache
 def admin_rush_jobs(request):
     """Rush job approval page."""
     from .matching_algorithm import get_matching_machines
@@ -1564,6 +1571,7 @@ def admin_undo_check_in(request, entry_id):
 
 
 @staff_member_required
+@never_cache
 def admin_presets(request):
     """Admin page for managing all presets (public and private)."""
     from .models import QueuePreset
@@ -1930,31 +1938,53 @@ def admin_render_usage(request):
 def admin_database_management(request):
     """
     Database management page for staff.
-    Shows storage stats and options to export/clear archive.
+    Shows Turso usage stats against monthly limits and storage breakdown.
     """
+    import os
     from .storage_utils import get_storage_stats, get_storage_breakdown, format_size_mb
+    from .turso_api_client import TursoAPIClient
 
-    # Get storage statistics
+    # Get Turso usage metrics from API
+    turso_client = TursoAPIClient()
+    turso_usage = turso_client.get_usage_metrics()
+
+    # Turso plan limits (Free tier defaults)
+    turso_limits = {
+        'storage_mb': int(os.environ.get('TURSO_MAX_STORAGE_MB', 5120)),  # 5GB
+        'rows_read_monthly': int(os.environ.get('TURSO_MAX_ROWS_READ', 500_000_000)),  # 500M
+        'rows_written_monthly': int(os.environ.get('TURSO_MAX_ROWS_WRITTEN', 10_000_000)),  # 10M
+    }
+
+    # Calculate usage percentages
+    turso_stats = None
+    if turso_usage:
+        turso_stats = {
+            'rows_read': turso_usage['rows_read'],
+            'rows_written': turso_usage['rows_written'],
+            'storage_mb': turso_usage['storage_bytes'] / (1024 * 1024),
+            'databases': turso_usage.get('databases', 0),
+            'rows_read_percent': (turso_usage['rows_read'] / turso_limits['rows_read_monthly'] * 100),
+            'rows_written_percent': (turso_usage['rows_written'] / turso_limits['rows_written_monthly'] * 100),
+            'storage_percent': (turso_usage['storage_bytes'] / (turso_limits['storage_mb'] * 1024 * 1024) * 100),
+        }
+
+    # Get storage statistics (fallback if API unavailable)
     storage_stats = get_storage_stats()
 
     # Get storage breakdown
     breakdown_data = get_storage_breakdown()
 
-    # Calculate overhead (actual DB size - estimated application data)
-    overhead_mb = max(0, storage_stats['current_size_mb'] - breakdown_data['total_estimated_mb'])
-
     # Get archive count
     archive_count = ArchivedMeasurement.objects.count()
-
-    # Estimate archive size (rough calculation)
-    # Each ArchivedMeasurement is roughly 1-2KB
-    estimated_archive_size_mb = (archive_count * 1.5) / 1024  # Rough estimate
+    estimated_archive_size_mb = (archive_count * 1.5) / 1024
 
     context = {
+        'turso_usage': turso_stats,
+        'turso_limits': turso_limits,
+        'turso_org_slug': os.environ.get('TURSO_ORG_SLUG', 'unknown'),
         'storage_stats': storage_stats,
         'storage_breakdown': breakdown_data['breakdown'],
         'total_estimated_mb': breakdown_data['total_estimated_mb'],
-        'overhead_mb': round(overhead_mb, 2),
         'archive_count': archive_count,
         'estimated_archive_size_mb': round(estimated_archive_size_mb, 2),
         'format_size_mb': format_size_mb,
