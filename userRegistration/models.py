@@ -23,7 +23,9 @@ class UserProfile(models.Model):
 
     ORGANIZATION_CHOICES = [
         ('', ''),  # Empty choice for initial state
+        ('montana', 'Montana State University'),
         ('uark', 'University of Arkansas, Fayetteville'),
+        ('vtech', 'Virginia Tech'),
         ('other', 'Other'),
     ]
 
@@ -40,7 +42,7 @@ class UserProfile(models.Model):
     phone_number = models.CharField(max_length=15, blank=False)
     organization = models.CharField(max_length=20, choices=ORGANIZATION_CHOICES, blank=False)
     organization_other = models.CharField(max_length=100, blank=True, help_text="Custom organization name")
-    department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES, blank=False)
+    department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES, blank=True)
     department_other = models.CharField(max_length=100, blank=True, help_text="Custom department name")
     notes = models.CharField(max_length=500, blank=True, help_text="Additional information about the user (max 500 characters)")
 

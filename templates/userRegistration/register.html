@@ -142,8 +142,8 @@
                     organizationOtherField.style.display = 'none';
                 }
 
-                // Show/hide department field (only for UArk)
-                if (orgValue === 'uark') {
+                // Show/hide department field (for schools: uark, montana, vtech)
+                if (orgValue === 'uark' || orgValue === 'montana' || orgValue === 'vtech') {
                     departmentField.style.display = 'block';
                 } else {
                     departmentField.style.display = 'none';
@@ -206,7 +206,8 @@
                 if (orgValue === 'other') {
                     if (!organizationOther || !organizationOther.value.trim()) allFieldsFilled = false;
                 }
-                if (orgValue === 'uark') {
+                // Require department for schools (uark, montana, vtech) but not for 'other'
+                if (orgValue === 'uark' || orgValue === 'montana' || orgValue === 'vtech') {
                     if (!department || !department.value.trim()) allFieldsFilled = false;
                     // Check if department is 'other' and requires department_other
                     const deptValue = department ? department.value : '';

@@ -102,7 +102,7 @@ class UserProfileForm(forms.ModelForm):
         help_texts = {
             'phone_number': 'Required',
             'organization': 'Required',
-            'department': 'Required',
+            'department': 'Select your department (if applicable)',
             'notes': '(Optional)',
         }
 
