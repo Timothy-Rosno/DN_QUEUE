@@ -336,6 +336,14 @@
             toggleDepartmentOtherField();
             updateRegisterButton();
 
+            // Prevent double submission by disabling button on submit
+            const registerForm = document.querySelector('form');
+            registerForm.addEventListener('submit', function(e) {
+                // Disable button and change text
+                registerButton.disabled = true;
+                registerButton.textContent = 'Registering...';
+            });
+
             // Character counter functionality for profile fields
             setupCharacterCounter('{{ profile_form.organization_other.id_for_label }}', 'organizationOtherCharCount', 'organizationOtherError', 100);
             setupCharacterCounter('{{ profile_form.department_other.id_for_label }}', 'departmentOtherCharCount', 'departmentOtherError', 100);
