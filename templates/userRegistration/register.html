@@ -3,6 +3,58 @@
 {% block title %}Register - Scheduler App{% endblock %}
 
 {% block content %}
+<style>
+    /* Submit button tooltip container */
+    .submit-btn-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    /* Validation tooltip */
+    .validation-tooltip {
+        display: none;
+        position: absolute;
+        bottom: 100%;
+        left: 0;
+        background-color: #2c3e50;
+        color: white;
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        max-width: 300px;
+        width: max-content;
+        z-index: 1000;
+        margin-bottom: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .validation-tooltip::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 20px;
+        border-width: 6px;
+        border-style: solid;
+        border-color: #2c3e50 transparent transparent transparent;
+    }
+
+    .validation-tooltip ul {
+        margin: 0;
+        padding: 0 0 0 1rem;
+        list-style: disc;
+    }
+
+    .validation-tooltip li {
+        margin: 0.25rem 0;
+        word-wrap: break-word;
+    }
+
+    /* Only show tooltip when hovering AND button is disabled */
+    .submit-btn-wrapper:hover .btn:disabled + .validation-tooltip {
+        display: block;
+    }
+</style>
+
 <div class="card">
     <h1>Create Your Account</h1>
     <p style="margin: 1rem 0;">Please fill out the form below to register. Fields are required unless otherwise stated.</p>
@@ -153,7 +205,7 @@
                 }
 
                 // Revalidate form after changing fields
-                validateForm();
+                updateRegisterButton();
             }
 
             // Handle department selection changes
@@ -168,11 +220,13 @@
                 }
 
                 // Revalidate form after changing fields
-                validateForm();
+                updateRegisterButton();
             }
 
-            // Form validation function
+            // Form validation function - returns array of error messages
             function validateForm() {
+                const errors = [];
+
                 // Get all required fields
                 const username = document.getElementById('id_username');
                 const firstName = document.getElementById('id_first_name');
@@ -187,41 +241,83 @@
                 const securityQuestionCustom = document.getElementById('{{ profile_form.security_question_custom.id_for_label }}');
                 const securityAnswer = document.getElementById('{{ profile_form.security_answer.id_for_label }}');
 
-                // Check if all base required fields are filled
-                let allFieldsFilled = true;
-
                 // Check user form fields
-                if (!username || !username.value.trim()) allFieldsFilled = false;
-                if (!firstName || !firstName.value.trim()) allFieldsFilled = false;
-                if (!email || !email.value.trim()) allFieldsFilled = false;
-                if (!password1 || !password1.value.trim()) allFieldsFilled = false;
-                if (!password2 || !password2.value.trim()) allFieldsFilled = false;
+                if (!username || !username.value.trim()) {
+                    errors.push('Enter a username');
+                }
+                if (!firstName || !firstName.value.trim()) {
+                    errors.push('Enter your first name');
+                }
+                if (!email || !email.value.trim()) {
+                    errors.push('Enter your email address');
+                }
+                if (!password1 || !password1.value.trim()) {
+                    errors.push('Enter a password');
+                }
+                if (!password2 || !password2.value.trim()) {
+                    errors.push('Confirm your password');
+                }
 
                 // Check profile form fields
-                if (!phoneNumber || !phoneNumber.value.trim()) allFieldsFilled = false;
-                if (!organization || !organization.value.trim()) allFieldsFilled = false;
+                if (!phoneNumber || !phoneNumber.value.trim()) {
+                    errors.push('Enter your phone number');
+                }
+                if (!organization || !organization.value.trim()) {
+                    errors.push('Select your organization');
+                }
 
                 // Check conditional fields based on organization selection
                 const orgValue = organization ? organization.value : '';
                 if (orgValue === 'other') {
-                    if (!organizationOther || !organizationOther.value.trim()) allFieldsFilled = false;
+                    if (!organizationOther || !organizationOther.value.trim()) {
+                        errors.push('Enter your organization name');
+                    }
                 }
+
                 // Require department for schools (uark, montana, vtech) but not for 'other'
                 if (orgValue === 'uark' || orgValue === 'montana' || orgValue === 'vtech') {
-                    if (!department || !department.value.trim()) allFieldsFilled = false;
-                    // Check if department is 'other' and requires department_other
-                    const deptValue = department ? department.value : '';
-                    if (deptValue === 'other') {
-                        if (!departmentOther || !departmentOther.value.trim()) allFieldsFilled = false;
+                    if (!department || !department.value.trim()) {
+                        errors.push('Select your department');
+                    } else {
+                        // Check if department is 'other' and requires department_other
+                        const deptValue = department ? department.value : '';
+                        if (deptValue === 'other') {
+                            if (!departmentOther || !departmentOther.value.trim()) {
+                                errors.push('Enter your department name');
+                            }
+                        }
                     }
                 }
 
                 // Check security question fields
-                if (!securityQuestionCustom || !securityQuestionCustom.value.trim()) allFieldsFilled = false;
-                if (!securityAnswer || !securityAnswer.value.trim()) allFieldsFilled = false;
+                if (!securityQuestionCustom || !securityQuestionCustom.value.trim()) {
+                    errors.push('Enter a security question');
+                }
+                if (!securityAnswer || !securityAnswer.value.trim()) {
+                    errors.push('Enter a security answer');
+                }
 
-                // Enable or disable the register button
-                registerButton.disabled = !allFieldsFilled;
+                return errors;
+            }
+
+            // Update register button and tooltip
+            function updateRegisterButton() {
+                const tooltip = document.getElementById('validationTooltip');
+                const errors = validateForm();
+                const isValid = errors.length === 0;
+
+                // Update button state
+                registerButton.disabled = !isValid;
+
+                // Update tooltip
+                if (errors.length > 0) {
+                    const tooltipContent = '<ul>' + errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+                    tooltip.innerHTML = tooltipContent;
+                    tooltip.style.display = '';  // Reset to default (CSS will control visibility)
+                } else {
+                    tooltip.innerHTML = '';
+                    tooltip.style.display = 'none';  // Explicitly hide when valid
+                }
             }
 
             // Add event listeners for validation
@@ -231,14 +327,14 @@
             // Add validation event listeners to all form inputs
             const formInputs = document.querySelectorAll('input, select, textarea');
             formInputs.forEach(function(input) {
-                input.addEventListener('input', validateForm);
-                input.addEventListener('change', validateForm);
+                input.addEventListener('input', updateRegisterButton);
+                input.addEventListener('change', updateRegisterButton);
             });
 
             // Initialize on page load
             toggleOrganizationFields();
             toggleDepartmentOtherField();
-            validateForm();
+            updateRegisterButton();
 
             // Character counter functionality for profile fields
             setupCharacterCounter('{{ profile_form.organization_other.id_for_label }}', 'organizationOtherCharCount', 'organizationOtherError', 100);
@@ -292,7 +388,10 @@
         </script>
 
         <div style="margin-top: 1.5rem;">
-            <button type="submit" class="btn" id="registerButton" disabled>Register</button>
+            <span class="submit-btn-wrapper">
+                <button type="submit" class="btn" id="registerButton" disabled>Register</button>
+                <div class="validation-tooltip" id="validationTooltip"></div>
+            </span>
             <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
         </div>
     </form>
