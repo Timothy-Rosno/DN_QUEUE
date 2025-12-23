@@ -73,10 +73,7 @@
             {% if form.title.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.title.errors }}</div>
             {% endif %}
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
-                <small style="color: #7f8c8d;">{{ form.title.help_text }}</small>
-                <small style="color: #7f8c8d;"><span id="titleCharCount"></span></small>
-            </div>
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.title.help_text }}</small>
         </div>
 
         <div style="margin-bottom: 1.5rem;">
@@ -87,10 +84,7 @@
             {% if form.description.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.description.errors }}</div>
             {% endif %}
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
-                <small style="color: #7f8c8d;">{{ form.description.help_text }}</small>
-                <small style="color: #7f8c8d;"><span id="descCharCount"></span></small>
-            </div>
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.description.help_text }}</small>
         </div>
 
         <div style="margin-bottom: 1.5rem;">
@@ -1305,7 +1299,7 @@
                 });
             });
 
-            // Description field validation (required, min 15 characters)
+            // Description field validation (required, min 50 characters)
             if (descriptionField) {
                 const descErrorDiv = document.createElement('div');
                 descErrorDiv.style.cssText = 'color: #e74c3c; font-size: 0.9rem; margin-top: 0.25rem; display: none; font-weight: bold;';
@@ -1314,7 +1308,7 @@
 
                 function validateDescription() {
                     const value = descriptionField.value.trim();
-                    const minLength = 15;
+                    const minLength = 50;
 
                     // Clear previous error
                     descErrorDiv.textContent = '';
@@ -1385,8 +1379,8 @@
                             descErrorDiv.style.display = 'block';
                             descriptionField.style.borderColor = '#e74c3c';
                             hasErrors = true;
-                        } else if (descValue.length < 15) {
-                            descErrorDiv.textContent = `Measurement Description: Must be at least 15 characters (currently ${descValue.length})`;
+                        } else if (descValue.length < 50) {
+                            descErrorDiv.textContent = `Measurement Description: Must be at least 50 characters (currently ${descValue.length})`;
                             descErrorDiv.style.display = 'block';
                             descriptionField.style.borderColor = '#e74c3c';
                             hasErrors = true;
@@ -1552,71 +1546,6 @@
                     // Delay to allow preset data to populate fields
                     setTimeout(updateSubmitButtons, 100);
                 });
-            }
-        })();
-
-        // Character counters for title and description fields
-        (function() {
-            const titleField = document.getElementById('{{ form.title.id_for_label }}');
-            const descriptionField = document.getElementById('{{ form.description.id_for_label }}');
-            const titleCharCount = document.getElementById('titleCharCount');
-            const descCharCount = document.getElementById('descCharCount');
-            const TITLE_MIN = 3;
-            const DESC_MIN = 50;
-
-            function updateTitleCharCounter() {
-                if (!titleField || !titleCharCount) return;
-
-                const length = titleField.value.length;
-                const needed = TITLE_MIN - length;
-
-                if (length === 0) {
-                    // Empty field - show nothing
-                    titleCharCount.textContent = '';
-                    titleCharCount.style.color = '#7f8c8d';
-                } else if (needed > 0) {
-                    // Below minimum - show how many more needed
-                    titleCharCount.textContent = `Need ${needed} more`;
-                    titleCharCount.style.color = '#f39c12'; // Orange warning
-                } else {
-                    // At or above minimum - show checkmark or ready message
-                    titleCharCount.textContent = '✓';
-                    titleCharCount.style.color = '#27ae60'; // Green success
-                }
-            }
-
-            function updateDescCharCounter() {
-                if (!descriptionField || !descCharCount) return;
-
-                const length = descriptionField.value.length;
-                const needed = DESC_MIN - length;
-
-                if (length === 0) {
-                    // Empty field - show nothing
-                    descCharCount.textContent = '';
-                    descCharCount.style.color = '#7f8c8d';
-                } else if (needed > 0) {
-                    // Below minimum - show how many more needed
-                    descCharCount.textContent = `Need ${needed} more`;
-                    descCharCount.style.color = '#f39c12'; // Orange warning
-                } else {
-                    // At or above minimum - show checkmark or ready message
-                    descCharCount.textContent = '✓';
-                    descCharCount.style.color = '#27ae60'; // Green success
-                }
-            }
-
-            // Initialize counters on page load
-            if (titleField) {
-                updateTitleCharCounter();
-                titleField.addEventListener('input', updateTitleCharCounter);
-                titleField.addEventListener('keyup', updateTitleCharCounter);
-            }
-
-            if (descriptionField) {
-                updateDescCharCounter();
-                descriptionField.addEventListener('input', updateDescCharCounter);
-                descriptionField.addEventListener('keyup', updateDescCharCounter);
             }
         })();
 

@@ -69,10 +69,7 @@
             {% if form.title.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.title.errors }}</div>
             {% endif %}
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
-                <small style="color: #7f8c8d;">{{ form.title.help_text }} <span style="color: #f39c12;">Note: Queue submissions require 3 characters minimum.</span></small>
-                <small style="color: #7f8c8d;"><span id="titleCharCount"></span></small>
-            </div>
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.title.help_text }}</small>
         </div>
 
         <!-- Description Field -->
@@ -84,10 +81,7 @@
             {% if form.description.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.description.errors }}</div>
             {% endif %}
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
-                <small style="color: #7f8c8d;">{{ form.description.help_text }} <span style="color: #f39c12;">Note: Queue submissions require 50 characters minimum.</span></small>
-                <small style="color: #7f8c8d;"><span id="descCharCount"></span></small>
-            </div>
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.description.help_text }}</small>
         </div>
 
         <!-- Temperature Fields -->
@@ -548,53 +542,6 @@
                 });
             });
 
-            // Device name (title) field validation (optional, shows warning if < 3 chars for queue submission)
-            const titleField = document.querySelector('input[name="title"]');
-            if (titleField) {
-                const titleWarningDiv = document.createElement('div');
-                titleWarningDiv.style.cssText = 'color: #f39c12; font-size: 0.9rem; margin-top: 0.25rem; display: none;';
-                titleWarningDiv.className = 'input-validation-warning';
-                titleField.parentNode.insertBefore(titleWarningDiv, titleField.nextSibling);
-
-                function validateTitle() {
-                    const value = titleField.value.trim();
-                    const queueMinLength = 3;
-
-                    // Clear previous warning
-                    titleWarningDiv.textContent = '';
-                    titleWarningDiv.style.display = 'none';
-                    titleField.style.borderColor = '';
-
-                    // Show informative warning if entered but < 3 chars (doesn't block submission)
-                    if (value !== '' && value.length < queueMinLength) {
-                        titleWarningDiv.textContent = `Note: ${queueMinLength - value.length} more character(s) needed for queue submission`;
-                        titleWarningDiv.style.display = 'block';
-                        titleField.style.borderColor = '#f39c12';
-                    }
-
-                    return true; // Always return true, doesn't block
-                }
-
-                // Validate on blur
-                titleField.addEventListener('blur', function() {
-                    this.dataset.touched = 'true';
-                    validateTitle();
-                });
-
-                // Validate on Enter or Tab
-                titleField.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' || e.key === 'Tab') {
-                        validateTitle();
-                    }
-                });
-
-                // Real-time validation after first interaction
-                titleField.addEventListener('input', function() {
-                    if (this.dataset.touched === 'true') {
-                        validateTitle();
-                    }
-                });
-            }
 
             // Description field validation (optional, shows warning if < 50 chars for queue submission)
             if (descriptionField) {
@@ -646,78 +593,11 @@
                 });
             }
 
-            // Character counters for title and description fields
-            const titleCharCount = document.getElementById('titleCharCount');
-            const descCharCount = document.getElementById('descCharCount');
-            const TITLE_MIN = 3;
-            const DESC_MIN = 50;
-
-            function updateTitleCharCounter() {
-                if (!titleField || !titleCharCount) return;
-
-                const length = titleField.value.length;
-                const needed = TITLE_MIN - length;
-
-                if (length === 0) {
-                    // Empty field - show nothing
-                    titleCharCount.textContent = '';
-                    titleCharCount.style.color = '#7f8c8d';
-                } else if (needed > 0) {
-                    // Below minimum - show how many more needed
-                    titleCharCount.textContent = `Need ${needed} more for queue`;
-                    titleCharCount.style.color = '#f39c12'; // Orange warning
-                } else {
-                    // At or above minimum - show checkmark
-                    titleCharCount.textContent = '✓';
-                    titleCharCount.style.color = '#27ae60'; // Green success
-                }
-            }
-
-            function updateDescCharCounter() {
-                if (!descriptionField || !descCharCount) return;
-
-                const length = descriptionField.value.length;
-                const needed = DESC_MIN - length;
-
-                if (length === 0) {
-                    // Empty field - show nothing
-                    descCharCount.textContent = '';
-                    descCharCount.style.color = '#7f8c8d';
-                } else if (needed > 0) {
-                    // Below minimum - show how many more needed
-                    descCharCount.textContent = `Need ${needed} more for queue`;
-                    descCharCount.style.color = '#f39c12'; // Orange warning
-                } else {
-                    // At or above minimum - show checkmark
-                    descCharCount.textContent = '✓';
-                    descCharCount.style.color = '#27ae60'; // Green success
-                }
-            }
-
-            // Initialize counters on page load
-            if (titleField) {
-                updateTitleCharCounter();
-                titleField.addEventListener('input', updateTitleCharCounter);
-                titleField.addEventListener('keyup', updateTitleCharCounter);
-            }
-
-            if (descriptionField) {
-                updateDescCharCounter();
-                descriptionField.addEventListener('input', updateDescCharCounter);
-                descriptionField.addEventListener('keyup', updateDescCharCounter);
-            }
-
             // Validate all fields on form submit
             const form = document.getElementById('presetForm');
             if (form) {
                 form.addEventListener('submit', function(e) {
                     let hasErrors = false;
-
-                    // Title validation on submit - just update warning, doesn't block
-                    if (titleField) {
-                        titleField.dataset.touched = 'true';
-                        validateTitle();
-                    }
 
                     // Description validation on submit - just update warning, doesn't block
                     if (descriptionField) {
