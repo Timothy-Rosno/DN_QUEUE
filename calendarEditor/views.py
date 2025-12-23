@@ -443,7 +443,14 @@ def my_queue(request):
 @login_required
 def cancel_queue_entry(request, pk):
     """Cancel a queued or running entry."""
-    queue_entry = get_object_or_404(QueueEntry, pk=pk, user=request.user)
+    # Check if entry exists and belongs to current user
+    try:
+        queue_entry = QueueEntry.objects.get(pk=pk)
+        if queue_entry.user != request.user:
+            messages.warning(request, 'This queue entry is not for your account. Returning to home page.')
+            return redirect('home')
+    except QueueEntry.DoesNotExist:
+        raise Http404("Queue entry not found")
 
     if queue_entry.status not in ['queued', 'running']:
         messages.error(request, 'Can only cancel queued or running entries.')
@@ -566,7 +573,14 @@ def check_in_job(request, entry_id):
     - Entry must be at position #1 (ON DECK)
     - Entry status must be 'queued'
     """
-    queue_entry = get_object_or_404(QueueEntry, id=entry_id, user=request.user)
+    # Check if entry exists and belongs to current user
+    try:
+        queue_entry = QueueEntry.objects.get(id=entry_id)
+        if queue_entry.user != request.user:
+            messages.warning(request, 'This queue entry is not for your account. Returning to home page.')
+            return redirect('home')
+    except QueueEntry.DoesNotExist:
+        raise Http404("Queue entry not found")
 
     # Validate entry can be checked in
     if queue_entry.status != 'queued':
@@ -668,7 +682,14 @@ def check_out_job(request, entry_id):
     - User must own the entry
     - Entry status must be 'running'
     """
-    queue_entry = get_object_or_404(QueueEntry, id=entry_id, user=request.user)
+    # Check if entry exists and belongs to current user
+    try:
+        queue_entry = QueueEntry.objects.get(id=entry_id)
+        if queue_entry.user != request.user:
+            messages.warning(request, 'This queue entry is not for your account. Returning to home page.')
+            return redirect('home')
+    except QueueEntry.DoesNotExist:
+        raise Http404("Queue entry not found")
 
     # Validate entry can be checked out
     if queue_entry.status != 'running':
@@ -835,7 +856,14 @@ def snooze_checkout_reminder(request, entry_id):
     - User must own the entry
     - Entry must be running
     """
-    queue_entry = get_object_or_404(QueueEntry, id=entry_id, user=request.user)
+    # Check if entry exists and belongs to current user
+    try:
+        queue_entry = QueueEntry.objects.get(id=entry_id)
+        if queue_entry.user != request.user:
+            messages.warning(request, 'This notification is not for your account. Returning to home page.')
+            return redirect('home')
+    except QueueEntry.DoesNotExist:
+        raise Http404("Queue entry not found")
 
     # Only allow snoozing for running entries
     if queue_entry.status != 'running':
@@ -863,7 +891,14 @@ def snooze_checkin_reminder(request, entry_id):
     - User must own the entry
     - Entry must be queued at position 1 (ON DECK)
     """
-    queue_entry = get_object_or_404(QueueEntry, id=entry_id, user=request.user)
+    # Check if entry exists and belongs to current user
+    try:
+        queue_entry = QueueEntry.objects.get(id=entry_id)
+        if queue_entry.user != request.user:
+            messages.warning(request, 'This notification is not for your account. Returning to home page.')
+            return redirect('home')
+    except QueueEntry.DoesNotExist:
+        raise Http404("Queue entry not found")
 
     # Only allow snoozing for position 1 queued entries
     if queue_entry.status != 'queued' or queue_entry.queue_position != 1:
@@ -892,7 +927,11 @@ def undo_check_in(request, entry_id):
     - Entry status must be 'running'
     """
     try:
-        queue_entry = get_object_or_404(QueueEntry, id=entry_id, user=request.user)
+        # Check if entry exists and belongs to current user
+        queue_entry = QueueEntry.objects.get(id=entry_id)
+        if queue_entry.user != request.user:
+            messages.warning(request, 'This queue entry is not for your account. Returning to home page.')
+            return redirect('home')
 
         # Validate entry can be undone
         if queue_entry.status != 'running':
@@ -985,6 +1024,8 @@ def undo_check_in(request, entry_id):
         messages.success(request, f'Check-in undone! Your measurement on {machine.name} has been moved back to position #1 (on deck).')
         return redirect('check_in_check_out')
 
+    except QueueEntry.DoesNotExist:
+        raise Http404("Queue entry not found")
     except Exception as e:
         # Log the error and show user-friendly message
         print(f"Error in undo_check_in for entry {entry_id}: {str(e)}")
@@ -2231,7 +2272,14 @@ def archive_create(request):
 @login_required
 def save_to_archive(request, queue_entry_id):
     """Save a completed queue entry to the archive."""
-    queue_entry = get_object_or_404(QueueEntry, id=queue_entry_id, user=request.user)
+    # Check if entry exists and belongs to current user
+    try:
+        queue_entry = QueueEntry.objects.get(id=queue_entry_id)
+        if queue_entry.user != request.user:
+            messages.warning(request, 'This queue entry is not for your account. Returning to home page.')
+            return redirect('home')
+    except QueueEntry.DoesNotExist:
+        raise Http404("Queue entry not found")
 
     if request.method == 'POST':
         form = ArchivedMeasurementForm(request.POST, request.FILES)
