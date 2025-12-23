@@ -926,7 +926,7 @@ def approve_rush_job(request, entry_id):
     if entry.is_rush_job and entry.status == 'queued' and entry.assigned_machine:
         # Move to position 1 (queue next)
         machine = entry.assigned_machine
-        old_position = entry.queue_position
+        old_position = entry.queue_position if entry.queue_position is not None else "unknown"
 
         # Find who is currently at position #1 (they will be bumped)
         current_on_deck = QueueEntry.objects.filter(
@@ -1060,7 +1060,7 @@ def queue_next(request, entry_id):
 
         if entry.status == 'queued' and entry.assigned_machine:
             machine = entry.assigned_machine
-            old_position = entry.queue_position
+            old_position = entry.queue_position if entry.queue_position is not None else "unknown"
 
             # Find who is currently at position #1 (they will be bumped)
             current_on_deck = QueueEntry.objects.filter(
@@ -1106,7 +1106,7 @@ def move_queue_up(request, entry_id):
     if request.method == 'POST':
         entry = get_object_or_404(QueueEntry, id=entry_id)
 
-        if entry.status == 'queued' and entry.assigned_machine and entry.queue_position > 1:
+        if entry.status == 'queued' and entry.assigned_machine and entry.queue_position is not None and entry.queue_position > 1:
             machine = entry.assigned_machine
             current_pos = entry.queue_position
 
@@ -1145,7 +1145,7 @@ def move_queue_down(request, entry_id):
     if request.method == 'POST':
         entry = get_object_or_404(QueueEntry, id=entry_id)
 
-        if entry.status == 'queued' and entry.assigned_machine:
+        if entry.status == 'queued' and entry.assigned_machine and entry.queue_position is not None:
             machine = entry.assigned_machine
             current_pos = entry.queue_position
 
@@ -1197,8 +1197,8 @@ def admin_check_in(request, entry_id):
         messages.error(request, f'Cannot check in - job status is "{queue_entry.get_status_display()}". Only queued jobs can be checked in.')
         return redirect('admin_queue')
 
-    if queue_entry.queue_position != 1:
-        messages.error(request, f'Cannot check in - job is position #{queue_entry.queue_position}. Only ON DECK (position #1) jobs can be checked in.')
+    if queue_entry.queue_position is None or queue_entry.queue_position != 1:
+        messages.error(request, f'Cannot check in - job is position #{queue_entry.queue_position if queue_entry.queue_position is not None else "unknown"}. Only ON DECK (position #1) jobs can be checked in.')
         return redirect('admin_queue')
 
     if not queue_entry.assigned_machine:
@@ -1501,8 +1501,9 @@ def admin_undo_check_in(request, entry_id):
     ).order_by('queue_position')
 
     for entry in existing_queued:
-        entry.queue_position += 1
-        entry.save(update_fields=['queue_position'])
+        if entry.queue_position is not None:
+            entry.queue_position += 1
+            entry.save(update_fields=['queue_position'])
 
     # Move this entry back to queued status at position 1
     queue_entry.status = 'queued'
