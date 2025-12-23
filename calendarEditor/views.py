@@ -2483,27 +2483,29 @@ def token_login(request, token):
             # Logout the current (wrong) user
             logout(request)
 
-            # Store redirect URL and intended user hint in session
-            request.session['next'] = redirect_url
+            # Store ONLY the token in session, not the redirect URL
+            # This forces them to come back through the token link after logging in
             request.session['token_auth_hint'] = intended_user.username
+            request.session['pending_token'] = token
 
             messages.warning(
                 request,
                 f'You were logged in as {wrong_user}. This link is for {intended_user.username}. '
                 f'Please log in as {intended_user.username} to continue.'
             )
-            return redirect(f"{reverse('login')}?next={redirect_url}")
+            # Redirect to login WITHOUT ?next parameter to prevent wrong user from accessing the page
+            return redirect('login')
 
         # Case 3: Not logged in - show login with hint
-        # Store the redirect URL and user hint in session for after login
-        request.session['next'] = redirect_url
+        # Store the token in session so we can validate after login
         request.session['token_auth_hint'] = intended_user.username
+        request.session['pending_token'] = token
 
         messages.info(
             request,
             f'Please log in as {intended_user.username} to view this notification.'
         )
-        return redirect(f"{reverse('login')}?next={redirect_url}")
+        return redirect('login')
 
     except OneTimeLoginToken.DoesNotExist:
         messages.error(request, 'Invalid notification link.')

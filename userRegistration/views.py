@@ -65,12 +65,31 @@ class CustomLoginView(LoginView):
         """Determine redirect URL based on user type or session 'next' parameter."""
         user = self.request.user
 
-        # First priority: Check Django's standard redirect_url handling (from GET/POST 'next' parameter)
+        # FIRST: Check if there's a pending token from notification link
+        pending_token = self.request.session.get('pending_token')
+        token_auth_hint = self.request.session.get('token_auth_hint')
+
+        if pending_token and token_auth_hint:
+            # Clean up session
+            del self.request.session['pending_token']
+            if 'token_auth_hint' in self.request.session:
+                del self.request.session['token_auth_hint']
+
+            # Check if user logged in as the correct user
+            if user.username == token_auth_hint:
+                # Correct user! Redirect to token_login which will redirect to the intended page
+                return reverse('token_login', kwargs={'token': pending_token})
+            else:
+                # Wrong user logged in! Redirect to home with warning
+                messages.warning(self.request, 'This notification is not for your account. Returning to home page.')
+                return reverse('home')
+
+        # Second priority: Check Django's standard redirect_url handling (from GET/POST 'next' parameter)
         redirect_url = self.get_redirect_url()
         if redirect_url:
             return redirect_url
 
-        # Second priority: Check if there's a redirect URL from session (notification link)
+        # Third priority: Check if there's a redirect URL from session (notification link)
         next_url = self.request.session.get('next')
         if next_url:
             # Clean up session
