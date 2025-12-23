@@ -2090,13 +2090,24 @@ def notification_mark_read_api(request):
         data = json.loads(request.body)
         notification_id = data.get('notification_id')
 
-        notification = Notification.objects.get(id=notification_id, recipient=request.user)
+        # First check if notification exists
+        try:
+            notification = Notification.objects.get(id=notification_id)
+        except Notification.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Notification not found'}, status=404)
+
+        # Check if it belongs to the current user
+        if notification.recipient != request.user:
+            return JsonResponse({
+                'success': False,
+                'error': 'This notification is not for your account',
+                'wrong_user': True
+            }, status=403)
+
         notification.is_read = True
         notification.save()
 
         return JsonResponse({'success': True})
-    except Notification.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Notification not found'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -2123,12 +2134,23 @@ def notification_dismiss_api(request):
         data = json.loads(request.body)
         notification_id = data.get('notification_id')
 
-        notification = Notification.objects.get(id=notification_id, recipient=request.user)
+        # First check if notification exists
+        try:
+            notification = Notification.objects.get(id=notification_id)
+        except Notification.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Notification not found'}, status=404)
+
+        # Check if it belongs to the current user
+        if notification.recipient != request.user:
+            return JsonResponse({
+                'success': False,
+                'error': 'This notification is not for your account',
+                'wrong_user': True
+            }, status=403)
+
         notification.delete()
 
         return JsonResponse({'success': True})
-    except Notification.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Notification not found'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
