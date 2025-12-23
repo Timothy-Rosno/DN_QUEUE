@@ -69,7 +69,10 @@
             {% if form.title.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.title.errors }}</div>
             {% endif %}
-            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.title.help_text }} <span style="color: #f39c12;">Note: Queue submissions require 3 characters minimum.</span></small>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+                <small style="color: #7f8c8d;">{{ form.title.help_text }} <span style="color: #f39c12;">Note: Queue submissions require 3 characters minimum.</span></small>
+                <small style="color: #7f8c8d;"><span id="titleCharCount"></span></small>
+            </div>
         </div>
 
         <!-- Description Field -->
@@ -81,7 +84,10 @@
             {% if form.description.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.description.errors }}</div>
             {% endif %}
-            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.description.help_text }} <span style="color: #f39c12;">Note: Queue submissions require 50 characters minimum.</span></small>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+                <small style="color: #7f8c8d;">{{ form.description.help_text }} <span style="color: #f39c12;">Note: Queue submissions require 50 characters minimum.</span></small>
+                <small style="color: #7f8c8d;"><span id="descCharCount"></span></small>
+            </div>
         </div>
 
         <!-- Temperature Fields -->
@@ -638,6 +644,67 @@
                         validateDescription();
                     }
                 });
+            }
+
+            // Character counters for title and description fields
+            const titleCharCount = document.getElementById('titleCharCount');
+            const descCharCount = document.getElementById('descCharCount');
+            const TITLE_MIN = 3;
+            const DESC_MIN = 50;
+
+            function updateTitleCharCounter() {
+                if (!titleField || !titleCharCount) return;
+
+                const length = titleField.value.length;
+                const needed = TITLE_MIN - length;
+
+                if (length === 0) {
+                    // Empty field - show nothing
+                    titleCharCount.textContent = '';
+                    titleCharCount.style.color = '#7f8c8d';
+                } else if (needed > 0) {
+                    // Below minimum - show how many more needed
+                    titleCharCount.textContent = `Need ${needed} more for queue`;
+                    titleCharCount.style.color = '#f39c12'; // Orange warning
+                } else {
+                    // At or above minimum - show checkmark
+                    titleCharCount.textContent = '✓';
+                    titleCharCount.style.color = '#27ae60'; // Green success
+                }
+            }
+
+            function updateDescCharCounter() {
+                if (!descriptionField || !descCharCount) return;
+
+                const length = descriptionField.value.length;
+                const needed = DESC_MIN - length;
+
+                if (length === 0) {
+                    // Empty field - show nothing
+                    descCharCount.textContent = '';
+                    descCharCount.style.color = '#7f8c8d';
+                } else if (needed > 0) {
+                    // Below minimum - show how many more needed
+                    descCharCount.textContent = `Need ${needed} more for queue`;
+                    descCharCount.style.color = '#f39c12'; // Orange warning
+                } else {
+                    // At or above minimum - show checkmark
+                    descCharCount.textContent = '✓';
+                    descCharCount.style.color = '#27ae60'; // Green success
+                }
+            }
+
+            // Initialize counters on page load
+            if (titleField) {
+                updateTitleCharCounter();
+                titleField.addEventListener('input', updateTitleCharCounter);
+                titleField.addEventListener('keyup', updateTitleCharCounter);
+            }
+
+            if (descriptionField) {
+                updateDescCharCounter();
+                descriptionField.addEventListener('input', updateDescCharCounter);
+                descriptionField.addEventListener('keyup', updateDescCharCounter);
             }
 
             // Validate all fields on form submit
