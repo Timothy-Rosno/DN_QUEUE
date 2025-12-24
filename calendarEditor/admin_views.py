@@ -1074,12 +1074,16 @@ def queue_next(request, entry_id):
                 status='queued'
             ).exclude(id=entry.id).order_by('queue_position')
 
-            # Shift all entries down
+            # Step 1: Set the target entry to NULL first to avoid conflicts
+            entry.queue_position = None
+            entry.save()
+
+            # Step 2: Reassign positions to all other entries (now safe since entry is NULL)
             for idx, other_entry in enumerate(queued_entries, start=2):
                 other_entry.queue_position = idx
                 other_entry.save()
 
-            # Set this entry to position 1
+            # Step 3: Set the target entry to position 1
             entry.queue_position = 1
             entry.save()
 
@@ -1118,12 +1122,20 @@ def move_queue_up(request, entry_id):
             ).first()
 
             if entry_above:
-                # Swap positions
+                # Swap positions using NULL as temporary value to avoid UNIQUE constraint violation
                 new_pos = current_pos - 1
-                entry.queue_position = new_pos
-                entry_above.queue_position = current_pos
+
+                # Step 1: Set entry to NULL temporarily
+                entry.queue_position = None
                 entry.save()
+
+                # Step 2: Update entry_above to the old position
+                entry_above.queue_position = current_pos
                 entry_above.save()
+
+                # Step 3: Set entry to its new position
+                entry.queue_position = new_pos
+                entry.save()
 
                 # Notify only the moved entry with admin-specific notification
                 notifications.notify_admin_moved_entry(entry, request.user, current_pos, new_pos)
@@ -1157,12 +1169,20 @@ def move_queue_down(request, entry_id):
             ).first()
 
             if entry_below:
-                # Swap positions
+                # Swap positions using NULL as temporary value to avoid UNIQUE constraint violation
                 new_pos = current_pos + 1
-                entry.queue_position = new_pos
-                entry_below.queue_position = current_pos
+
+                # Step 1: Set entry to NULL temporarily
+                entry.queue_position = None
                 entry.save()
+
+                # Step 2: Update entry_below to the old position
+                entry_below.queue_position = current_pos
                 entry_below.save()
+
+                # Step 3: Set entry to its new position
+                entry.queue_position = new_pos
+                entry.save()
 
                 # Notify only the moved entry with admin-specific notification
                 notifications.notify_admin_moved_entry(entry, request.user, current_pos, new_pos)
