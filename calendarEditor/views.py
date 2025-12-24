@@ -958,7 +958,9 @@ def undo_check_in(request, entry_id):
         was_on_deck = existing_queued.filter(queue_position=1).first()
 
         # Bump all existing queued entries down by 1 position
-        for entry in existing_queued:
+        # Update in REVERSE order to avoid UNIQUE constraint violations
+        existing_queued_list = list(existing_queued)
+        for entry in reversed(existing_queued_list):
             entry.queue_position += 1
             entry.save(update_fields=['queue_position'])
 

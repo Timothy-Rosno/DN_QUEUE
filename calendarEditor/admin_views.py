@@ -940,12 +940,18 @@ def approve_rush_job(request, entry_id):
             status='queued'
         ).exclude(id=entry.id).order_by('queue_position')
 
-        # Shift all entries down
-        for idx, other_entry in enumerate(queued_entries, start=2):
-            other_entry.queue_position = idx
+        # Step 1: Set target entry to NULL to avoid conflicts
+        entry.queue_position = None
+        entry.save()
+
+        # Step 2: Reassign positions to all other entries in REVERSE order
+        queued_entries_list = list(queued_entries)
+        for idx in range(len(queued_entries_list) - 1, -1, -1):
+            other_entry = queued_entries_list[idx]
+            other_entry.queue_position = idx + 2  # Positions start at 2
             other_entry.save()
 
-        # Set this entry to position 1 and remove rush job flag
+        # Step 3: Set this entry to position 1 and remove rush job flag
         entry.queue_position = 1
         entry.is_rush_job = False  # Remove from pending rush jobs list
         entry.save()
@@ -1523,7 +1529,9 @@ def admin_undo_check_in(request, entry_id):
         status='queued'
     ).order_by('queue_position')
 
-    for entry in existing_queued:
+    # Update in REVERSE order to avoid UNIQUE constraint violations
+    existing_queued_list = list(existing_queued)
+    for entry in reversed(existing_queued_list):
         if entry.queue_position is not None:
             entry.queue_position += 1
             entry.save(update_fields=['queue_position'])

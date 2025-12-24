@@ -423,15 +423,21 @@ def reorder_queue(machine, notify=True):
             old_position_1_entry_id = entry.id
 
     # Reassign sequential positions to all queued entries
+    # Step 1: Set all entries to NULL to avoid UNIQUE constraint violations
+    queued_entries_list = list(queued_entries)
+    for entry in queued_entries_list:
+        entry.queue_position = None
+        entry.save()
+
+    # Step 2: Reassign sequential positions
     position_changes = []
     new_position_1_entry_id = None
-    for index, entry in enumerate(queued_entries, start=1):
+    for index, entry in enumerate(queued_entries_list, start=1):
         old_pos = old_positions.get(entry.id)
-        if entry.queue_position != index:
-            entry.queue_position = index
-            # Track position change for notification
-            if old_pos and old_pos != index:
-                position_changes.append((entry, old_pos, index))
+        entry.queue_position = index
+        # Track position change for notification
+        if old_pos and old_pos != index:
+            position_changes.append((entry, old_pos, index))
         entry.estimated_start_time = entry.calculate_estimated_start_time()
         entry.save()
         if index == 1:
@@ -493,16 +499,22 @@ def move_queue_entry_up(entry_id):
     ).first()
 
     if entry_above:
-        # Swap positions
+        # Swap positions using NULL as temporary value to avoid UNIQUE constraint violation
         old_position = entry.queue_position
-        entry_above.queue_position += 1
-        entry.queue_position -= 1
-        new_position = entry.queue_position
+        new_position = old_position - 1
 
+        # Step 1: Set entry to NULL temporarily
+        entry.queue_position = None
+        entry.save()
+
+        # Step 2: Update entry_above to the old position
+        entry_above.queue_position = old_position
         entry_above.estimated_start_time = entry_above.calculate_estimated_start_time()
-        entry.estimated_start_time = entry.calculate_estimated_start_time()
-
         entry_above.save()
+
+        # Step 3: Set entry to its new position
+        entry.queue_position = new_position
+        entry.estimated_start_time = entry.calculate_estimated_start_time()
         entry.save()
 
         # Notify user of position change
@@ -543,16 +555,22 @@ def move_queue_entry_down(entry_id):
     ).first()
 
     if entry_below:
-        # Swap positions
+        # Swap positions using NULL as temporary value to avoid UNIQUE constraint violation
         old_position = entry.queue_position
-        entry_below.queue_position -= 1
-        entry.queue_position += 1
-        new_position = entry.queue_position
+        new_position = old_position + 1
 
+        # Step 1: Set entry to NULL temporarily
+        entry.queue_position = None
+        entry.save()
+
+        # Step 2: Update entry_below to the old position
+        entry_below.queue_position = old_position
         entry_below.estimated_start_time = entry_below.calculate_estimated_start_time()
-        entry.estimated_start_time = entry.calculate_estimated_start_time()
-
         entry_below.save()
+
+        # Step 3: Set entry to its new position
+        entry.queue_position = new_position
+        entry.estimated_start_time = entry.calculate_estimated_start_time()
         entry.save()
 
         # Notify user of position change
@@ -615,7 +633,12 @@ def set_queue_position(entry_id, new_position):
     # Insert it at the new position (0-indexed)
     entries_list.insert(new_position - 1, entry)
 
-    # Update all positions
+    # Step 1: Set all entries to NULL to avoid UNIQUE constraint violations
+    for e in entries_list:
+        e.queue_position = None
+        e.save()
+
+    # Step 2: Update all positions to their final values
     for index, e in enumerate(entries_list, start=1):
         e.queue_position = index
         e.estimated_start_time = e.calculate_estimated_start_time()
