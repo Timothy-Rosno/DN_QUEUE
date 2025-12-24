@@ -1078,9 +1078,12 @@ def queue_next(request, entry_id):
             entry.queue_position = None
             entry.save()
 
-            # Step 2: Reassign positions to all other entries (now safe since entry is NULL)
-            for idx, other_entry in enumerate(queued_entries, start=2):
-                other_entry.queue_position = idx
+            # Step 2: Reassign positions to all other entries in REVERSE order
+            # This prevents UNIQUE constraint violations (update highest positions first)
+            queued_entries_list = list(queued_entries)
+            for idx in range(len(queued_entries_list) - 1, -1, -1):
+                other_entry = queued_entries_list[idx]
+                other_entry.queue_position = idx + 2  # Positions start at 2
                 other_entry.save()
 
             # Step 3: Set the target entry to position 1

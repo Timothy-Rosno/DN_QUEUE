@@ -112,9 +112,9 @@
                                             </div>
                                             {% endif %}
                                         {% else %}
-                                            <form method="post" action="{% url 'queue_next' entry.id %}" style="display: flex; flex: 1;" onsubmit="saveScrollPosition()">
+                                            <form method="post" action="{% url 'queue_next' entry.id %}" style="display: flex; flex: 1;" onsubmit="saveScrollPosition(); disableAllQueueButtons();">
                                                 {% csrf_token %}
-                                                <button type="submit" class="btn btn-warning btn-sm" style="flex: 1; width: 100%; height: 100%;" title="Move to position 1">Move to First</button>
+                                                <button type="submit" class="btn btn-warning btn-sm queue-move-btn" style="flex: 1; width: 100%; height: 100%;" title="Move to position 1">Move to First</button>
                                             </form>
                                         {% endif %}
                                     </div>
@@ -122,16 +122,16 @@
                                     <!-- Middle column: Up/Down buttons stacked vertically -->
                                     <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 0.25rem; flex: 0 0 36px;">
                                         <!-- Up button -->
-                                        <form method="post" action="{% url 'move_queue_up' entry.id %}" style="display: flex; flex: 1;" onsubmit="saveScrollPosition()">
+                                        <form method="post" action="{% url 'move_queue_up' entry.id %}" style="display: flex; flex: 1;" onsubmit="saveScrollPosition(); disableAllQueueButtons();">
                                             {% csrf_token %}
-                                            <button type="submit" class="btn btn-primary btn-sm" style="flex: 1;" title="Move up"
+                                            <button type="submit" class="btn btn-primary btn-sm queue-move-btn" style="flex: 1;" title="Move up"
                                                 {% if entry.queue_position == 1 %}disabled{% endif %}>▲</button>
                                         </form>
 
                                         <!-- Down button -->
-                                        <form method="post" action="{% url 'move_queue_down' entry.id %}" style="display: flex; flex: 1;" onsubmit="saveScrollPosition()">
+                                        <form method="post" action="{% url 'move_queue_down' entry.id %}" style="display: flex; flex: 1;" onsubmit="saveScrollPosition(); disableAllQueueButtons();">
                                             {% csrf_token %}
-                                            <button type="submit" class="btn btn-primary btn-sm" style="flex: 1;" title="Move down"
+                                            <button type="submit" class="btn btn-primary btn-sm queue-move-btn" style="flex: 1;" title="Move down"
                                                 {% if forloop.last %}disabled{% endif %}>▼</button>
                                         </form>
                                     </div>
@@ -324,6 +324,24 @@ function toggleSection(sectionId) {
 // Save scroll position before form submission
 function saveScrollPosition() {
     sessionStorage.setItem('adminQueueScrollPosition', window.scrollY);
+}
+
+// Disable all queue movement buttons to prevent double-clicking
+function disableAllQueueButtons() {
+    const queueButtons = document.querySelectorAll('.queue-move-btn');
+    queueButtons.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        // Change button text to show it's processing
+        if (btn.textContent.includes('Move to First')) {
+            btn.textContent = 'Moving...';
+        } else if (btn.textContent === '▲') {
+            btn.textContent = '⏳';
+        } else if (btn.textContent === '▼') {
+            btn.textContent = '⏳';
+        }
+    });
 }
 
 // Restore scroll position after page load
