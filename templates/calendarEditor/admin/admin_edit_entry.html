@@ -63,17 +63,17 @@
             {% endif %}
             <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                 {% if queue_entry.status == 'queued' %}
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="radio" name="queue_position_action" value="keep" checked style="margin-right: 0.25rem;">
+                <label id="keep_current_option" style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="queue_position_action" value="keep" id="keep_current_radio" checked style="margin-right: 0.25rem;">
                     Keep Current (#<span id="current_position_display">{{ queue_entry.queue_position }}</span>)
                 </label>
                 {% endif %}
                 <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="radio" name="queue_position_action" value="first" {% if queue_entry.status == 'running' %}checked{% endif %} style="margin-right: 0.25rem;">
+                    <input type="radio" name="queue_position_action" value="first" id="first_radio" {% if queue_entry.status == 'running' %}checked{% endif %} style="margin-right: 0.25rem;">
                     Move to First
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="radio" name="queue_position_action" value="last" style="margin-right: 0.25rem;">
+                    <input type="radio" name="queue_position_action" value="last" id="last_radio" style="margin-right: 0.25rem;">
                     Move to Last
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer;">
@@ -361,8 +361,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update queue position max when machine selection changes
     const machineSelect = document.getElementById('machine_select');
     if (machineSelect) {
+        const originalMachineId = '{{ queue_entry.assigned_machine.id }}';
+        const keepCurrentOption = document.getElementById('keep_current_option');
+        const keepCurrentRadio = document.getElementById('keep_current_radio');
+        const lastRadio = document.getElementById('last_radio');
+        const firstRadio = document.getElementById('first_radio');
+
         machineSelect.addEventListener('change', function() {
             const selectedOption = machineSelect.options[machineSelect.selectedIndex];
+            const selectedMachineId = machineSelect.value;
             // Use adjusted queue count which accounts for this entry being moved to the selected machine
             const adjustedCount = parseInt(selectedOption.getAttribute('data-adjusted-queue-count') || '1');
 
@@ -379,6 +386,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (manualPositionInput) {
                 manualPositionInput.max = adjustedCount;
+            }
+
+            // Handle "Keep Current" option visibility
+            if (keepCurrentOption && keepCurrentRadio && lastRadio) {
+                if (selectedMachineId === originalMachineId) {
+                    // Machine unchanged - show "Keep Current" and make it default
+                    keepCurrentOption.style.display = 'flex';
+                    keepCurrentRadio.checked = true;
+                } else {
+                    // Machine changed - hide "Keep Current" and default to "Move to Last"
+                    keepCurrentOption.style.display = 'none';
+                    if (keepCurrentRadio.checked) {
+                        lastRadio.checked = true;
+                    }
+                }
             }
         });
     }

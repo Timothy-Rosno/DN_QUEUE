@@ -410,15 +410,18 @@ function bulkDelete() {
     // Open Thanos modal
     const modal = document.getElementById('thanosModal');
     const message = document.getElementById('thanosMessage');
+    const btnYesText = document.getElementById('thanosYesText');
     const count = checkboxes.length;
 
     // Set delete mode to bulk
     window.thanosDeleteState = {
         mode: 'bulk',
-        archiveId: null
+        archiveId: null,
+        count: count
     };
 
     message.textContent = `Are you sure you want to delete ${count} archive ${count === 1 ? 'entry' : 'entries'}?`;
+    btnYesText.textContent = count === 1 ? 'Yes, snap it away' : 'Yes, snap them away';
     modal.style.display = 'flex';
 }
 
@@ -513,7 +516,7 @@ function showBanner(message, type) {
         <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto;">
         <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-wrap: break-word;"></p>
         <div style="display:flex; justify-content:space-around; gap:1rem;">
-            <button id="thanosYes" class="btn btn-danger">Yes, snap them away</button>
+            <button id="thanosYes" class="btn btn-danger"><span id="thanosYesText">Yes, snap them away</span></button>
             <button id="thanosNo" class="btn btn-secondary">No, spare the archives</button>
         </div>
         <span id="thanosClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
@@ -524,21 +527,41 @@ function showBanner(message, type) {
 // Global state for Thanos modal
 window.thanosDeleteState = {
     mode: null,  // 'bulk' or 'single'
-    archiveId: null
+    archiveId: null,
+    count: 0
 };
+
+// Disable all delete buttons
+function disableAllDeleteButtons() {
+    // Disable individual delete buttons
+    document.querySelectorAll('.delete-archive-btn').forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+    });
+
+    // Disable bulk delete button
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    if (deleteSelectedBtn) {
+        deleteSelectedBtn.disabled = true;
+        deleteSelectedBtn.style.opacity = '0.5';
+        deleteSelectedBtn.style.cursor = 'not-allowed';
+    }
+}
 
 // Thanos modal handlers
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('thanosModal');
     const message = document.getElementById('thanosMessage');
     const btnYes = document.getElementById('thanosYes');
+    const btnYesText = document.getElementById('thanosYesText');
     const btnNo = document.getElementById('thanosNo');
     const btnClose = document.getElementById('thanosClose');
 
     // Close modal
     function closeModal() {
         modal.style.display = 'none';
-        window.thanosDeleteState = { mode: null, archiveId: null };
+        window.thanosDeleteState = { mode: null, archiveId: null, count: 0 };
     }
 
     btnNo.addEventListener('click', closeModal);
@@ -565,9 +588,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             window.thanosDeleteState = {
                 mode: 'single',
-                archiveId: archiveId
+                archiveId: archiveId,
+                count: 1
             };
             message.textContent = `Are you sure you want to delete "${archiveTitle}"?`;
+            btnYesText.textContent = 'Yes, snap it away';
             modal.style.display = 'flex';
         });
     });
@@ -575,6 +600,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Yes button: Submit appropriate delete
     btnYes.addEventListener('click', function() {
         const state = window.thanosDeleteState;
+
+        // Disable all delete buttons immediately
+        disableAllDeleteButtons();
 
         if (state.mode === 'bulk') {
             closeModal();
