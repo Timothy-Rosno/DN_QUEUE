@@ -412,8 +412,11 @@ function bulkDelete() {
     const message = document.getElementById('thanosMessage');
     const count = checkboxes.length;
 
-    // Set delete mode to bulk (will be accessed by the DOMContentLoaded handler)
-    window.thanosDeleteMode = 'bulk';
+    // Set delete mode to bulk
+    window.thanosDeleteState = {
+        mode: 'bulk',
+        archiveId: null
+    };
 
     message.textContent = `Are you sure you want to delete ${count} archive ${count === 1 ? 'entry' : 'entries'}?`;
     modal.style.display = 'flex';
@@ -518,6 +521,12 @@ function showBanner(message, type) {
 </div>
 
 <script>
+// Global state for Thanos modal
+window.thanosDeleteState = {
+    mode: null,  // 'bulk' or 'single'
+    archiveId: null
+};
+
 // Thanos modal handlers
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('thanosModal');
@@ -525,14 +534,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnYes = document.getElementById('thanosYes');
     const btnNo = document.getElementById('thanosNo');
     const btnClose = document.getElementById('thanosClose');
-    let deleteMode = null; // 'bulk' or 'single'
-    let singleDeleteId = null;
 
     // Close modal
     function closeModal() {
         modal.style.display = 'none';
-        deleteMode = null;
-        singleDeleteId = null;
+        window.thanosDeleteState = { mode: null, archiveId: null };
     }
 
     btnNo.addEventListener('click', closeModal);
@@ -551,8 +557,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const archiveId = this.getAttribute('data-archive-id');
             const archiveTitle = this.getAttribute('data-archive-title');
 
-            deleteMode = 'single';
-            singleDeleteId = archiveId;
+            if (!archiveId) {
+                console.error('Archive ID is missing');
+                alert('Error: Archive ID is missing');
+                return;
+            }
+
+            window.thanosDeleteState = {
+                mode: 'single',
+                archiveId: archiveId
+            };
             message.textContent = `Are you sure you want to delete "${archiveTitle}"?`;
             modal.style.display = 'flex';
         });
@@ -560,19 +574,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Yes button: Submit appropriate delete
     btnYes.addEventListener('click', function() {
-        if (deleteMode === 'bulk' || window.thanosDeleteMode === 'bulk') {
+        const state = window.thanosDeleteState;
+
+        if (state.mode === 'bulk') {
             closeModal();
             submitBulkDelete();
-            window.thanosDeleteMode = null;
-        } else if (deleteMode === 'single' && singleDeleteId) {
+        } else if (state.mode === 'single' && state.archiveId) {
+            const archiveId = state.archiveId;
             closeModal();
-            submitSingleDelete(singleDeleteId);
+            submitSingleDelete(archiveId);
+        } else {
+            console.error('Invalid delete state:', state);
+            alert('Error: Cannot determine what to delete');
+            closeModal();
         }
     });
 });
 
 function submitSingleDelete(archiveId) {
+    if (!archiveId) {
+        console.error('Archive ID is null or undefined');
+        alert('Error: Archive ID is missing');
+        return;
+    }
+
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfToken) {
+        console.error('CSRF token not found');
+        alert('Error: CSRF token not found');
+        return;
+    }
 
     // Create and submit form
     const form = document.createElement('form');
