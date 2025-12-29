@@ -235,11 +235,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Disable all undo check-in buttons
+    function disableAllUndoButtons() {
+        // Disable all undo check-in buttons
+        document.querySelectorAll('.undo-check-in-btn').forEach(btn => {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+            btn.textContent = 'Processing...';
+        });
+
+        // Disable modal buttons
+        undoYesBtn.disabled = true;
+        undoYesBtn.style.opacity = '0.5';
+        undoYesBtn.style.cursor = 'not-allowed';
+        undoNoBtn.disabled = true;
+        undoNoBtn.style.opacity = '0.5';
+        undoNoBtn.style.cursor = 'not-allowed';
+    }
+
     // Yes button: submit the form
     undoYesBtn.addEventListener('click', function() {
         if (currentUndoEntryId) {
+            // Disable all buttons immediately
+            disableAllUndoButtons();
+
             const form = document.getElementById(`undo-form-${currentUndoEntryId}`);
             if (form) {
+                undoModal.style.display = 'none';
                 form.submit();
             }
         }

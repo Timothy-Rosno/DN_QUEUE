@@ -167,9 +167,9 @@
                                             title="Check out and finish measurement">Check Out</button>
 
                                         <!-- Undo Check-In button -->
-                                        <form method="post" action="{% url 'admin_undo_check_in' entry.id %}" style="display: flex; flex: 1;" onsubmit="saveScrollPosition()">
+                                        <form method="post" action="{% url 'admin_undo_check_in' entry.id %}" style="display: flex; flex: 1;" onsubmit="saveScrollPosition(); disableUndoButton(this);">
                                             {% csrf_token %}
-                                            <button type="submit" class="btn btn-warning btn-sm" style="flex: 1; width: 100%;" title="Undo check-in and move back to position #1">Undo Check-In</button>
+                                            <button type="submit" class="btn btn-warning btn-sm undo-checkin-btn" style="flex: 1; width: 100%;" title="Undo check-in and move back to position #1">Undo Check-In</button>
                                         </form>
                                     </div>
 
@@ -324,6 +324,17 @@ function toggleSection(sectionId) {
 // Save scroll position before form submission
 function saveScrollPosition() {
     sessionStorage.setItem('adminQueueScrollPosition', window.scrollY);
+}
+
+// Disable undo check-in button to prevent double-clicking
+function disableUndoButton(form) {
+    const button = form.querySelector('.undo-checkin-btn');
+    if (button) {
+        button.disabled = true;
+        button.style.opacity = '0.6';
+        button.style.cursor = 'not-allowed';
+        button.textContent = 'Processing...';
+    }
 }
 
 // Disable all queue movement buttons to prevent double-clicking
