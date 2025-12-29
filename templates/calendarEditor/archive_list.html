@@ -253,10 +253,9 @@
                             {% if archive.uploaded_file %}
                                 <a href="{% url 'download_archive_file' archive.id %}" class="btn btn-sm btn-primary">Download</a>
                             {% endif %}
-                            <form method="post" action="{% url 'delete_archive' archive.id %}" style="display: inline; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this archive entry? This cannot be undone.');">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                            </form>
+                            <button type="button" class="btn btn-sm btn-danger delete-archive-btn"
+                                    data-archive-id="{{ archive.id }}"
+                                    data-archive-title="{{ archive.title }}">Delete</button>
                         </div>
                     </td>
                 {% endif %}
@@ -413,6 +412,9 @@ function bulkDelete() {
     const message = document.getElementById('thanosMessage');
     const count = checkboxes.length;
 
+    // Set delete mode to bulk (will be accessed by the DOMContentLoaded handler)
+    window.thanosDeleteMode = 'bulk';
+
     message.textContent = `Are you sure you want to delete ${count} archive ${count === 1 ? 'entry' : 'entries'}?`;
     modal.style.display = 'flex';
 }
@@ -523,10 +525,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnYes = document.getElementById('thanosYes');
     const btnNo = document.getElementById('thanosNo');
     const btnClose = document.getElementById('thanosClose');
+    let deleteMode = null; // 'bulk' or 'single'
+    let singleDeleteId = null;
 
     // Close modal
     function closeModal() {
         modal.style.display = 'none';
+        deleteMode = null;
+        singleDeleteId = null;
     }
 
     btnNo.addEventListener('click', closeModal);
@@ -539,12 +545,49 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Yes button: Submit delete
+    // Individual delete button handlers
+    document.querySelectorAll('.delete-archive-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const archiveId = this.getAttribute('data-archive-id');
+            const archiveTitle = this.getAttribute('data-archive-title');
+
+            deleteMode = 'single';
+            singleDeleteId = archiveId;
+            message.textContent = `Are you sure you want to delete "${archiveTitle}"?`;
+            modal.style.display = 'flex';
+        });
+    });
+
+    // Yes button: Submit appropriate delete
     btnYes.addEventListener('click', function() {
-        closeModal();
-        submitBulkDelete();
+        if (deleteMode === 'bulk' || window.thanosDeleteMode === 'bulk') {
+            closeModal();
+            submitBulkDelete();
+            window.thanosDeleteMode = null;
+        } else if (deleteMode === 'single' && singleDeleteId) {
+            closeModal();
+            submitSingleDelete(singleDeleteId);
+        }
     });
 });
+
+function submitSingleDelete(archiveId) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+
+    // Create and submit form
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/schedule/archive/delete/${archiveId}/`;
+
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = csrfToken.value;
+    form.appendChild(csrfInput);
+
+    document.body.appendChild(form);
+    form.submit();
+}
 </script>
 
 {% endblock %}

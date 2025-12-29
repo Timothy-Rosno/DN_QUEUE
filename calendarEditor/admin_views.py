@@ -1734,6 +1734,18 @@ def admin_edit_entry(request, entry_id):
                     compatible_machines = get_compatible_machines(edited_entry)
                     if selected_machine not in compatible_machines:
                         messages.error(request, f'Selected machine "{selected_machine.name}" is not compatible with the requirements.')
+
+                        # Calculate adjusted queue count for each machine
+                        for machine in compatible_machines:
+                            current_count = QueueEntry.objects.filter(
+                                assigned_machine=machine, status='queued'
+                            ).count()
+
+                            if machine.id == queue_entry.assigned_machine.id and queue_entry.status == 'queued':
+                                machine.adjusted_queue_count = current_count
+                            else:
+                                machine.adjusted_queue_count = current_count + 1
+
                         # Get compatible machines again for the form
                         context = {
                             'queue_entry': queue_entry,
@@ -1755,6 +1767,18 @@ def admin_edit_entry(request, entry_id):
                 # If machine would change and user hasn't confirmed, show warning
                 if best_machine != old_machine and not confirmed:
                     compatible_machines = get_compatible_machines(edited_entry)
+
+                    # Calculate adjusted queue count for each machine
+                    for machine in compatible_machines:
+                        current_count = QueueEntry.objects.filter(
+                            assigned_machine=machine, status='queued'
+                        ).count()
+
+                        if machine.id == queue_entry.assigned_machine.id and queue_entry.status == 'queued':
+                            machine.adjusted_queue_count = current_count
+                        else:
+                            machine.adjusted_queue_count = current_count + 1
+
                     context = {
                         'queue_entry': queue_entry,
                         'form': form,
@@ -1773,10 +1797,14 @@ def admin_edit_entry(request, entry_id):
                 if best_machine is None:
                     messages.error(request, 'No compatible machines found for these requirements. Please adjust the requirements.')
                     form.add_error(None, 'No compatible machines found for these requirements.')
+
+                    compatible_machines = []
+                    # No need to calculate adjusted counts for empty list
+
                     context = {
                         'queue_entry': queue_entry,
                         'form': form,
-                        'compatible_machines': [],
+                        'compatible_machines': compatible_machines,
                         'max_queue_position': 1,
                     }
                     return render(request, 'calendarEditor/admin/admin_edit_entry.html', context)
@@ -1790,6 +1818,31 @@ def admin_edit_entry(request, entry_id):
             queue_position_action = request.POST.get('queue_position_action')
             manual_position = request.POST.get('manual_queue_position')
             old_position = queue_entry.queue_position
+            status_changed_from_running = False
+
+            # Check if reassigning a running entry to a machine that already has a running job
+            if queue_entry.status == 'running' and old_machine != target_machine:
+                # Check if target machine has a running job
+                target_has_running = QueueEntry.objects.filter(
+                    assigned_machine=target_machine,
+                    status='running'
+                ).exists()
+
+                if target_has_running:
+                    # Convert this entry to queued status
+                    edited_entry.status = 'queued'
+                    edited_entry.started_at = None
+                    edited_entry.reminder_due_at = None
+                    edited_entry.last_reminder_sent_at = None
+                    edited_entry.reminder_snoozed_until = None
+                    status_changed_from_running = True
+
+                    # Update old machine status to idle
+                    if old_machine:
+                        old_machine.current_status = 'idle'
+                        old_machine.current_user = None
+                        old_machine.estimated_available_time = None
+                        old_machine.save()
 
             # Save the entry first
             edited_entry.save()
@@ -1802,8 +1855,8 @@ def admin_edit_entry(request, entry_id):
                 # Add to new machine's queue and reorder
                 reorder_queue(target_machine)
 
-            # Handle queue position changes (only for queued entries)
-            if queue_entry.status == 'queued':
+            # Handle queue position changes (for queued entries, or entries that just became queued)
+            if queue_entry.status == 'queued' or status_changed_from_running:
                 if queue_position_action == 'first':
                     # Move to position 1
                     set_queue_position(edited_entry.id, 1)
@@ -1850,10 +1903,12 @@ def admin_edit_entry(request, entry_id):
                 changes.append('rush job status')
             if old_machine != target_machine:
                 changes.append(f'machine assignment (moved to {target_machine.name})')
+            if status_changed_from_running:
+                changes.append('status (converted from running to queued due to target machine conflict)')
 
             # Refresh from DB to get updated queue position
             edited_entry.refresh_from_db()
-            if original_values['queue_position'] != edited_entry.queue_position and queue_entry.status == 'queued':
+            if original_values['queue_position'] != edited_entry.queue_position and (queue_entry.status == 'queued' or status_changed_from_running):
                 changes.append(f'queue position (moved to #{edited_entry.queue_position})')
 
             # Create change summary for notification
@@ -1871,6 +1926,18 @@ def admin_edit_entry(request, entry_id):
         else:
             # Form has validation errors - get compatible machines for re-render
             compatible_machines = get_compatible_machines(queue_entry)
+
+            # Calculate adjusted queue count for each machine
+            for machine in compatible_machines:
+                current_count = QueueEntry.objects.filter(
+                    assigned_machine=machine, status='queued'
+                ).count()
+
+                if machine.id == queue_entry.assigned_machine.id and queue_entry.status == 'queued':
+                    machine.adjusted_queue_count = current_count
+                else:
+                    machine.adjusted_queue_count = current_count + 1
+
             context = {
                 'queue_entry': queue_entry,
                 'form': form,
@@ -1887,6 +1954,21 @@ def admin_edit_entry(request, entry_id):
 
         # Get compatible machines based on current requirements
         compatible_machines = get_compatible_machines(queue_entry)
+
+        # Calculate adjusted queue count for each machine
+        # This accounts for this entry being moved TO that machine
+        for machine in compatible_machines:
+            current_count = QueueEntry.objects.filter(
+                assigned_machine=machine, status='queued'
+            ).count()
+
+            # If this is the current machine and entry is queued, count stays same
+            # If this is a different machine, count increases by 1 (this entry will be added)
+            if machine.id == queue_entry.assigned_machine.id and queue_entry.status == 'queued':
+                machine.adjusted_queue_count = current_count
+            else:
+                # Entry will be added to this machine's queue
+                machine.adjusted_queue_count = current_count + 1
 
         # Get max queue position for current machine
         max_queue_position = QueueEntry.objects.filter(

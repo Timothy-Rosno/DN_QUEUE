@@ -28,7 +28,10 @@
             {% if compatible_machines %}
                 <select id="machine_select" name="machine_select" style="width: 100%; padding: 0.5rem; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 1rem;">
                     {% for machine in compatible_machines %}
-                        <option value="{{ machine.id }}" {% if machine.id == queue_entry.assigned_machine.id %}selected{% endif %}>
+                        <option value="{{ machine.id }}"
+                                data-queue-count="{{ machine.get_queue_count }}"
+                                data-adjusted-queue-count="{{ machine.adjusted_queue_count }}"
+                                {% if machine.id == queue_entry.assigned_machine.id %}selected{% endif %}>
                             {{ machine.name }}{% if machine.id == queue_entry.assigned_machine.id %} (Current){% endif %}
                             - Available in {{ machine.get_estimated_wait_time.total_seconds|floatformat:0|add:"0"|floatformat:0 }}s
                             ({{ machine.get_queue_count }} in queue)
@@ -44,19 +47,29 @@
             {% endif %}
         </div>
 
-        <!-- Queue Position Controls (only for queued entries) -->
-        {% if queue_entry.status == 'queued' %}
+        <!-- Queue Position Controls -->
         <div style="margin-bottom: 0;">
+            {% if queue_entry.status == 'queued' %}
             <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
-                Queue Position: #{{ queue_entry.queue_position }} of {{ max_queue_position }}
+                Queue Position: #{{ queue_entry.queue_position }} of <span id="max_position_display">{{ max_queue_position }}</span>
             </label>
+            {% else %}
+            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Queue Position: <span style="color: #e67e22;">Currently Running</span>
+            </label>
+            <p style="color: #7f8c8d; margin: 0.5rem 0; font-size: 0.9rem;">
+                If reassigned to a machine with a running job, this entry will be queued. Select position below:
+            </p>
+            {% endif %}
             <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                {% if queue_entry.status == 'queued' %}
                 <label style="display: flex; align-items: center; cursor: pointer;">
                     <input type="radio" name="queue_position_action" value="keep" checked style="margin-right: 0.25rem;">
-                    Keep Current (#{{ queue_entry.queue_position }})
+                    Keep Current (#<span id="current_position_display">{{ queue_entry.queue_position }}</span>)
                 </label>
+                {% endif %}
                 <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="radio" name="queue_position_action" value="first" style="margin-right: 0.25rem;">
+                    <input type="radio" name="queue_position_action" value="first" {% if queue_entry.status == 'running' %}checked{% endif %} style="margin-right: 0.25rem;">
                     Move to First
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer;">
@@ -73,14 +86,9 @@
                        onfocus="document.getElementById('custom_position_radio').checked = true;">
             </div>
             <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">
-                Position 1 is next to run (ON DECK). Max position: {{ max_queue_position }}
+                Position 1 is next to run (ON DECK). Max position for selected machine: <span id="max_position_help">{{ max_queue_position }}</span>
             </small>
         </div>
-        {% else %}
-        <div style="margin-bottom: 0;">
-            <p style="color: #7f8c8d; margin: 0.5rem 0;"><strong>Queue Position:</strong> N/A (entry is currently running)</p>
-        </div>
-        {% endif %}
     </div>
     {% endif %}
 
@@ -347,6 +355,31 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCounter(specialField, specialCounter, 500);
         specialField.addEventListener('input', function() {
             updateCounter(specialField, specialCounter, 500);
+        });
+    }
+
+    // Update queue position max when machine selection changes
+    const machineSelect = document.getElementById('machine_select');
+    if (machineSelect) {
+        machineSelect.addEventListener('change', function() {
+            const selectedOption = machineSelect.options[machineSelect.selectedIndex];
+            // Use adjusted queue count which accounts for this entry being moved to the selected machine
+            const adjustedCount = parseInt(selectedOption.getAttribute('data-adjusted-queue-count') || '1');
+
+            // Update max position displays
+            const maxPositionDisplay = document.getElementById('max_position_display');
+            const maxPositionHelp = document.getElementById('max_position_help');
+            const manualPositionInput = document.getElementById('manual_queue_position');
+
+            if (maxPositionDisplay) {
+                maxPositionDisplay.textContent = adjustedCount;
+            }
+            if (maxPositionHelp) {
+                maxPositionHelp.textContent = adjustedCount;
+            }
+            if (manualPositionInput) {
+                manualPositionInput.max = adjustedCount;
+            }
         });
     }
 
