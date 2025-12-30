@@ -117,12 +117,12 @@
                 {% endif %}
             </div>
             <div>
-                <form method="post" action="{% url 'check_in_job' entry.id %}">
+                <form method="post" action="{% url 'check_in_job' entry.id %}" onsubmit="disableCheckInButton(this);">
                     {% csrf_token %}
                     {% if not entry.assigned_machine.is_available %}
                     <button type="button" class="btn btn-secondary btn-lg" style="cursor: not-allowed;" disabled title="Machine is unavailable. Please contact an administrator.">Check In Now</button>
                     {% else %}
-                    <button type="submit" class="btn btn-success btn-lg">Check In Now</button>
+                    <button type="submit" class="btn btn-success btn-lg check-in-btn">Check In Now</button>
                     {% endif %}
                 </form>
             </div>
@@ -234,6 +234,17 @@ document.addEventListener('DOMContentLoaded', function() {
             undoModal.style.display = 'flex';
         });
     });
+
+    // Disable check-in button to prevent double-clicking
+    window.disableCheckInButton = function(form) {
+        const button = form.querySelector('.check-in-btn');
+        if (button) {
+            button.disabled = true;
+            button.style.opacity = '0.5';
+            button.style.cursor = 'not-allowed';
+            button.textContent = 'Processing...';
+        }
+    };
 
     // Disable all undo check-in buttons
     function disableAllUndoButtons() {
