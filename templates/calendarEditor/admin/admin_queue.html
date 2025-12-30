@@ -12,7 +12,7 @@
     </div>
 </div>
 
-<div class="card">
+<!-- <div class="card">
     <form method="get" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: end;">
         <div style="min-width: 150px;">
             <label for="status" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Status</label>
@@ -40,7 +40,7 @@
             <a href="{% url 'admin_queue' %}" class="btn btn-secondary">Clear</a>
         </div>
     </form>
-</div>
+</div> -->
 
 <div class="card">
     <h2>Queue Entries by Machine</h2>
@@ -218,87 +218,6 @@
     {% endif %}
 </div>
 
-<!-- Machine Status Overview (Collapsible) -->
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleSection('machine-status-overview')">
-        <h2 style="margin: 0; color: #16a085; display: flex; align-items: center; gap: 0.5rem;">
-            🔧 Machine Status Overview
-        </h2>
-        <span id="machine-status-overview-icon" style="font-size: 1.2rem; transition: transform 0.3s;">►</span>
-    </div>
-
-    <div id="machine-status-overview" style="display: none; margin-top: 1rem;">
-        <p style="color: #7f8c8d; margin-bottom: 1.5rem;">Real-time status of all machines and their queues</p>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1rem;">
-            {% for data in machine_status_data %}
-            <div data-machine-id="{{ data.machine.id }}" style="border: 2px solid {% if data.running_job %}#9b59b6{% elif data.on_deck_job %}#3498db{% else %}#95a5a6{% endif %}; border-radius: 8px; padding: 1rem; background-color: {% if data.running_job %}#f4ecf7{% elif data.on_deck_job %}#ebf5fb{% else %}#f8f9fa{% endif %};">
-                <h3 style="margin-top: 0; color: #2c3e50; font-size: 1.1rem;">
-                    {{ data.machine.name }}
-                    <span class="machine-status status-badge status-{{ data.display_status|lower|cut:' ' }}" style="font-size: 0.85rem; font-weight: bold; margin-left: 0.5rem; padding: 0.25rem 0.75rem; border-radius: 12px;">
-                        {{ data.display_status|upper }}
-                    </span>
-                </h3>
-
-                <!-- Temperature -->
-                <div style="margin-bottom: 0.75rem; font-size: 0.9rem; color: #7f8c8d;">
-                    <strong>Temperature:</strong>
-                    <span class="machine-temp">
-                    {% if data.live_temp %}
-                        {{ data.live_temp|floatformat:2 }} K
-                    {% else %}
-                        <span style="color: #999;">N/A</span>
-                    {% endif %}
-                    </span>
-                </div>
-
-                <!-- Running Job -->
-                {% if data.running_job %}
-                <div style="background-color: white; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; border-left: 4px solid #9b59b6;">
-                    <p style="margin: 0; font-weight: bold; color: #9b59b6;">RUNNING</p>
-                    <p style="margin: 0.25rem 0; font-size: 0.95rem;"><strong><span data-tooltip="Description: {{ data.running_job.description|default:'No description' }}">{{ data.running_job.title|truncatechars:25 }}</span></strong></p>
-                    <p style="margin: 0; font-size: 0.9rem; color: #7f8c8d;">User: {{ data.running_job.user.username }}</p>
-                    <p style="margin: 0; font-size: 0.9rem; color: #7f8c8d;">Started: {{ data.running_job.started_at|date:"M d, g:i A" }}</p>
-                    <button type="button" class="btn btn-success btn-sm btn-block checkout-entry-btn"
-                        data-entry-id="{{ data.running_job.id }}"
-                        data-entry-title="{{ data.running_job.title }}"
-                        style="margin-top: 0.5rem;">Check Out</button>
-                </div>
-                {% endif %}
-
-                <!-- On Deck Job -->
-                {% if data.on_deck_job %}
-                <div style="background-color: white; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem; border-left: 4px solid #3498db;">
-                    <p style="margin: 0; font-weight: bold; color: #3498db;">ON DECK (#1)</p>
-                    <p style="margin: 0.25rem 0; font-size: 0.95rem;"><strong><span data-tooltip="Description: {{ data.on_deck_job.description|default:'No description' }}">{{ data.on_deck_job.title|truncatechars:25 }}</span></strong></p>
-                    <p style="margin: 0; font-size: 0.9rem; color: #7f8c8d;">User: {{ data.on_deck_job.user.username }}</p>
-                    <p style="margin: 0; font-size: 0.9rem; color: #7f8c8d;">Duration: {{ data.on_deck_job.estimated_duration_hours }} hrs</p>
-                    {% if not data.running_job %}
-                    <form method="post" action="{% url 'admin_check_in' data.on_deck_job.id %}" style="margin-top: 0.5rem;" onsubmit="saveScrollPosition(); disableCheckInButton(this);">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-primary btn-sm btn-block check-in-btn">Start Job</button>
-                    </form>
-                    {% endif %}
-                </div>
-                {% endif %}
-
-                <!-- Queue Info -->
-                <div style="padding: 0.5rem; text-align: center; color: #7f8c8d; font-size: 0.9rem; border-top: 1px solid #ddd; margin-top: 0.5rem; padding-top: 0.75rem;">
-                    {% if data.queue_count > 0 %}
-                        📋 {{ data.queue_count }} job{{ data.queue_count|pluralize }} in queue
-                    {% else %}
-                        {% if not data.running_job %}
-                            ✨ FREE - No queue
-                        {% else %}
-                            📋 No queue
-                        {% endif %}
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-</div>
 
 <div style="margin-top: 1rem;">
     <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
@@ -531,8 +450,9 @@ function connectWebSocket() {
             console.log('Received queue update:', data);
 
             if (data.message_type === 'queue_update') {
-                // Save scroll position before reload
+                // Save scroll position and update info before reload
                 sessionStorage.setItem('adminQueueScrollPosition', window.scrollY);
+                sessionStorage.setItem('queueUpdateInfo', JSON.stringify(data));
                 location.reload();
             }
         };
@@ -565,6 +485,81 @@ function attemptReconnect() {
 
 // Connect on page load
 connectWebSocket();
+
+// Show update notification banner if page was just refreshed
+function showUpdateBanner() {
+    const updateInfo = sessionStorage.getItem('queueUpdateInfo');
+    if (updateInfo) {
+        sessionStorage.removeItem('queueUpdateInfo');
+        const data = JSON.parse(updateInfo);
+
+        // Create friendly message based on update type
+        let message = 'Queue updated';
+        switch(data.update_type) {
+            case 'started':
+                message = 'A measurement was started';
+                break;
+            case 'completed':
+                message = 'A measurement was completed';
+                break;
+            case 'undo_checkin':
+                message = 'A check-in was undone';
+                break;
+            case 'position_changed':
+                message = 'Queue positions changed';
+                break;
+            case 'moved_to_first':
+                message = 'An entry was moved to first position';
+                break;
+            case 'cancelled':
+                message = 'An entry was cancelled';
+                break;
+            default:
+                message = 'Queue updated';
+        }
+
+        const banner = document.createElement('div');
+        banner.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #27ae60;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            z-index: 9999;
+            font-weight: 500;
+            animation: slideDown 0.3s ease-out;
+        `;
+        banner.innerHTML = 'Updated: ' + message;
+        document.body.appendChild(banner);
+
+        // Auto-dismiss after 4 seconds
+        setTimeout(() => {
+            banner.style.animation = 'slideUp 0.3s ease-out';
+            setTimeout(() => banner.remove(), 300);
+        }, 4000);
+    }
+}
+
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideDown {
+        from { transform: translate(-50%, -100%); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
+    }
+    @keyframes slideUp {
+        from { transform: translate(-50%, 0); opacity: 1; }
+        to { transform: translate(-50%, -100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+
+// Check for update banner on page load
+window.addEventListener('load', showUpdateBanner);
 </script>
 
 <!-- Thanos Delete Confirmation Modal -->

@@ -364,8 +364,9 @@
                 const data = JSON.parse(e.data);
                 console.log('Received WebSocket message:', data);
 
-                // Reload page immediately on any queue update
+                // Save update info and reload page
                 if (data.message_type === 'queue_update') {
+                    sessionStorage.setItem('queueUpdateInfo', JSON.stringify(data));
                     location.reload();
                 }
             };
@@ -404,5 +405,80 @@
 
     // Initialize WebSocket connection
     connectWebSocket();
+
+    // Show update notification banner if page was just refreshed
+    function showUpdateBanner() {
+        const updateInfo = sessionStorage.getItem('queueUpdateInfo');
+        if (updateInfo) {
+            sessionStorage.removeItem('queueUpdateInfo');
+            const data = JSON.parse(updateInfo);
+
+            // Create friendly message based on update type
+            let message = 'Queue updated';
+            switch(data.update_type) {
+                case 'started':
+                    message = 'A measurement was started';
+                    break;
+                case 'completed':
+                    message = 'A measurement was completed';
+                    break;
+                case 'undo_checkin':
+                    message = 'A check-in was undone';
+                    break;
+                case 'position_changed':
+                    message = 'Queue positions changed';
+                    break;
+                case 'moved_to_first':
+                    message = 'An entry was moved to first position';
+                    break;
+                case 'cancelled':
+                    message = 'An entry was cancelled';
+                    break;
+                default:
+                    message = 'Queue updated';
+            }
+
+            const banner = document.createElement('div');
+            banner.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #27ae60;
+                color: white;
+                padding: 1rem 2rem;
+                border-radius: 5px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+                z-index: 9999;
+                font-weight: 500;
+                animation: slideDown 0.3s ease-out;
+            `;
+            banner.innerHTML = 'Updated: ' + message;
+            document.body.appendChild(banner);
+
+            // Auto-dismiss after 4 seconds
+            setTimeout(() => {
+                banner.style.animation = 'slideUp 0.3s ease-out';
+                setTimeout(() => banner.remove(), 300);
+            }, 4000);
+        }
+    }
+
+    // Add CSS animations
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideDown {
+            from { transform: translate(-50%, -100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translate(-50%, 0); opacity: 1; }
+            to { transform: translate(-50%, -100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Check for update banner on page load
+    window.addEventListener('load', showUpdateBanner);
 </script>
 {% endblock %}
