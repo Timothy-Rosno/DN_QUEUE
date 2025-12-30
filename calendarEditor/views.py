@@ -257,6 +257,7 @@ def submit_queue_entry(request):
                                 'entry_id': queue_entry.id,
                                 'user_id': queue_entry.user.id,
                                 'machine_id': queue_entry.assigned_machine.id if queue_entry.assigned_machine else None,
+                                'machine_name': queue_entry.assigned_machine.name if queue_entry.assigned_machine else None,
                                 'triggering_user_id': request.user.id,
                             }
                         )

@@ -424,6 +424,9 @@
             // Create friendly message based on update type
             let message = 'Queue updated';
             switch(data.update_type) {
+                case 'submitted':
+                    message = 'New queue entry';
+                    break;
                 case 'started':
                     message = 'A measurement was started';
                     break;
