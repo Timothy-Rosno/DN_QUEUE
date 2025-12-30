@@ -396,44 +396,24 @@ function showUpdateBanner() {
         }
 
         const banner = document.createElement('div');
-        banner.style.cssText = `
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #27ae60;
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 5px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            z-index: 9999;
-            font-weight: 500;
-            animation: slideDown 0.3s ease-out;
+        banner.style.cssText = 'position: fixed; top: 20px; right: 20px; background-color: #3498db; color: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 10000; display: flex; align-items: center; gap: 15px; max-width: 400px;';
+
+        banner.innerHTML = `
+            <div>
+                <strong>Queue Updated</strong>
+                <div style="font-size: 0.9rem; margin-top: 4px;">${message}</div>
+            </div>
         `;
-        banner.innerHTML = 'Updated: ' + message;
         document.body.appendChild(banner);
 
-        // Auto-dismiss after 4 seconds
+        // Auto-remove banner after 10 seconds
         setTimeout(() => {
-            banner.style.animation = 'slideUp 0.3s ease-out';
-            setTimeout(() => banner.remove(), 300);
-        }, 4000);
+            if (banner.parentNode) {
+                banner.remove();
+            }
+        }, 10000);
     }
 }
-
-// Add CSS animations
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideDown {
-        from { transform: translate(-50%, -100%); opacity: 0; }
-        to { transform: translate(-50%, 0); opacity: 1; }
-    }
-    @keyframes slideUp {
-        from { transform: translate(-50%, 0); opacity: 1; }
-        to { transform: translate(-50%, -100%); opacity: 0; }
-    }
-`;
-document.head.appendChild(style);
 
 // Check for update banner on page load
 window.addEventListener('load', showUpdateBanner);
