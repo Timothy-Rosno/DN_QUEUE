@@ -1096,6 +1096,26 @@ def queue_next(request, entry_id):
             entry.queue_position = 1
             entry.save()
 
+            # Broadcast WebSocket update for real-time page refresh
+            try:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    'queue_updates',
+                    {
+                        'type': 'queue_update',
+                        'update_type': 'moved_to_first',
+                        'entry_id': entry.id,
+                        'user_id': entry.user.id,
+                        'machine_id': machine.id,
+                    }
+                )
+            except Exception as e:
+                # Don't fail the operation if WebSocket broadcast fails
+                print(f"WebSocket broadcast error in queue_next: {e}")
+
             # Notify the person who was bumped from position #1
             if current_on_deck:
                 current_on_deck.refresh_from_db()
@@ -1146,6 +1166,26 @@ def move_queue_up(request, entry_id):
                 entry.queue_position = new_pos
                 entry.save()
 
+                # Broadcast WebSocket update for real-time page refresh
+                try:
+                    from channels.layers import get_channel_layer
+                    from asgiref.sync import async_to_sync
+
+                    channel_layer = get_channel_layer()
+                    async_to_sync(channel_layer.group_send)(
+                        'queue_updates',
+                        {
+                            'type': 'queue_update',
+                            'update_type': 'position_changed',
+                            'entry_id': entry.id,
+                            'user_id': entry.user.id,
+                            'machine_id': machine.id,
+                        }
+                    )
+                except Exception as e:
+                    # Don't fail the operation if WebSocket broadcast fails
+                    print(f"WebSocket broadcast error in move_queue_up: {e}")
+
                 # Notify only the moved entry with admin-specific notification
                 notifications.notify_admin_moved_entry(entry, request.user, current_pos, new_pos)
 
@@ -1192,6 +1232,26 @@ def move_queue_down(request, entry_id):
                 # Step 3: Set entry to its new position
                 entry.queue_position = new_pos
                 entry.save()
+
+                # Broadcast WebSocket update for real-time page refresh
+                try:
+                    from channels.layers import get_channel_layer
+                    from asgiref.sync import async_to_sync
+
+                    channel_layer = get_channel_layer()
+                    async_to_sync(channel_layer.group_send)(
+                        'queue_updates',
+                        {
+                            'type': 'queue_update',
+                            'update_type': 'position_changed',
+                            'entry_id': entry.id,
+                            'user_id': entry.user.id,
+                            'machine_id': machine.id,
+                        }
+                    )
+                except Exception as e:
+                    # Don't fail the operation if WebSocket broadcast fails
+                    print(f"WebSocket broadcast error in move_queue_down: {e}")
 
                 # Notify only the moved entry with admin-specific notification
                 notifications.notify_admin_moved_entry(entry, request.user, current_pos, new_pos)

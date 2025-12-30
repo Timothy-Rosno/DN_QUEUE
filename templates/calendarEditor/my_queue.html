@@ -346,8 +346,6 @@
     let socket = null;
     let reconnectAttempts = 0;
     const maxReconnectAttempts = 5;
-    const currentUserId = {{ request.user.id }};
-    let reloadTimeout = null;
 
     function connectWebSocket() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -366,8 +364,9 @@
                 const data = JSON.parse(e.data);
                 console.log('Received WebSocket message:', data);
 
+                // Reload page immediately on any queue update
                 if (data.message_type === 'queue_update') {
-                    handleQueueUpdate(data);
+                    location.reload();
                 }
             };
 
@@ -401,61 +400,6 @@
     function updateConnectionStatus(status) {
         // No-op: WebSocket still works in background, but status indicator is hidden
         // This matches behavior of other pages (home, public queue) which also hide the indicator
-    }
-
-    // Handle queue update events
-    function handleQueueUpdate(data) {
-        console.log('Queue update:', data);
-
-        // Check if this update affects the current user
-        if (data.user_id === currentUserId || !data.user_id) {
-            showUpdateNotification(data);
-            scheduleReload();
-        }
-    }
-
-    // Show update notification banner
-    function showUpdateNotification(data) {
-        // Remove existing banner
-        const existing = document.getElementById('update-banner');
-        if (existing) {
-            existing.remove();
-        }
-
-        // Create new banner
-        const banner = document.createElement('div');
-        banner.id = 'update-banner';
-        banner.style.cssText = 'position: fixed; top: 20px; right: 20px; background-color: #3498db; color: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 10000; display: flex; align-items: center; gap: 15px; max-width: 400px;';
-
-        const updateText = data.update_type || 'Queue updated';
-        banner.innerHTML = `
-            <div>
-                <strong>🔄 Queue Updated</strong>
-                <div style="font-size: 0.9rem; margin-top: 4px;">New changes detected</div>
-            </div>
-            <button onclick="location.reload()" style="background-color: white; color: #3498db; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap;">
-                Refresh Now
-            </button>
-        `;
-
-        document.body.appendChild(banner);
-
-        // Auto-remove banner after 10 seconds
-        setTimeout(() => {
-            if (banner.parentNode) {
-                banner.remove();
-            }
-        }, 10000);
-    }
-
-    // Schedule auto-reload after a few seconds
-    function scheduleReload() {
-        if (reloadTimeout) {
-            clearTimeout(reloadTimeout);
-        }
-        reloadTimeout = setTimeout(() => {
-            location.reload();
-        }, 5000); // Auto-reload after 5 seconds
     }
 
     // Initialize WebSocket connection

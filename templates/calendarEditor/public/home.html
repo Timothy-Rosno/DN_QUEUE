@@ -529,7 +529,7 @@
                 const data = JSON.parse(e.data);
                 console.log('Received queue update:', data);
 
-                // Reload page on any queue update to show latest status
+                // Reload page immediately on any queue update
                 if (data.message_type === 'queue_update') {
                     location.reload();
                 }

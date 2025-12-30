@@ -302,5 +302,64 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// ========================================
+// WebSocket Real-Time Updates
+// ========================================
+
+let socket = null;
+let reconnectAttempts = 0;
+const maxReconnectAttempts = 5;
+
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/queue-updates/`;
+
+    try {
+        socket = new WebSocket(wsUrl);
+
+        socket.onopen = function(e) {
+            console.log('Check-in/Check-out WebSocket connected');
+            reconnectAttempts = 0;
+        };
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            console.log('Received queue update:', data);
+
+            // Reload page immediately on any queue update
+            if (data.message_type === 'queue_update') {
+                location.reload();
+            }
+        };
+
+        socket.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+
+        socket.onclose = function(e) {
+            console.log('WebSocket closed');
+            attemptReconnect();
+        };
+
+    } catch (error) {
+        console.error('Failed to create WebSocket:', error);
+        attemptReconnect();
+    }
+}
+
+function attemptReconnect() {
+    if (reconnectAttempts < maxReconnectAttempts) {
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 16000);
+        console.log(`Reconnecting in ${delay}ms... (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`);
+        setTimeout(connectWebSocket, delay);
+        reconnectAttempts++;
+    } else {
+        console.log('Max reconnection attempts reached');
+    }
+}
+
+// Connect on page load
+connectWebSocket();
 </script>
 {% endblock %}
