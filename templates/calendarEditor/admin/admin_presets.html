@@ -4,10 +4,37 @@
 
 {% block content %}
 <style>
+/* Collapsible card styles */
+.card-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.card-details {
+    padding: 1.5rem;
+    border-top: 1px solid #ddd;
+    display: none;
+}
+
+.card-details.open {
+    display: block;
+}
+
+.expand-icon {
+    font-size: 1.2rem;
+    transition: transform 0.3s;
+    display: inline-block;
+}
+
+.expand-icon.open {
+    transform: rotate(180deg);
+}
+
 .preset-table {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
+    min-width: 800px;
 }
 .preset-table th,
 .preset-table td {
@@ -54,10 +81,16 @@
 
 <!-- Public Presets -->
 <div class="card" style="border-left: 4px solid #1abc9c;">
-    <h2 style="color: #1abc9c; margin-top: 0;">Public Presets ({{ total_public }})</h2>
-
-    {% if public_presets %}
-        <table class="preset-table">
+    <div class="card-header" onclick="toggleCard('public-presets')">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; color: #1abc9c;">Public Presets ({{ total_public }})</h2>
+            <span class="expand-icon open" id="icon-public-presets">▼</span>
+        </div>
+    </div>
+    <div class="card-details open" id="details-public-presets">
+        {% if public_presets %}
+        <div style="overflow-x: auto; margin: 0 -1.5rem; padding: 0 1.5rem;">
+            <table class="preset-table">
             <thead>
                 <tr>
                     <th style="width: 12%;">Author</th>
@@ -94,17 +127,25 @@
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
-        <p style="color: #7f8c8d; font-style: italic;">No public presets found.</p>
-    {% endif %}
+        </div>
+        {% else %}
+            <p style="color: #7f8c8d; font-style: italic;">No public presets found.</p>
+        {% endif %}
+    </div>
 </div>
 
 <!-- Private Presets -->
 <div class="card" style="border-left: 4px solid #9b59b6;">
-    <h2 style="color: #9b59b6; margin-top: 0;">Private Presets ({{ total_private }})</h2>
-
-    {% if private_presets %}
-        <table class="preset-table">
+    <div class="card-header" onclick="toggleCard('private-presets')">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; color: #9b59b6;">Private Presets ({{ total_private }})</h2>
+            <span class="expand-icon open" id="icon-private-presets">▼</span>
+        </div>
+    </div>
+    <div class="card-details open" id="details-private-presets">
+        {% if private_presets %}
+        <div style="overflow-x: auto; margin: 0 -1.5rem; padding: 0 1.5rem;">
+            <table class="preset-table">
             <thead>
                 <tr>
                     <th style="width: 12%;">Author</th>
@@ -151,9 +192,11 @@
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
-        <p style="color: #7f8c8d; font-style: italic;">No private presets found.</p>
-    {% endif %}
+        </div>
+        {% else %}
+            <p style="color: #7f8c8d; font-style: italic;">No private presets found.</p>
+        {% endif %}
+    </div>
 </div>
 
 <div style="margin-top: 1rem;">
@@ -177,6 +220,20 @@
 </div>
 
 <script>
+// Toggle collapsible card sections
+function toggleCard(cardId) {
+    const details = document.getElementById('details-' + cardId);
+    const icon = document.getElementById('icon-' + cardId);
+
+    if (details.classList.contains('open')) {
+        details.classList.remove('open');
+        icon.classList.remove('open');
+    } else {
+        details.classList.add('open');
+        icon.classList.add('open');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('thanosModal');
     const message = document.getElementById('thanosMessage');

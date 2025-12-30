@@ -944,6 +944,9 @@ def undo_check_in(request, entry_id):
 
         machine = queue_entry.assigned_machine
 
+        # Refresh machine from database to get latest state
+        machine.refresh_from_db()
+
         # Check if machine is in maintenance mode
         if machine.current_status == 'maintenance':
             messages.error(request, f'Cannot undo check-in - {machine.name} is under maintenance. Please contact an administrator.')
@@ -974,11 +977,18 @@ def undo_check_in(request, entry_id):
         queue_entry.reminder_snoozed_until = None
         queue_entry.save()
 
+        # Refresh machine again to ensure we're working with latest data
+        machine.refresh_from_db()
+
         # Update machine status to idle
         machine.current_status = 'idle'
         machine.current_user = None
         machine.estimated_available_time = None
         machine.save()
+
+        # Final refresh to ensure all updates are committed
+        machine.refresh_from_db()
+        queue_entry.refresh_from_db()
 
         # Auto-clear any running-related notifications
         auto_clear_notifications(related_queue_entry=queue_entry)

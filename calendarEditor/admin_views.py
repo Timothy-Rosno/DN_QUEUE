@@ -1516,6 +1516,9 @@ def admin_undo_check_in(request, entry_id):
     entry_user = queue_entry.user
     entry_title = queue_entry.title
 
+    # Refresh machine from database to get latest state
+    machine.refresh_from_db()
+
     # Find the entry that was at position 1 (will be bumped to position 2)
     was_on_deck = QueueEntry.objects.filter(
         assigned_machine=machine,
@@ -1546,11 +1549,18 @@ def admin_undo_check_in(request, entry_id):
     queue_entry.reminder_snoozed_until = None
     queue_entry.save()
 
+    # Refresh machine again to ensure we're working with latest data
+    machine.refresh_from_db()
+
     # Update machine status to idle
     machine.current_status = 'idle'
     machine.current_user = None
     machine.estimated_available_time = None
     machine.save()
+
+    # Final refresh to ensure all updates are committed
+    machine.refresh_from_db()
+    queue_entry.refresh_from_db()
 
     # Auto-clear any running-related notifications
     auto_clear_notifications(related_queue_entry=queue_entry)
