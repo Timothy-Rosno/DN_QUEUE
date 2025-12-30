@@ -374,7 +374,7 @@ function showUpdateBanner() {
         const data = JSON.parse(updateInfo);
 
         // Don't show banner if current user triggered the update
-        if (data.triggering_user_id && data.triggering_user_id === currentUserId) {
+        if (data.triggering_user_id && Number(data.triggering_user_id) === Number(currentUserId)) {
             return;
         }
 
@@ -412,7 +412,7 @@ function showUpdateBanner() {
         banner.className = 'message info';
         banner.style.cssText = 'position: fixed; top: 80px; right: 20px; max-width: 400px; z-index: 9999;';
         banner.innerHTML = `
-            <span style="flex: 1;">Updated: ${message}</span>
+            <span style="flex: 1;">Update: ${message}</span>
             <button class="message-close" onclick="this.parentElement.remove()" aria-label="Dismiss">×</button>
         `;
         document.body.appendChild(banner);

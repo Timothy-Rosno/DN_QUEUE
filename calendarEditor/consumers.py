@@ -96,6 +96,8 @@ class QueueUpdatesConsumer(AsyncWebsocketConsumer):
         - entry_id: ID of the affected queue entry
         - user_id: ID of the user affected (optional)
         - machine_id: ID of the affected machine (optional)
+        - machine_name: Name of the affected machine (optional)
+        - triggering_user_id: ID of the user who triggered the update (optional)
         """
         await self.send(text_data=json.dumps({
             'message_type': 'queue_update',
@@ -103,6 +105,8 @@ class QueueUpdatesConsumer(AsyncWebsocketConsumer):
             'entry_id': event.get('entry_id'),
             'user_id': event.get('user_id'),
             'machine_id': event.get('machine_id'),
+            'machine_name': event.get('machine_name'),
+            'triggering_user_id': event.get('triggering_user_id'),
         }))
 
     async def notification(self, event):
