@@ -222,7 +222,7 @@
             <div style="flex: 1;">
                 <strong style="color: #856404;">Currently Running:</strong>
                 <div style="margin-top: 0.25rem;">
-                    <strong>{{ data.running_entry.title }}</strong> ({{ data.running_entry.user.username }})
+                    <strong><span data-tooltip="Description: {{ data.running_entry.description }}">{{ data.running_entry.title }}</span></strong> ({{ data.running_entry.user.username }})
                 </div>
                 <div style="color: #856404; font-size: 0.9rem; margin-top: 0.25rem;">
                     Started: {{ data.running_entry.started_at|date:"M d, g:i A" }}
@@ -273,7 +273,7 @@
                             {% endif %}
                         </td>
                         <td style="padding: 0.5rem;">
-                            {{ entry.title }}
+                            <span data-tooltip="Description: {{ entry.description }}">{{ entry.title }}</span>
                             {% if user.is_authenticated and entry.user == user %}
                                 <span style="background-color: #3498db; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">YOUR ENTRY</span>
                             {% endif %}
@@ -299,6 +299,9 @@
 {% endif %}
 
 <script>
+    // Current user ID for filtering self-triggered updates
+    const currentUserId = {{ request.user.id|default:'null' }};
+
     // Store scroll position before filter change
     let scrollPosition = 0;
 
@@ -447,6 +450,11 @@
             sessionStorage.removeItem('queueUpdateInfo');
             const data = JSON.parse(updateInfo);
 
+            // Don't show banner if current user triggered the update
+            if (data.triggering_user_id && data.triggering_user_id === currentUserId) {
+                return;
+            }
+
             // Create friendly message based on update type
             let message = 'Queue updated';
             switch(data.update_type) {
@@ -472,11 +480,16 @@
                     message = 'Queue updated';
             }
 
+            // Add machine name if available
+            if (data.machine_name) {
+                message += ` on ${data.machine_name}`;
+            }
+
             const banner = document.createElement('div');
             banner.className = 'message info';
             banner.style.cssText = 'position: fixed; top: 80px; right: 20px; max-width: 400px; z-index: 9999;';
             banner.innerHTML = `
-                <span style="flex: 1;">${message}</span>
+                <span style="flex: 1;">Updated: ${message}</span>
                 <button class="message-close" onclick="this.parentElement.remove()" aria-label="Dismiss">×</button>
             `;
             document.body.appendChild(banner);

@@ -325,6 +325,9 @@
 </div>
 
 <script>
+    // Current user ID for filtering self-triggered updates
+    const currentUserId = {{ request.user.id|default:'null' }};
+
     // Collapsible section toggle
     function toggleSection(sectionId) {
         const content = document.getElementById(sectionId);
@@ -413,6 +416,11 @@
             sessionStorage.removeItem('queueUpdateInfo');
             const data = JSON.parse(updateInfo);
 
+            // Don't show banner if current user triggered the update
+            if (data.triggering_user_id && data.triggering_user_id === currentUserId) {
+                return;
+            }
+
             // Create friendly message based on update type
             let message = 'Queue updated';
             switch(data.update_type) {
@@ -438,11 +446,16 @@
                     message = 'Queue updated';
             }
 
+            // Add machine name if available
+            if (data.machine_name) {
+                message += ` on ${data.machine_name}`;
+            }
+
             const banner = document.createElement('div');
             banner.className = 'message info';
             banner.style.cssText = 'position: fixed; top: 80px; right: 20px; max-width: 400px; z-index: 9999;';
             banner.innerHTML = `
-                <span style="flex: 1;">${message}</span>
+                <span style="flex: 1;">Updated: ${message}</span>
                 <button class="message-close" onclick="this.parentElement.remove()" aria-label="Dismiss">×</button>
             `;
             document.body.appendChild(banner);

@@ -1110,6 +1110,8 @@ def queue_next(request, entry_id):
                         'entry_id': entry.id,
                         'user_id': entry.user.id,
                         'machine_id': machine.id,
+                        'machine_name': machine.name,
+                        'triggering_user_id': request.user.id,
                     }
                 )
             except Exception as e:
@@ -1180,6 +1182,8 @@ def move_queue_up(request, entry_id):
                             'entry_id': entry.id,
                             'user_id': entry.user.id,
                             'machine_id': machine.id,
+                            'machine_name': machine.name,
+                            'triggering_user_id': request.user.id,
                         }
                     )
                 except Exception as e:
@@ -1247,6 +1251,8 @@ def move_queue_down(request, entry_id):
                             'entry_id': entry.id,
                             'user_id': entry.user.id,
                             'machine_id': machine.id,
+                            'machine_name': machine.name,
+                            'triggering_user_id': request.user.id,
                         }
                     )
                 except Exception as e:
@@ -1368,6 +1374,8 @@ def admin_check_in(request, entry_id):
                 'entry_id': queue_entry.id,
                 'user_id': queue_entry.user.id,
                 'machine_id': machine.id,
+                'machine_name': machine.name,
+                'triggering_user_id': request.user.id,
             }
         )
     except Exception as e:
@@ -1538,6 +1546,8 @@ def admin_check_out(request, entry_id):
                 'entry_id': queue_entry.id,
                 'user_id': queue_entry.user.id,
                 'machine_id': machine.id,
+                'machine_name': machine.name,
+                'triggering_user_id': request.user.id,
             }
         )
     except Exception as e:
@@ -1662,6 +1672,7 @@ def admin_undo_check_in(request, entry_id):
                 'entry_id': queue_entry.id,
                 'user_id': queue_entry.user.id,
                 'machine_id': machine.id,
+                'machine_name': machine.name,
                 'triggering_user_id': request.user.id,
             }
         )

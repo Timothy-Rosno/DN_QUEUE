@@ -82,7 +82,7 @@
                                 {% endif %}
                             </td>
                             <td style="padding: 0.75rem; max-width: 200px;">
-                                <strong><span data-tooltip="Title: {{ entry.title }}{% if entry.description %} | Description: {{ entry.description }}{% endif %}" style="display: inline-block; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ entry.title|truncatechars:30 }}</span></strong>
+                                <strong><span data-tooltip="Description: {{ entry.description }}" style="display: inline-block; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ entry.title|truncatechars:30 }}</span></strong>
                                 {% if entry.is_rush_job %}
                                     <span style="background-color: #e67e22; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">RUSH</span>
                                 {% endif %}
@@ -224,6 +224,9 @@
 </div>
 
 <script>
+// Current user ID for filtering self-triggered updates
+const currentUserId = {{ request.user.id|default:'null' }};
+
 // Toggle collapsible sections
 function toggleSection(sectionId) {
     const content = document.getElementById(sectionId);
@@ -493,6 +496,11 @@ function showUpdateBanner() {
         sessionStorage.removeItem('queueUpdateInfo');
         const data = JSON.parse(updateInfo);
 
+        // Don't show banner if current user triggered the update
+        if (data.triggering_user_id && data.triggering_user_id === currentUserId) {
+            return;
+        }
+
         // Create friendly message based on update type
         let message = 'Queue updated';
         switch(data.update_type) {
@@ -518,11 +526,16 @@ function showUpdateBanner() {
                 message = 'Queue updated';
         }
 
+        // Add machine name if available
+        if (data.machine_name) {
+            message += ` on ${data.machine_name}`;
+        }
+
         const banner = document.createElement('div');
         banner.className = 'message info';
         banner.style.cssText = 'position: fixed; top: 80px; right: 20px; max-width: 400px; z-index: 9999;';
         banner.innerHTML = `
-            <span style="flex: 1;">${message}</span>
+            <span style="flex: 1;">Updated: ${message}</span>
             <button class="message-close" onclick="this.parentElement.remove()" aria-label="Dismiss">×</button>
         `;
         document.body.appendChild(banner);

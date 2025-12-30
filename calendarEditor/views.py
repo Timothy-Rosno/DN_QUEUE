@@ -664,6 +664,8 @@ def check_in_job(request, entry_id):
                 'entry_id': queue_entry.id,
                 'user_id': queue_entry.user.id,
                 'machine_id': machine.id,
+                'machine_name': machine.name,
+                'triggering_user_id': request.user.id,
             }
         )
     except Exception as e:
@@ -835,6 +837,8 @@ def check_out_job(request, entry_id):
                 'entry_id': queue_entry.id,
                 'user_id': queue_entry.user.id,
                 'machine_id': machine.id,
+                'machine_name': machine.name,
+                'triggering_user_id': request.user.id,
             }
         )
     except Exception as e:
@@ -1027,6 +1031,7 @@ def undo_check_in(request, entry_id):
                     'entry_id': queue_entry.id,
                     'user_id': queue_entry.user.id,
                     'machine_id': machine.id,
+                    'machine_name': machine.name,
                     'triggering_user_id': request.user.id,
                 }
             )
