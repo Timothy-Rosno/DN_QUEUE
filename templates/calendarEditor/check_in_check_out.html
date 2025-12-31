@@ -199,8 +199,6 @@
 </div>
 
 <script>
-// Current user ID for filtering self-triggered updates
-const currentUserId = {{ request.user.id|default:'null' }};
 
 // Save scroll position before form submission
 document.addEventListener('DOMContentLoaded', function() {
@@ -307,64 +305,14 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ========================================
-// WebSocket Real-Time Updates
+// Auto-Reload on Queue Updates
 // ========================================
 
-let socket = null;
-let reconnectAttempts = 0;
-const maxReconnectAttempts = 5;
-
-function connectWebSocket() {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/queue-updates/`;
-
-    try {
-        socket = new WebSocket(wsUrl);
-
-        socket.onopen = function(e) {
-            console.log('Check-in/Check-out WebSocket connected');
-            reconnectAttempts = 0;
-        };
-
-        socket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            console.log('Received queue update:', data);
-
-            // Save update info and reload page
-            if (data.message_type === 'queue_update') {
-                sessionStorage.setItem('queueUpdateInfo', JSON.stringify(data));
-                location.reload();
-            }
-        };
-
-        socket.onerror = function(error) {
-            console.error('WebSocket error:', error);
-        };
-
-        socket.onclose = function(e) {
-            console.log('WebSocket closed');
-            attemptReconnect();
-        };
-
-    } catch (error) {
-        console.error('Failed to create WebSocket:', error);
-        attemptReconnect();
-    }
-}
-
-function attemptReconnect() {
-    if (reconnectAttempts < maxReconnectAttempts) {
-        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 16000);
-        console.log(`Reconnecting in ${delay}ms... (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`);
-        setTimeout(connectWebSocket, delay);
-        reconnectAttempts++;
-    } else {
-        console.log('Max reconnection attempts reached');
-    }
-}
-
-// Connect on page load
-connectWebSocket();
+// Listen for global queue updates and reload page
+window.addEventListener('queueUpdate', function(e) {
+    console.log('Check-in/Check-out page: received queue update, reloading...');
+    location.reload();
+});
 
 // Show update notification banner if page was just refreshed
 function showUpdateBanner() {
@@ -374,7 +322,7 @@ function showUpdateBanner() {
         const data = JSON.parse(updateInfo);
 
         // Don't show banner if current user triggered the update
-        if (data.triggering_user_id && Number(data.triggering_user_id) === Number(currentUserId)) {
+        if (data.triggering_user_id && Number(data.triggering_user_id) === Number(globalCurrentUserId)) {
             return;
         }
 

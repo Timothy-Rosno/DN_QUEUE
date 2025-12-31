@@ -53,9 +53,13 @@ class CustomLoginView(LoginView):
         if remember_me:
             # Long session: 1 year (for personal devices)
             self.request.session.set_expiry(31536000)  # 365 days in seconds
+            # Store flag to disable auto-logout for "Remember Me" users
+            self.request.session['remember_me'] = True
         else:
             # Shorter session: 7 days (safer for potentially shared devices)
             self.request.session.set_expiry(604800)  # 7 days in seconds
+            # Enable auto-logout for non-"Remember Me" users
+            self.request.session['remember_me'] = False
 
         # Tokens are reusable, so no need to mark as used
         # The get_success_url will handle redirection

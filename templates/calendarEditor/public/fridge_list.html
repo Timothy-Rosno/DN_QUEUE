@@ -515,5 +515,11 @@ window.addEventListener('beforeunload', function() {
         clearInterval(countdownInterval);
     }
 });
+
+// Listen for global queue updates and reload page
+window.addEventListener('queueUpdate', function(e) {
+    console.log('Fridge list page: received queue update, reloading...');
+    location.reload();
+});
 </script>
 {% endblock %}

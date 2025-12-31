@@ -425,9 +425,6 @@
 {% endif %} -->
 
 <script>
-    // Current user ID for filtering self-triggered updates
-    const currentUserId = {{ request.user.id|default:'null' }};
-
     // Store scroll position before filter change
     let scrollPosition = 0;
 
@@ -511,63 +508,11 @@
     setInterval(updateCountdowns, 1000);
     updateCountdowns(); // Initial update
 
-    // WebSocket connection for real-time updates
-    let socket = null;
-    let reconnectAttempts = 0;
-    const maxReconnectAttempts = 5;
-
-    function connectWebSocket() {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws/queue-updates/`;
-
-        try {
-            socket = new WebSocket(wsUrl);
-
-            socket.onopen = function(e) {
-                console.log('WebSocket connection established');
-                reconnectAttempts = 0;
-            };
-
-            socket.onmessage = function(e) {
-                const data = JSON.parse(e.data);
-                console.log('Received queue update:', data);
-
-                // Save update info and reload page
-                if (data.message_type === 'queue_update') {
-                    sessionStorage.setItem('queueUpdateInfo', JSON.stringify(data));
-                    location.reload();
-                }
-            };
-
-            socket.onclose = function(e) {
-                console.log('WebSocket connection closed');
-
-                // Attempt to reconnect with exponential backoff
-                if (reconnectAttempts < maxReconnectAttempts) {
-                    reconnectAttempts++;
-                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 16000);
-                    console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
-                    setTimeout(connectWebSocket, delay);
-                }
-            };
-
-            socket.onerror = function(e) {
-                console.error('WebSocket error:', e);
-            };
-        } catch (error) {
-            console.error('Failed to create WebSocket:', error);
-        }
-    }
-
-    // Initialize WebSocket connection
-    connectWebSocket();
-
-    // Fallback: Auto-refresh every 60 seconds if WebSocket fails
-    setInterval(function() {
-        if (!socket || socket.readyState !== WebSocket.OPEN) {
-            location.reload();
-        }
-    }, 60000);
+    // Listen for global queue updates and reload page
+    window.addEventListener('queueUpdate', function(e) {
+        console.log('Home page: received queue update, reloading...');
+        location.reload();
+    });
 
     // Show update notification banner if page was just refreshed
     function showUpdateBanner() {
@@ -577,7 +522,7 @@
             const data = JSON.parse(updateInfo);
 
             // Don't show banner if current user triggered the update
-            if (data.triggering_user_id && Number(data.triggering_user_id) === Number(currentUserId)) {
+            if (data.triggering_user_id && Number(data.triggering_user_id) === Number(globalCurrentUserId)) {
                 return;
             }
 

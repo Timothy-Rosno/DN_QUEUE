@@ -706,8 +706,8 @@
             window.location.href = '{% url "logout" %}';
         }
 
-        // Only enable auto-logout for non-admin users
-        {% if not user.is_staff %}
+        // Only enable auto-logout for non-admin users who didn't check "Remember Me"
+        {% if not user.is_staff and not request.session.remember_me %}
         // Track user activity events
         const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
         activityEvents.forEach(function(eventName) {
@@ -726,8 +726,12 @@
             }
         });
         {% else %}
-        // Admin users are exempt from auto-logout
+        // Admin users and "Remember Me" users are exempt from auto-logout
+        {% if user.is_staff %}
         console.log('Auto-logout disabled for admin users');
+        {% else %}
+        console.log('Auto-logout disabled for "Remember Me" users');
+        {% endif %}
         {% endif %}
     </script>
     {% endif %}
@@ -841,6 +845,139 @@
 
         // Update temperatures every 10 seconds (just the text values, NOT the page)
         setInterval(updateMachineStatus, 10000);
+    </script>
+
+    <!-- Global Queue Update WebSocket -->
+    <script>
+        // Current user ID for filtering self-triggered updates
+        const globalCurrentUserId = {{ request.user.id|default:'null' }};
+
+        // Global WebSocket connection for queue updates
+        let globalSocket = null;
+        let globalReconnectAttempts = 0;
+        const globalMaxReconnectAttempts = 5;
+        const globalReconnectDelays = [1000, 2000, 4000, 8000, 16000];
+
+        function connectGlobalWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/queue-updates/`;
+
+            try {
+                globalSocket = new WebSocket(wsUrl);
+
+                globalSocket.onopen = function(e) {
+                    console.log('Global queue WebSocket connected');
+                    globalReconnectAttempts = 0;
+                };
+
+                globalSocket.onmessage = function(e) {
+                    const data = JSON.parse(e.data);
+                    console.log('Global received queue update:', data);
+
+                    if (data.message_type === 'queue_update') {
+                        // Store update info for banner display
+                        sessionStorage.setItem('queueUpdateInfo', JSON.stringify(data));
+
+                        // Dispatch custom event for pages that want to auto-reload
+                        const event = new CustomEvent('queueUpdate', { detail: data });
+                        window.dispatchEvent(event);
+
+                        // Show banner (pages can decide to reload on their own)
+                        showGlobalUpdateBanner(data);
+                    }
+                };
+
+                globalSocket.onerror = function(error) {
+                    console.error('Global WebSocket error:', error);
+                };
+
+                globalSocket.onclose = function(e) {
+                    console.log('Global WebSocket closed');
+                    attemptGlobalReconnect();
+                };
+
+            } catch (error) {
+                console.error('Failed to create global WebSocket:', error);
+                attemptGlobalReconnect();
+            }
+        }
+
+        function attemptGlobalReconnect() {
+            if (globalReconnectAttempts < globalMaxReconnectAttempts) {
+                const delay = globalReconnectDelays[globalReconnectAttempts];
+                console.log(`Global WebSocket reconnecting in ${delay}ms...`);
+                setTimeout(connectGlobalWebSocket, delay);
+                globalReconnectAttempts++;
+            }
+        }
+
+        function showGlobalUpdateBanner(data) {
+            // Don't show banner if current user triggered the update
+            if (data.triggering_user_id && Number(data.triggering_user_id) === Number(globalCurrentUserId)) {
+                return;
+            }
+
+            // Remove any existing banner
+            const existingBanner = document.getElementById('globalQueueUpdateBanner');
+            if (existingBanner) {
+                existingBanner.remove();
+            }
+
+            // Create friendly message based on update type
+            let message = 'Queue updated';
+            switch(data.update_type) {
+                case 'submitted':
+                    message = 'New queue entry';
+                    break;
+                case 'started':
+                    message = 'A measurement was started';
+                    break;
+                case 'completed':
+                    message = 'A measurement was completed';
+                    break;
+                case 'undo_checkin':
+                    message = 'A check-in was undone';
+                    break;
+                case 'position_changed':
+                    message = 'Queue positions changed';
+                    break;
+                case 'moved_to_first':
+                    message = 'An entry was moved to first position';
+                    break;
+                case 'cancelled':
+                    message = 'An entry was cancelled';
+                    break;
+                default:
+                    message = 'Queue updated';
+            }
+
+            // Add machine name if available
+            if (data.machine_name) {
+                message += ` on ${data.machine_name}`;
+            }
+
+            const banner = document.createElement('div');
+            banner.id = 'globalQueueUpdateBanner';
+            banner.className = 'message info';
+            banner.style.cssText = 'position: fixed; top: 80px; right: 20px; max-width: 400px; z-index: 9999;';
+            banner.innerHTML = `
+                <span style="flex: 1;">Update: ${message}</span>
+                <button class="message-close" onclick="this.parentElement.remove()" aria-label="Dismiss">×</button>
+            `;
+            document.body.appendChild(banner);
+
+            // Auto-remove banner after 10 seconds
+            setTimeout(() => {
+                if (banner.parentNode) {
+                    banner.remove();
+                }
+            }, 10000);
+        }
+
+        // Connect on page load (only if user is authenticated)
+        {% if request.user.is_authenticated %}
+        connectGlobalWebSocket();
+        {% endif %}
     </script>
 
     <!-- Global Tooltip System -->

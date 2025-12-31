@@ -346,5 +346,11 @@ function toggleMachine(machineId) {
         icon.classList.add('open');
     }
 }
+
+// Listen for global queue updates and reload page
+window.addEventListener('queueUpdate', function(e) {
+    console.log('Admin machines page: received queue update, reloading...');
+    location.reload();
+});
 </script>
 {% endblock %}
