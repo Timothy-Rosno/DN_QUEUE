@@ -3331,16 +3331,36 @@ def recalculate_analytics(request):
     if request.method == 'POST':
         from django.core.cache import cache
         from datetime import datetime
+        from .turso_api_client import TursoAPIClient
 
         # Get the days filter from request
         days_filter = int(request.POST.get('days', 30))
+
+        # Get Turso stats before recalculation
+        turso_client = TursoAPIClient()
+        usage_before = turso_client.get_usage_metrics()
+        rows_read_before = usage_before.get('rows_read', 0) if usage_before else 0
+        rows_written_before = usage_before.get('rows_written', 0) if usage_before else 0
 
         # Clear the cache for this filter
         today = datetime.now().date()
         cache_key = f'analytics_daily_{days_filter}_{today}'
         cache.delete(cache_key)
 
-        messages.success(request, f'Analytics cache cleared! Recalculating for {days_filter} days...')
+        # Trigger recalculation by importing and calling the function
+        from .analytics_cache import get_daily_analytics
+        get_daily_analytics(days_filter)
+
+        # Get Turso stats after recalculation
+        usage_after = turso_client.get_usage_metrics()
+        rows_read_after = usage_after.get('rows_read', 0) if usage_after else 0
+        rows_written_after = usage_after.get('rows_written', 0) if usage_after else 0
+
+        # Calculate difference
+        rows_read = rows_read_after - rows_read_before
+        rows_written = rows_written_after - rows_written_before
+
+        messages.success(request, f'Analytics recalculated! DB Reads: {rows_read:,} | DB Writes: {rows_written:,}')
         return redirect(f'/schedule/developer/data/?days={days_filter}')
 
     return redirect('developer_data')
