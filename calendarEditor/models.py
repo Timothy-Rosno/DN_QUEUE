@@ -617,6 +617,10 @@ class Notification(models.Model):
         elif self.notification_type == 'account_approved':
             return reverse('home')
 
+        # Feedback completed - go to notifications page
+        elif self.notification_type == 'feedback_completed':
+            return reverse('notifications_page')
+
         # Default fallback
         return reverse('my_queue')
 
@@ -1021,3 +1025,5 @@ class ErrorLog(models.Model):
     def __str__(self):
         user_str = self.user.username if self.user else 'Anonymous'
         return f"{self.status_code} {self.error_type} - {self.path} - {user_str}"
+
+

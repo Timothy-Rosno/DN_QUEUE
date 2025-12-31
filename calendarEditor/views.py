@@ -2886,3 +2886,5 @@ def notify_developers_new_feedback(feedback):
             message=f'{feedback.user.username} submitted: {feedback.title}',
             triggering_user=feedback.user,
         )
+
+

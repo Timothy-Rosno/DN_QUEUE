@@ -217,8 +217,13 @@ class RenderUsageMiddleware:
 
 class AnalyticsMiddleware:
     """
-    Middleware to track page views and user activity.
-    Lightweight tracking for developer analytics dashboard.
+    Efficient analytics tracking using Redis counters and smart sampling.
+
+    Strategy:
+    - Use Redis for real-time counters (page views, users online)
+    - Sample only 10% of page views for device/browser analysis
+    - Aggregate data hourly/daily via management commands
+    - Minimal database writes = minimal database reads later
     """
 
     def __init__(self, get_response):
@@ -235,6 +240,9 @@ class AnalyticsMiddleware:
             '/',
         ]
 
+        # Sample rate: 1 in 10 page views are stored for device/browser analysis
+        self.sample_rate = 10
+
     def __call__(self, request):
         response = self.get_response(request)
 
@@ -247,35 +255,72 @@ class AnalyticsMiddleware:
         return response
 
     def _track_page_view(self, request):
-        """Record page view in database"""
+        """Track page view using cache counters + occasional DB sampling"""
         try:
-            from .models import PageView
-            from .views import parse_user_agent
+            from .analytics_utils import increment_counter, add_to_set, add_to_sorted_set
+            import random
+            from datetime import datetime
 
             # Ensure session exists
             if not request.session.session_key:
                 request.session.create()
 
-            # Get device info and add IP address
-            device_info = parse_user_agent(request)
+            session_key = request.session.session_key or ''
+            user_id = request.user.id if request.user.is_authenticated else None
+            page_title = self._get_page_title(request.path)
+            now = datetime.now()
+            today = now.date()
+            current_hour = now.hour
 
-            # Extract IP address
-            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-            if x_forwarded_for:
-                ip_address = x_forwarded_for.split(',')[0].strip()
-            else:
-                ip_address = request.META.get('REMOTE_ADDR', 'Unknown')
+            # === CACHE COUNTERS (super fast, no DB writes) ===
+            # Increment today's page view counter
+            increment_counter(f'analytics:pageviews:{today}', 1, 86400 * 2)
 
-            device_info['ip_address'] = ip_address
+            # Track unique users today
+            if user_id:
+                add_to_set(f'analytics:users:{today}', user_id, 86400 * 2)
 
-            PageView.objects.create(
-                user=request.user if request.user.is_authenticated else None,
-                session_key=request.session.session_key or '',
-                path=request.path,
-                page_title=self._get_page_title(request.path),
-                referrer=request.META.get('HTTP_REFERER', ''),
-                device_info=device_info,
-            )
+            # Track unique sessions today
+            add_to_set(f'analytics:sessions:{today}', session_key, 86400 * 2)
+
+            # Track page-specific counters
+            increment_counter(f'analytics:page:{page_title}:{today}', 1, 86400 * 2)
+
+            # Track hourly counters
+            increment_counter(f'analytics:hour:{today}:{current_hour}', 1, 86400 * 2)
+
+            # Track users online (last 15 minutes)
+            if user_id:
+                add_to_sorted_set('analytics:users_online', user_id, now.timestamp(), 900)
+
+            # === SAMPLED DATABASE WRITES (for device/browser analysis) ===
+            # Only write to DB for 10% of requests (reduces DB load by 90%)
+            if random.randint(1, self.sample_rate) == 1:
+                from .models import PageView
+                from .views import parse_user_agent
+
+                # Get device info
+                device_info = parse_user_agent(request)
+
+                # Extract IP address
+                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+                if x_forwarded_for:
+                    ip_address = x_forwarded_for.split(',')[0].strip()
+                else:
+                    ip_address = request.META.get('REMOTE_ADDR', 'Unknown')
+
+                device_info['ip_address'] = ip_address
+
+                # Store sampled page view
+                PageView.objects.create(
+                    user=request.user if request.user.is_authenticated else None,
+                    session_key=session_key,
+                    path=request.path,
+                    page_title=page_title,
+                    referrer=request.META.get('HTTP_REFERER', ''),
+                    device_info=device_info,
+                )
+
         except Exception as e:
             # Don't break requests if tracking fails
             pass
