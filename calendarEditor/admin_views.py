@@ -3305,45 +3305,36 @@ def developer_data(request):
     else:
         start_date = now - timedelta(days=days_filter)
 
-    # === CURRENTLY ONLINE USERS ===
+    # === CURRENTLY ONLINE USERS (OPTIMIZED) ===
     online_threshold = now - timedelta(minutes=15)
     online_users_data = []
 
-    # Get users with recent page views
+    # Get users with recent page views - use select_related to avoid N+1 queries
     recent_views = PageView.objects.filter(
         created_at__gte=online_threshold,
         user__isnull=False
-    ).values('user').annotate(
-        last_seen=Max('created_at'),
-        page_count=Count('id')
-    )
+    ).select_related('user', 'user__profile').order_by('user', '-created_at').distinct('user')
 
-    for view_data in recent_views:
-        user = User.objects.get(id=view_data['user'])
-        # Get most recent browser from recent page views
-        latest_view = PageView.objects.filter(
-            user=user,
-            created_at__gte=online_threshold
-        ).order_by('-created_at').first()
+    # Process users (already have latest view per user from distinct)
+    for latest_view in recent_views:
+        user = latest_view.user
 
         browser = 'Unknown'
         os = 'Unknown'
         device_type = 'Unknown'
         ip_address = 'Unknown'
 
-        if latest_view and isinstance(latest_view.device_info, dict):
+        if isinstance(latest_view.device_info, dict):
             browser_full = latest_view.device_info.get('browser', 'Unknown')
             # Extract browser family, handling mobile browsers properly
-            # "Mobile Safari 18.6" -> "Safari", "Chrome 143.0.0" -> "Chrome"
             browser_parts = browser_full.split() if browser_full else []
             if browser_parts:
-                # Handle cases like "Mobile Safari" or "Chrome Mobile"
                 if browser_parts[0] == 'Mobile' and len(browser_parts) > 1:
-                    browser = browser_parts[1]  # "Mobile Safari" -> "Safari"
+                    browser = browser_parts[1]
                 elif len(browser_parts) > 1 and browser_parts[-1] == 'Mobile':
-                    browser = browser_parts[0]  # "Chrome Mobile" -> "Chrome"
+                    browser = browser_parts[0]
                 else:
-                    browser = browser_parts[0]  # "Chrome" -> "Chrome"
+                    browser = browser_parts[0]
             else:
                 browser = 'Unknown'
             os = latest_view.device_info.get('os', 'Unknown')
@@ -3356,29 +3347,33 @@ def developer_data(request):
             elif latest_view.device_info.get('is_pc'):
                 device_type = 'Desktop'
 
-        # Get IP address from device_info
-        if latest_view and isinstance(latest_view.device_info, dict):
             ip_address = latest_view.device_info.get('ip_address', 'Unknown')
 
         # Build roles list
         roles = []
         if user.is_superuser:
             roles.append('Admin')
-            roles.append('Developer')  # Admins are developers by nature
-            roles.append('Staff')      # Admins are staff by nature
+            roles.append('Developer')
+            roles.append('Staff')
         elif hasattr(user, 'profile') and user.profile.is_developer:
             roles.append('Developer')
-            roles.append('Staff')      # Developers are staff by requirement
+            roles.append('Staff')
         elif user.is_staff:
             roles.append('Staff')
 
         if not roles:
             roles.append('User')
 
+        # Count page views for this user in the last 15 min
+        page_count = PageView.objects.filter(
+            user=user,
+            created_at__gte=online_threshold
+        ).count()
+
         online_users_data.append({
             'username': user.username,
-            'last_seen': view_data['last_seen'],
-            'page_count': view_data['page_count'],
+            'last_seen': latest_view.created_at,
+            'page_count': page_count,
             'browser': browser,
             'os': os,
             'device_type': device_type,
@@ -3521,66 +3516,74 @@ def developer_data(request):
         'completed': feedback_all.filter(status='completed').count(),
     }
 
-    # Device breakdown
-    device_views = page_views_filtered.all()
-    mobile_count = 0
-    desktop_count = 0
-    tablet_count = 0
-    for pv in device_views:
-        device_info = pv.device_info
-        if isinstance(device_info, dict):
-            if device_info.get('is_mobile'):
-                mobile_count += 1
-            elif device_info.get('is_tablet'):
-                tablet_count += 1
-            elif device_info.get('is_pc'):
-                desktop_count += 1
+    # Device/Browser breakdown (CACHED to avoid iterating through all PageViews)
+    # Cache key based on filter period to invalidate when changing filters
+    from django.core.cache import cache
+    cache_key = f'analytics_device_browser_{days_filter}'
+    cached_data = cache.get(cache_key)
 
-    # Browser breakdown (filter out generic/non-browser names)
-    browser_counts = {}
-    browser_device_breakdown = {}  # Track browser × device type
+    if cached_data:
+        mobile_count = cached_data['mobile_count']
+        desktop_count = cached_data['desktop_count']
+        tablet_count = cached_data['tablet_count']
+        top_browsers = cached_data['top_browsers']
+        browser_device_stats = cached_data['browser_device_stats']
+    else:
+        # Only iterate if cache miss - sample up to 10,000 recent views for efficiency
+        device_views = page_views_filtered.order_by('-created_at')[:10000]
+        mobile_count = 0
+        desktop_count = 0
+        tablet_count = 0
 
-    # List of generic terms to exclude
-    generic_browsers = {'Mobile', 'Other', 'Unknown', 'Generic', 'Tablet', 'Desktop', 'Android', 'iPhone', 'iPad'}
+        browser_counts = {}
+        browser_device_breakdown = {}
+        generic_browsers = {'Mobile', 'Other', 'Unknown', 'Generic', 'Tablet', 'Desktop', 'Android', 'iPhone', 'iPad'}
 
-    for pv in device_views:
-        device_info = pv.device_info
-        if isinstance(device_info, dict):
-            browser = device_info.get('browser', 'Unknown')
-            # Extract browser family, handling mobile browsers properly
-            # "Mobile Safari 18.6" -> "Safari", "Chrome 143.0.0" -> "Chrome"
-            browser_parts = browser.split() if browser else []
-            if browser_parts:
-                # Handle cases like "Mobile Safari" or "Chrome Mobile"
-                if browser_parts[0] == 'Mobile' and len(browser_parts) > 1:
-                    browser_family = browser_parts[1]  # "Mobile Safari" -> "Safari"
-                elif len(browser_parts) > 1 and browser_parts[-1] == 'Mobile':
-                    browser_family = browser_parts[0]  # "Chrome Mobile" -> "Chrome"
-                else:
-                    browser_family = browser_parts[0]  # "Chrome" -> "Chrome"
-            else:
-                browser_family = 'Unknown'
-
-            # Filter out generic names
-            if browser_family not in generic_browsers:
-                browser_counts[browser_family] = browser_counts.get(browser_family, 0) + 1
-
-                # Determine device type
-                device_type = 'Desktop'
+        for pv in device_views:
+            device_info = pv.device_info
+            if isinstance(device_info, dict):
                 if device_info.get('is_mobile'):
-                    device_type = 'Mobile'
+                    mobile_count += 1
                 elif device_info.get('is_tablet'):
-                    device_type = 'Tablet'
+                    tablet_count += 1
+                elif device_info.get('is_pc'):
+                    desktop_count += 1
 
-                # Track browser × device combination
-                key = f"{browser_family} on {device_type}"
-                browser_device_breakdown[key] = browser_device_breakdown.get(key, 0) + 1
+                browser = device_info.get('browser', 'Unknown')
+                browser_parts = browser.split() if browser else []
+                if browser_parts:
+                    if browser_parts[0] == 'Mobile' and len(browser_parts) > 1:
+                        browser_family = browser_parts[1]
+                    elif len(browser_parts) > 1 and browser_parts[-1] == 'Mobile':
+                        browser_family = browser_parts[0]
+                    else:
+                        browser_family = browser_parts[0]
+                else:
+                    browser_family = 'Unknown'
 
-    # Sort browsers by count
-    top_browsers = sorted(browser_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+                if browser_family not in generic_browsers:
+                    browser_counts[browser_family] = browser_counts.get(browser_family, 0) + 1
 
-    # Sort browser-device combinations by count
-    browser_device_stats = sorted(browser_device_breakdown.items(), key=lambda x: x[1], reverse=True)[:10]
+                    device_type = 'Desktop'
+                    if device_info.get('is_mobile'):
+                        device_type = 'Mobile'
+                    elif device_info.get('is_tablet'):
+                        device_type = 'Tablet'
+
+                    key = f"{browser_family} on {device_type}"
+                    browser_device_breakdown[key] = browser_device_breakdown.get(key, 0) + 1
+
+        top_browsers = sorted(browser_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+        browser_device_stats = sorted(browser_device_breakdown.items(), key=lambda x: x[1], reverse=True)[:10]
+
+        # Cache for 5 minutes
+        cache.set(cache_key, {
+            'mobile_count': mobile_count,
+            'desktop_count': desktop_count,
+            'tablet_count': tablet_count,
+            'top_browsers': top_browsers,
+            'browser_device_stats': browser_device_stats,
+        }, 300)
 
     # User type breakdown
     user_types = {
@@ -3628,21 +3631,26 @@ def developer_data(request):
     day_labels = [day_map.get(d['weekday'], 'Unknown') for d in daily_views]
     day_counts = [d['count'] for d in daily_views]
 
-    # === SESSION DURATION ===
-    # Calculate average session duration
-    sessions = page_views_filtered.values('session_key').annotate(
-        first_view=Min('created_at'),
-        last_view=Max('created_at'),
-        view_count=Count('id')
-    ).filter(view_count__gt=1)  # Only sessions with multiple views
+    # === SESSION DURATION (CACHED) ===
+    cache_key_session = f'analytics_session_duration_{days_filter}'
+    avg_session_duration = cache.get(cache_key_session)
 
-    session_durations = []
-    for session in sessions:
-        duration = (session['last_view'] - session['first_view']).total_seconds() / 60  # minutes
-        if duration < 120:  # Ignore sessions longer than 2 hours (likely stale)
-            session_durations.append(duration)
+    if avg_session_duration is None:
+        # Sample up to 5000 sessions for efficiency
+        sessions = page_views_filtered.values('session_key').annotate(
+            first_view=Min('created_at'),
+            last_view=Max('created_at'),
+            view_count=Count('id')
+        ).filter(view_count__gt=1).order_by('-last_view')[:5000]
 
-    avg_session_duration = sum(session_durations) / len(session_durations) if session_durations else 0
+        session_durations = []
+        for session in sessions:
+            duration = (session['last_view'] - session['first_view']).total_seconds() / 60  # minutes
+            if duration < 120:  # Ignore sessions longer than 2 hours (likely stale)
+                session_durations.append(duration)
+
+        avg_session_duration = sum(session_durations) / len(session_durations) if session_durations else 0
+        cache.set(cache_key_session, avg_session_duration, 300)  # Cache 5 minutes
 
     # === USER RETENTION ===
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -3670,16 +3678,26 @@ def developer_data(request):
         user__date_joined__gte=start_date
     ).values('user').distinct().count() if start_date else 0
 
-    # === QUEUE METRICS ===
+    # === QUEUE METRICS (CACHED) ===
     # Calculate average wait time (time from submission to completion)
-    completed_queue_entries = queue_filtered.filter(status='completed', updated_at__isnull=False)
-    wait_times = []
-    for entry in completed_queue_entries:
-        wait_time = (entry.updated_at - entry.created_at).total_seconds() / 3600  # hours
-        if wait_time < 168:  # Ignore entries over 1 week
-            wait_times.append(wait_time)
+    cache_key_queue = f'analytics_queue_wait_{days_filter}'
+    avg_queue_wait_time = cache.get(cache_key_queue)
 
-    avg_queue_wait_time = sum(wait_times) / len(wait_times) if wait_times else 0
+    if avg_queue_wait_time is None:
+        # Sample up to 1000 recent completed entries for efficiency
+        completed_queue_entries = queue_filtered.filter(
+            status='completed',
+            updated_at__isnull=False
+        ).order_by('-updated_at')[:1000]
+
+        wait_times = []
+        for entry in completed_queue_entries:
+            wait_time = (entry.updated_at - entry.created_at).total_seconds() / 3600  # hours
+            if wait_time < 168:  # Ignore entries over 1 week
+                wait_times.append(wait_time)
+
+        avg_queue_wait_time = sum(wait_times) / len(wait_times) if wait_times else 0
+        cache.set(cache_key_queue, avg_queue_wait_time, 300)  # Cache 5 minutes
 
     # Queue completion rate
     total_queue_submissions = queue_filtered.count()
@@ -3698,33 +3716,46 @@ def developer_data(request):
     # === TOP 10 ACTIVE USERS ===
     top_10_users = per_user_stats[:10] if len(per_user_stats) >= 10 else per_user_stats
 
-    # === FEEDBACK RESPONSE TIME ===
-    # Average time from new → reviewed
-    feedback_to_reviewed = Feedback.objects.filter(
-        status__in=['reviewed', 'completed'],
-        reviewed_at__isnull=False
-    )
-    review_times = []
-    for fb in feedback_to_reviewed:
-        time_diff = (fb.reviewed_at - fb.created_at).total_seconds() / 3600  # hours
-        if time_diff < 720:  # Ignore outliers over 30 days
-            review_times.append(time_diff)
+    # === FEEDBACK RESPONSE TIME (CACHED) ===
+    cache_key_feedback = f'analytics_feedback_times_{days_filter}'
+    cached_feedback_times = cache.get(cache_key_feedback)
 
-    avg_feedback_review_time = sum(review_times) / len(review_times) if review_times else 0
+    if cached_feedback_times:
+        avg_feedback_review_time = cached_feedback_times['review_time']
+        avg_feedback_completion_time = cached_feedback_times['completion_time']
+    else:
+        # Sample up to 500 recent feedback items for efficiency
+        feedback_to_reviewed = Feedback.objects.filter(
+            status__in=['reviewed', 'completed'],
+            reviewed_at__isnull=False
+        ).order_by('-reviewed_at')[:500]
 
-    # Average time from reviewed → completed
-    feedback_to_completed = Feedback.objects.filter(
-        status='completed',
-        reviewed_at__isnull=False,
-        updated_at__isnull=False
-    )
-    completion_times = []
-    for fb in feedback_to_completed:
-        time_diff = (fb.updated_at - fb.reviewed_at).total_seconds() / 3600  # hours
-        if time_diff < 720:  # Ignore outliers over 30 days
-            completion_times.append(time_diff)
+        review_times = []
+        for fb in feedback_to_reviewed:
+            time_diff = (fb.reviewed_at - fb.created_at).total_seconds() / 3600  # hours
+            if time_diff < 720:  # Ignore outliers over 30 days
+                review_times.append(time_diff)
 
-    avg_feedback_completion_time = sum(completion_times) / len(completion_times) if completion_times else 0
+        avg_feedback_review_time = sum(review_times) / len(review_times) if review_times else 0
+
+        feedback_to_completed = Feedback.objects.filter(
+            status='completed',
+            reviewed_at__isnull=False,
+            updated_at__isnull=False
+        ).order_by('-updated_at')[:500]
+
+        completion_times = []
+        for fb in feedback_to_completed:
+            time_diff = (fb.updated_at - fb.reviewed_at).total_seconds() / 3600  # hours
+            if time_diff < 720:  # Ignore outliers over 30 days
+                completion_times.append(time_diff)
+
+        avg_feedback_completion_time = sum(completion_times) / len(completion_times) if completion_times else 0
+
+        cache.set(cache_key_feedback, {
+            'review_time': avg_feedback_review_time,
+            'completion_time': avg_feedback_completion_time,
+        }, 300)  # Cache 5 minutes
 
     # === ERROR STATISTICS ===
     from .models import ErrorLog
