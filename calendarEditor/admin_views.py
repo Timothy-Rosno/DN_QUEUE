@@ -3392,8 +3392,19 @@ def developer_data(request):
         device_info = pv.device_info
         if isinstance(device_info, dict):
             browser = device_info.get('browser', 'Unknown')
-            # Extract browser family (e.g., "Chrome 120.0.0" -> "Chrome")
-            browser_family = browser.split()[0] if browser else 'Unknown'
+            # Extract browser family, handling mobile browsers properly
+            # "Mobile Safari 18.6" -> "Safari", "Chrome 143.0.0" -> "Chrome"
+            browser_parts = browser.split() if browser else []
+            if browser_parts:
+                # Handle cases like "Mobile Safari" or "Chrome Mobile"
+                if browser_parts[0] == 'Mobile' and len(browser_parts) > 1:
+                    browser_family = browser_parts[1]  # "Mobile Safari" -> "Safari"
+                elif len(browser_parts) > 1 and browser_parts[-1] == 'Mobile':
+                    browser_family = browser_parts[0]  # "Chrome Mobile" -> "Chrome"
+                else:
+                    browser_family = browser_parts[0]  # "Chrome" -> "Chrome"
+            else:
+                browser_family = 'Unknown'
 
             # Filter out generic names
             if browser_family not in generic_browsers:
@@ -3505,6 +3516,15 @@ def demote_from_developer(request, user_id):
             else:
                 profile.is_developer = False
                 profile.save()
+
+                # Send notification
+                notifications.create_notification(
+                    recipient=user,
+                    notification_type='account_demoted',
+                    title='Developer role removed',
+                    message=f'Admin {request.user.username} has removed your developer role. You no longer have access to the Tasks and Data pages, but retain staff privileges.',
+                    triggering_user=request.user,
+                )
 
                 messages.success(request, f'{user.username} demoted from developer to staff.')
         except UserProfile.DoesNotExist:
