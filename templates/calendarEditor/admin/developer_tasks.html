@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Developer Tasks{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Developer Tasks{% if new_count > 0 %} <span style="background: #e74c3c; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.9rem;">{{ new_count }} New</span>{% endif %}</h1>
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary" style="margin-bottom: 1rem;">← Back to Dashboard</a>
+
+    <!-- Filters -->
+    <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+        <div>
+            <label>Status:</label>
+            <select id="statusFilter" onchange="applyFilters()" style="padding: 0.5rem;">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                <option value="new" {% if status_filter == 'new' %}selected{% endif %}>New</option>
+                <option value="reviewed" {% if status_filter == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+            </select>
+        </div>
+        <div>
+            <label>Type:</label>
+            <select id="typeFilter" onchange="applyFilters()" style="padding: 0.5rem;">
+                <option value="all" {% if type_filter == 'all' %}selected{% endif %}>All</option>
+                <option value="bug" {% if type_filter == 'bug' %}selected{% endif %}>Bug</option>
+                <option value="feature" {% if type_filter == 'feature' %}selected{% endif %}>Feature Request</option>
+                <option value="opinion" {% if type_filter == 'opinion' %}selected{% endif %}>Opinion</option>
+            </select>
+        </div>
+        <div>
+            <label>Priority:</label>
+            <select id="priorityFilter" onchange="applyFilters()" style="padding: 0.5rem;">
+                <option value="all" {% if priority_filter == 'all' %}selected{% endif %}>All</option>
+                <option value="critical" {% if priority_filter == 'critical' %}selected{% endif %}>Critical</option>
+                <option value="high" {% if priority_filter == 'high' %}selected{% endif %}>High</option>
+                <option value="medium" {% if priority_filter == 'medium' %}selected{% endif %}>Medium</option>
+                <option value="low" {% if priority_filter == 'low' %}selected{% endif %}>Low</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Feedback List -->
+    {% if feedback_list %}
+        {% for feedback in feedback_list %}
+        <div class="card" style="margin-bottom: 1rem; border-left: 4px solid {% if feedback.feedback_type == 'bug' %}#e74c3c{% elif feedback.feedback_type == 'feature' %}#3498db{% else %}#27ae60{% endif %};">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div style="flex: 1;">
+                    <h3 style="margin: 0 0 0.5rem 0;">
+                        <span style="background: {% if feedback.feedback_type == 'bug' %}#e74c3c{% elif feedback.feedback_type == 'feature' %}#3498db{% else %}#27ae60{% endif %}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">{{ feedback.get_feedback_type_display }}</span>
+                        {{ feedback.title }}
+                    </h3>
+                    <p style="color: #7f8c8d; margin: 0.25rem 0;">
+                        By <strong>{{ feedback.user.username }}</strong> ({{ feedback.user_level }}) - {{ feedback.created_at|date:"M d, Y g:i A" }}
+                    </p>
+                    <p style="margin: 0.5rem 0;">{{ feedback.description|truncatewords:30 }}</p>
+
+                    <!-- Action Form -->
+                    <form method="post" action="{% url 'update_feedback_status' feedback.id %}" style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: end; flex-wrap: wrap;">
+                        {% csrf_token %}
+                        <div>
+                            <label style="font-size: 0.9rem; display: block;">Status:</label>
+                            <select name="status" style="padding: 0.5rem;">
+                                <option value="new" {% if feedback.status == 'new' %}selected{% endif %}>New</option>
+                                <option value="reviewed" {% if feedback.status == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                                <option value="completed" {% if feedback.status == 'completed' %}selected{% endif %}>Completed</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.9rem; display: block;">Priority:</label>
+                            <select name="priority" style="padding: 0.5rem;">
+                                <option value="low" {% if feedback.priority == 'low' %}selected{% endif %}>Low</option>
+                                <option value="medium" {% if feedback.priority == 'medium' %}selected{% endif %}>Medium</option>
+                                <option value="high" {% if feedback.priority == 'high' %}selected{% endif %}>High</option>
+                                <option value="critical" {% if feedback.priority == 'critical' %}selected{% endif %}>Critical</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn" style="padding: 0.5rem 1rem;">Update</button>
+                        <button type="button" class="btn btn-secondary" onclick="toggleDetails({{ feedback.id }})" style="padding: 0.5rem 1rem;">Details</button>
+                    </form>
+
+                    <!-- Expanded Details -->
+                    <div id="details-{{ feedback.id }}" style="display: none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+                        <h4>Full Description:</h4>
+                        <p>{{ feedback.description }}</p>
+                        {% if feedback.replication_steps %}
+                            <h4>Replication Steps:</h4>
+                            <p>{{ feedback.replication_steps }}</p>
+                        {% endif %}
+                        {% if feedback.console_logs %}
+                            <h4>Console Logs:</h4>
+                            <pre style="background: #2c3e50; color: #ecf0f1; padding: 1rem; border-radius: 4px; overflow-x: auto;">{{ feedback.console_logs }}</pre>
+                        {% endif %}
+                        <h4>Device Info:</h4>
+                        <p>{{ feedback.device_info.browser }} on {{ feedback.device_info.os }} ({{ feedback.device_info.device }})</p>
+                        {% if feedback.reviewed_by %}
+                            <p><strong>Reviewed by:</strong> {{ feedback.reviewed_by.username }} on {{ feedback.reviewed_at|date:"M d, Y g:i A" }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #7f8c8d; text-align: center; padding: 2rem;">No feedback found with the selected filters.</p>
+    {% endif %}
+</div>
+
+<script>
+function applyFilters() {
+    const status = document.getElementById('statusFilter').value;
+    const type = document.getElementById('typeFilter').value;
+    const priority = document.getElementById('priorityFilter').value;
+    window.location.href = '{% url "developer_tasks" %}?status=' + status + '&type=' + type + '&priority=' + priority;
+}
+
+function toggleDetails(id) {
+    const details = document.getElementById('details-' + id);
+    if (details.style.display === 'none') {
+        details.style.display = 'block';
+    } else {
+        details.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Submit Feedback{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div id="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h1 style="margin: 0;">Submit Feedback</h1>
+    </div>
+
+    <p style="color: #7f8c8d; margin-bottom: 1.5rem;">
+        We value your input! Report bugs, request features, or share your thoughts to help us improve.
+    </p>
+
+    <form method="post" id="feedbackForm" action="{% url 'submit_feedback' %}">
+        {% csrf_token %}
+
+        <!-- Feedback Type -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.feedback_type.label }} <span style="color: #e74c3c;">*</span>
+            </label>
+            <div style="display: flex; gap: 2rem; margin-top: 0.5rem;">
+                {% for radio in form.feedback_type %}
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        {{ radio.tag }}
+                        <span style="margin-left: 0.5rem;">{{ radio.choice_label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+            {% if form.feedback_type.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.feedback_type.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.feedback_type.help_text }}</small>
+        </div>
+
+        <!-- Title -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.title.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.title.label }} <span style="color: #e74c3c;">*</span>
+            </label>
+            {{ form.title }}
+            <div class="char-counter" data-input-id="{{ form.title.id_for_label }}" data-max-length="150"></div>
+            {% if form.title.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.title.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.title.help_text }}</small>
+        </div>
+
+        <!-- Description -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.description.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.description.label }} <span style="color: #e74c3c;">*</span>
+            </label>
+            {{ form.description }}
+            <div class="char-counter" data-input-id="{{ form.description.id_for_label }}" data-max-length="1000"></div>
+            {% if form.description.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.description.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.description.help_text }}</small>
+        </div>
+
+        <!-- Replication Steps (for bugs) -->
+        <div id="replicationStepsField" style="margin-bottom: 1.5rem; display: none;">
+            <label for="{{ form.replication_steps.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.replication_steps.label }}
+            </label>
+            {{ form.replication_steps }}
+            <div class="char-counter" data-input-id="{{ form.replication_steps.id_for_label }}" data-max-length="1000"></div>
+            {% if form.replication_steps.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.replication_steps.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.replication_steps.help_text }}</small>
+        </div>
+
+        <!-- Console Logs (for bugs) -->
+        <div id="consoleLogsField" style="margin-bottom: 1.5rem; display: none;">
+            <label for="{{ form.console_logs.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                {{ form.console_logs.label }}
+            </label>
+            {{ form.console_logs }}
+            <div class="char-counter" data-input-id="{{ form.console_logs.id_for_label }}" data-max-length="2000"></div>
+            {% if form.console_logs.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.console_logs.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.console_logs.help_text }}</small>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div style="margin-top: 1.5rem;">
+            <span class="submit-btn-wrapper">
+                <button type="submit" class="btn" id="submitBtn">Submit Feedback</button>
+                <div class="validation-tooltip" id="validationTooltip"></div>
+            </span>
+            <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
+        </div>
+    </form>
+
+    <style>
+        .submit-btn-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .validation-tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            background-color: #2c3e50;
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            max-width: 300px;
+            z-index: 1000;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .validation-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 20px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: #2c3e50 transparent transparent transparent;
+        }
+        .submit-btn-wrapper:hover .btn:disabled + .validation-tooltip {
+            display: block;
+        }
+        .btn:disabled {
+            background-color: #7fb3d3 !important;
+            cursor: not-allowed !important;
+            opacity: 0.8;
+        }
+        input[type="radio"] {
+            cursor: pointer !important;
+        }
+    </style>
+
+    <script>
+        // Show/hide bug-specific fields based on feedback type
+        document.addEventListener('DOMContentLoaded', function() {
+            const feedbackTypeRadios = document.querySelectorAll('input[name="feedback_type"]');
+            const replicationStepsField = document.getElementById('replicationStepsField');
+            const consoleLogsField = document.getElementById('consoleLogsField');
+
+            function updateFieldVisibility() {
+                const selectedType = document.querySelector('input[name="feedback_type"]:checked');
+                if (selectedType && selectedType.value === 'bug') {
+                    replicationStepsField.style.display = 'block';
+                    consoleLogsField.style.display = 'block';
+                } else {
+                    replicationStepsField.style.display = 'none';
+                    consoleLogsField.style.display = 'none';
+                }
+            }
+
+            feedbackTypeRadios.forEach(radio => {
+                radio.addEventListener('change', updateFieldVisibility);
+            });
+
+            // Initialize on page load
+            updateFieldVisibility();
+
+            // Form validation
+            const form = document.getElementById('feedbackForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const validationTooltip = document.getElementById('validationTooltip');
+            const titleInput = document.getElementById('{{ form.title.id_for_label }}');
+            const descriptionInput = document.getElementById('{{ form.description.id_for_label }}');
+
+            function validateForm() {
+                const errors = [];
+
+                // Check feedback type
+                const selectedType = document.querySelector('input[name="feedback_type"]:checked');
+                if (!selectedType) {
+                    errors.push('Please select a feedback type');
+                }
+
+                // Check title
+                const title = titleInput.value.trim();
+                if (!title) {
+                    errors.push('Title is required');
+                } else if (title.length < 3) {
+                    errors.push('Title must be at least 3 characters');
+                }
+
+                // Check description
+                const description = descriptionInput.value.trim();
+                if (!description) {
+                    errors.push('Description is required');
+                } else if (description.length < 10) {
+                    errors.push('Description must be at least 10 characters');
+                }
+
+                if (errors.length > 0) {
+                    submitBtn.disabled = true;
+                    validationTooltip.innerHTML = errors.join('<br>');
+                } else {
+                    submitBtn.disabled = false;
+                    validationTooltip.innerHTML = '';
+                }
+            }
+
+            // Validate on input
+            titleInput.addEventListener('input', validateForm);
+            descriptionInput.addEventListener('input', validateForm);
+            feedbackTypeRadios.forEach(radio => {
+                radio.addEventListener('change', validateForm);
+            });
+
+            // Initial validation
+            validateForm();
+        });
+    </script>
+</div>
+{% endblock %}

@@ -1,6 +1,6 @@
 from django import forms
 from django.core.validators import MinValueValidator, MaxValueValidator
-from .models import ScheduleEntry, QueueEntry, Machine, QueuePreset, NotificationPreference, ArchivedMeasurement
+from .models import ScheduleEntry, QueueEntry, Machine, QueuePreset, NotificationPreference, ArchivedMeasurement, Feedback
 from django.utils import timezone
 from .matching_algorithm import get_matching_machines
 
@@ -535,3 +535,75 @@ class ArchivedMeasurementForm(forms.ModelForm):
         if title and len(title) < 3:
             raise forms.ValidationError("Title must be at least 3 characters long.")
         return title
+
+
+class FeedbackForm(forms.ModelForm):
+    """Form for submitting user feedback (bugs, feature requests, opinions)."""
+
+    class Meta:
+        model = Feedback
+        fields = [
+            'feedback_type',
+            'title',
+            'description',
+            'replication_steps',
+            'console_logs'
+        ]
+        widgets = {
+            'feedback_type': forms.RadioSelect(),
+            'title': forms.TextInput(attrs={
+                'class': 'char-counter-input',
+                'maxlength': '150',
+                'placeholder': 'Brief summary of your feedback'
+            }),
+            'description': forms.Textarea(attrs={
+                'rows': 6,
+                'class': 'char-counter-input',
+                'maxlength': '1000',
+                'placeholder': 'Provide detailed information...'
+            }),
+            'replication_steps': forms.Textarea(attrs={
+                'rows': 4,
+                'class': 'char-counter-input',
+                'maxlength': '1000',
+                'placeholder': 'For bugs: Step 1, Step 2, etc.'
+            }),
+            'console_logs': forms.Textarea(attrs={
+                'rows': 4,
+                'class': 'char-counter-input',
+                'maxlength': '2000',
+                'placeholder': 'For bugs: Paste F12 console logs here'
+            }),
+        }
+        labels = {
+            'feedback_type': 'Feedback Type',
+            'title': 'Title',
+            'description': 'Description',
+            'replication_steps': 'Steps to Reproduce (for bugs)',
+            'console_logs': 'Console Logs/Error Messages (for bugs)',
+        }
+        help_texts = {
+            'feedback_type': 'Select the type of feedback you want to submit',
+            'title': 'Brief summary (max 150 characters)',
+            'description': 'Detailed description of your feedback (max 1000 characters)',
+            'replication_steps': 'If reporting a bug, explain how to reproduce it',
+            'console_logs': 'If reporting a bug, paste any error messages from browser console (F12)',
+        }
+
+    def clean_title(self):
+        """Validate title has minimum 3 characters."""
+        title = self.cleaned_data.get('title')
+        if not title:
+            raise forms.ValidationError("This field is required.")
+        if len(title) < 3:
+            raise forms.ValidationError("Title must be at least 3 characters long.")
+        return title
+
+    def clean_description(self):
+        """Validate description has minimum 10 characters."""
+        description = self.cleaned_data.get('description')
+        if not description:
+            raise forms.ValidationError("This field is required.")
+        if len(description) < 10:
+            raise forms.ValidationError("Description must be at least 10 characters long.")
+        return description

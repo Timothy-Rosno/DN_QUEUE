@@ -863,3 +863,124 @@ class OneTimeLoginToken(models.Model):
         self.is_used = True
         self.used_at = timezone.now()
         self.save()
+
+
+class Feedback(models.Model):
+    """User feedback submissions (bugs, feature requests, opinions)"""
+    FEEDBACK_TYPE_CHOICES = [
+        ('bug', 'Bug Report'),
+        ('feature', 'Feature Request'),
+        ('opinion', 'Opinion/Suggestion'),
+    ]
+
+    STATUS_CHOICES = [
+        ('new', 'New'),
+        ('reviewed', 'Reviewed'),
+        ('completed', 'Completed'),
+    ]
+
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='feedback_submissions')
+    feedback_type = models.CharField(max_length=20, choices=FEEDBACK_TYPE_CHOICES)
+
+    # Common fields
+    title = models.CharField(max_length=150, help_text="Brief summary of feedback")
+    description = models.TextField(help_text="Detailed description")
+
+    # Bug-specific fields
+    replication_steps = models.TextField(blank=True, help_text="Steps to reproduce bug")
+    console_logs = models.TextField(blank=True, help_text="F12 console logs")
+
+    # Device/environment info (auto-collected)
+    device_info = models.JSONField(default=dict, help_text="Browser, OS, device type")
+    user_level = models.CharField(max_length=20, help_text="user/staff/developer/admin at submission time")
+
+    # Status tracking
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
+    reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_feedback'
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    developer_notes = models.TextField(blank=True, help_text="Internal notes from developers")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Feedback"
+        verbose_name_plural = "Feedback"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', '-created_at']),
+            models.Index(fields=['feedback_type', 'status']),
+        ]
+
+    def __str__(self):
+        return f"{self.get_feedback_type_display()} - {self.title} ({self.user.username})"
+
+
+class PageView(models.Model):
+    """Track page views for analytics"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    session_key = models.CharField(max_length=40)
+    path = models.CharField(max_length=500)
+    page_title = models.CharField(max_length=200, blank=True)
+    referrer = models.CharField(max_length=500, blank=True)
+    device_info = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Page View"
+        verbose_name_plural = "Page Views"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['user', '-created_at']),
+        ]
+
+    def __str__(self):
+        user_str = self.user.username if self.user else 'Anonymous'
+        return f"{user_str} - {self.page_title or self.path} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+
+class UserActivity(models.Model):
+    """Track user interactions (clicks, form submissions, etc.)"""
+    ACTION_CHOICES = [
+        ('click', 'Click'),
+        ('form_submit', 'Form Submit'),
+        ('queue_submit', 'Queue Submit'),
+        ('check_in', 'Check In'),
+        ('check_out', 'Check Out'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    session_key = models.CharField(max_length=40)
+    action_type = models.CharField(max_length=50, choices=ACTION_CHOICES)
+    target = models.CharField(max_length=200, help_text="What was clicked/submitted")
+    page_path = models.CharField(max_length=500)
+    metadata = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "User Activity"
+        verbose_name_plural = "User Activities"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['action_type', '-created_at']),
+        ]
+
+    def __str__(self):
+        user_str = self.user.username if self.user else 'Anonymous'
+        return f"{user_str} - {self.get_action_type_display()} - {self.target}"

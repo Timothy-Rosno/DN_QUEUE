@@ -3083,3 +3083,236 @@ def admin_import_database(request):
         messages.error(request, error_msg)
 
     return redirect('admin_database_management')
+
+
+# ============================================================================
+# DEVELOPER VIEWS - Tasks, Data, and Promotions
+# ============================================================================
+
+@staff_member_required
+@never_cache
+def developer_tasks(request):
+    """Developer task management page - view and manage feedback."""
+    from .models import Feedback
+
+    # Only developers and superusers can access
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_developer) and not request.user.is_superuser:
+        messages.error(request, 'Developer access required.')
+        return redirect('admin_dashboard')
+
+    # Get filters from query params
+    status_filter = request.GET.get('status', 'all')
+    type_filter = request.GET.get('type', 'all')
+    priority_filter = request.GET.get('priority', 'all')
+
+    # Base queryset
+    feedback = Feedback.objects.select_related('user', 'reviewed_by').all()
+
+    # Apply filters
+    if status_filter != 'all':
+        feedback = feedback.filter(status=status_filter)
+    if type_filter != 'all':
+        feedback = feedback.filter(feedback_type=type_filter)
+    if priority_filter != 'all':
+        feedback = feedback.filter(priority=priority_filter)
+
+    # Count new feedback for notification badge
+    new_count = Feedback.objects.filter(status='new').count()
+
+    context = {
+        'feedback_list': feedback,
+        'status_filter': status_filter,
+        'type_filter': type_filter,
+        'priority_filter': priority_filter,
+        'new_count': new_count,
+    }
+
+    return render(request, 'calendarEditor/admin/developer_tasks.html', context)
+
+
+@staff_member_required
+def update_feedback_status(request, feedback_id):
+    """Update feedback status (developer action)."""
+    from .models import Feedback
+
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_developer) and not request.user.is_superuser:
+        messages.error(request, 'Developer access required.')
+        return redirect('admin_dashboard')
+
+    feedback = get_object_or_404(Feedback, id=feedback_id)
+
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        priority = request.POST.get('priority')
+        developer_notes = request.POST.get('developer_notes', '')
+
+        if new_status in dict(Feedback.STATUS_CHOICES):
+            feedback.status = new_status
+            if new_status in ['reviewed', 'completed'] and not feedback.reviewed_by:
+                feedback.reviewed_by = request.user
+                feedback.reviewed_at = timezone.now()
+
+        if priority in dict(Feedback.PRIORITY_CHOICES):
+            feedback.priority = priority
+
+        if developer_notes:
+            feedback.developer_notes = developer_notes
+
+        feedback.save()
+        messages.success(request, f'Feedback #{feedback.id} updated.')
+
+    return redirect('developer_tasks')
+
+
+@staff_member_required
+@never_cache
+def developer_data(request):
+    """Developer analytics dashboard."""
+    from .models import PageView, UserActivity, QueueEntry, Feedback
+    from django.db.models import Count
+    from datetime import timedelta
+
+    # Only developers and superusers can access
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_developer) and not request.user.is_superuser:
+        messages.error(request, 'Developer access required.')
+        return redirect('admin_dashboard')
+
+    now = timezone.now()
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
+
+    # Users online (active in last 15 minutes)
+    online_threshold = now - timedelta(minutes=15)
+    users_online = PageView.objects.filter(
+        created_at__gte=online_threshold
+    ).values('session_key').distinct().count()
+
+    # Page views stats
+    page_views_week = PageView.objects.filter(created_at__gte=week_ago).count()
+    page_views_month = PageView.objects.filter(created_at__gte=month_ago).count()
+
+    # Top pages (last 7 days)
+    top_pages = PageView.objects.filter(
+        created_at__gte=week_ago
+    ).values('page_title').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+
+    # Queue request stats
+    queue_stats = {
+        'total_week': QueueEntry.objects.filter(created_at__gte=week_ago).count(),
+        'total_month': QueueEntry.objects.filter(created_at__gte=month_ago).count(),
+        'completed_week': QueueEntry.objects.filter(
+            status='completed',
+            completed_at__gte=week_ago
+        ).count(),
+    }
+
+    # Feedback stats
+    feedback_stats = {
+        'total': Feedback.objects.count(),
+        'new': Feedback.objects.filter(status='new').count(),
+        'reviewed': Feedback.objects.filter(status='reviewed').count(),
+        'completed': Feedback.objects.filter(status='completed').count(),
+    }
+
+    # User activity breakdown
+    user_types = {
+        'total': User.objects.count(),
+        'active_week': PageView.objects.filter(
+            created_at__gte=week_ago,
+            user__isnull=False
+        ).values('user').distinct().count(),
+        'staff': User.objects.filter(is_staff=True).count(),
+        'developers': UserProfile.objects.filter(is_developer=True).count(),
+    }
+
+    # Device breakdown (last 30 days)
+    device_views = PageView.objects.filter(created_at__gte=month_ago).values('device_info')
+    mobile_count = 0
+    desktop_count = 0
+    for pv in device_views:
+        if pv.get('device_info', {}).get('is_mobile'):
+            mobile_count += 1
+        elif pv.get('device_info', {}).get('is_pc'):
+            desktop_count += 1
+
+    context = {
+        'users_online': users_online,
+        'page_views_week': page_views_week,
+        'page_views_month': page_views_month,
+        'top_pages': top_pages,
+        'queue_stats': queue_stats,
+        'feedback_stats': feedback_stats,
+        'user_types': user_types,
+        'mobile_count': mobile_count,
+        'desktop_count': desktop_count,
+    }
+
+    return render(request, 'calendarEditor/admin/developer_data.html', context)
+
+
+@staff_member_required
+def promote_to_developer(request, user_id):
+    """Promote a staff user to developer (superuser only)."""
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can promote users to developer.')
+        return redirect('admin_users')
+
+    if request.method == 'POST':
+        user = get_object_or_404(User, id=user_id)
+
+        # Must be staff first
+        if not user.is_staff:
+            messages.error(request, f'{user.username} must be staff before becoming developer.')
+            return redirect('admin_users')
+
+        try:
+            profile = user.profile
+            if profile.is_developer:
+                messages.info(request, f'{user.username} is already a developer.')
+            else:
+                profile.is_developer = True
+                profile.developer_promoted_by = request.user
+                profile.developer_promoted_at = timezone.now()
+                profile.save()
+
+                # Send notification
+                notifications.create_notification(
+                    recipient=user,
+                    notification_type='account_promoted',
+                    title='You have been promoted to developer',
+                    message=f'Congratulations! Admin {request.user.username} has promoted you to developer. You now have access to the Tasks and Data pages.',
+                    triggering_user=request.user,
+                )
+
+                messages.success(request, f'{user.username} promoted to developer!')
+        except UserProfile.DoesNotExist:
+            messages.error(request, f'{user.username} does not have a profile.')
+
+    return redirect('admin_users')
+
+
+@staff_member_required
+def demote_from_developer(request, user_id):
+    """Demote a developer back to staff (superuser only)."""
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can demote developers.')
+        return redirect('admin_users')
+
+    if request.method == 'POST':
+        user = get_object_or_404(User, id=user_id)
+
+        try:
+            profile = user.profile
+            if not profile.is_developer:
+                messages.info(request, f'{user.username} is not a developer.')
+            else:
+                profile.is_developer = False
+                profile.save()
+
+                messages.success(request, f'{user.username} demoted from developer to staff.')
+        except UserProfile.DoesNotExist:
+            messages.error(request, f'{user.username} does not have a profile.')
+
+    return redirect('admin_users')

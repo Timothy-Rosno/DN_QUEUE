@@ -2782,3 +2782,91 @@ def health_check(request):
 
     # ALWAYS return 200 - keeps Render awake without waking database
     return JsonResponse(health_status, status=200)
+
+
+def parse_user_agent(request):
+    """
+    Parse request headers to extract device info.
+
+    Returns dict with browser, OS, device type, and platform flags.
+    """
+    from user_agents import parse
+
+    ua_string = request.META.get('HTTP_USER_AGENT', '')
+    user_agent = parse(ua_string)
+
+    return {
+        'browser': f"{user_agent.browser.family} {user_agent.browser.version_string}",
+        'os': f"{user_agent.os.family} {user_agent.os.version_string}",
+        'device': user_agent.device.family,
+        'is_mobile': user_agent.is_mobile,
+        'is_tablet': user_agent.is_tablet,
+        'is_pc': user_agent.is_pc,
+        'timestamp': timezone.now().isoformat(),
+    }
+
+
+@login_required
+def submit_feedback(request):
+    """Submit feedback (bugs, feature requests, opinions)."""
+    from .forms import FeedbackForm
+    from . import notifications
+
+    if request.method == 'POST':
+        form = FeedbackForm(request.POST)
+        if form.is_valid():
+            feedback = form.save(commit=False)
+            feedback.user = request.user
+
+            # Auto-collect device info
+            feedback.device_info = parse_user_agent(request)
+
+            # Determine user level
+            if request.user.is_superuser:
+                feedback.user_level = 'admin'
+            elif hasattr(request.user, 'profile') and request.user.profile.is_developer:
+                feedback.user_level = 'developer'
+            elif request.user.is_staff:
+                feedback.user_level = 'staff'
+            else:
+                feedback.user_level = 'user'
+
+            feedback.save()
+
+            # Send notification to developers
+            notify_developers_new_feedback(feedback)
+
+            messages.success(request, 'Thank you for your feedback!')
+            return redirect('home')
+    else:
+        form = FeedbackForm()
+
+    return render(request, 'calendarEditor/feedback/submit_feedback.html', {
+        'form': form
+    })
+
+
+def notify_developers_new_feedback(feedback):
+    """Notify all developers when new feedback is submitted."""
+    from userRegistration.models import UserProfile
+    from . import notifications
+
+    # Get all developers
+    developers = UserProfile.objects.filter(is_developer=True).select_related('user')
+
+    # Get all superusers
+    superusers = User.objects.filter(is_superuser=True)
+
+    # Combine recipients
+    developer_users = [profile.user for profile in developers]
+    all_recipients = list(set(list(developer_users) + list(superusers)))
+
+    # Create notification for each recipient
+    for recipient in all_recipients:
+        notifications.create_notification(
+            recipient=recipient,
+            notification_type='developer_new_feedback',
+            title=f'New {feedback.get_feedback_type_display()}',
+            message=f'{feedback.user.username} submitted: {feedback.title}',
+            triggering_user=feedback.user,
+        )

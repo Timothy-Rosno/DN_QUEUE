@@ -128,6 +128,18 @@ urlpatterns = [
     # Health check endpoint (for UptimeRobot and monitoring)
     path('health/', views.health_check, name='health_check'),
 
+    # Feedback system
+    path('feedback/', views.submit_feedback, name='submit_feedback'),
+
+    # Developer pages (Tasks and Data)
+    path('developer/tasks/', admin_views.developer_tasks, name='developer_tasks'),
+    path('developer/tasks/update/<int:feedback_id>/', admin_views.update_feedback_status, name='update_feedback_status'),
+    path('developer/data/', admin_views.developer_data, name='developer_data'),
+
+    # Developer role promotions (superuser only)
+    path('admin-users/promote-developer/<int:user_id>/', admin_views.promote_to_developer, name='promote_to_developer'),
+    path('admin-users/demote-developer/<int:user_id>/', admin_views.demote_from_developer, name='demote_from_developer'),
+
     # LEGACY ROUTES - Scheduled for removal (Old ScheduleEntry system)
     path('schedule/', views.schedule_list, name='schedule'),  # LEGACY: Old schedule list view
     path('create/', views.create_schedule, name='create_schedule'),  # LEGACY: Create schedule

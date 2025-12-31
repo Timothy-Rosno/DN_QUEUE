@@ -62,6 +62,11 @@ class UserProfile(models.Model):
     security_question_custom = models.CharField(max_length=200, blank=True, help_text="Custom security question")
     security_answer_hash = models.CharField(max_length=128, blank=True, help_text="Hashed security answer")
 
+    # Developer role (promoted by superusers from staff)
+    is_developer = models.BooleanField(default=False, help_text="Has developer access to feedback and analytics")
+    developer_promoted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='promoted_developers')
+    developer_promoted_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

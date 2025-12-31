@@ -213,3 +213,70 @@ class RenderUsageMiddleware:
 
         response = self.get_response(request)
         return response
+
+
+class AnalyticsMiddleware:
+    """
+    Middleware to track page views and user activity.
+    Lightweight tracking for developer analytics dashboard.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+        # Pages to track (exclude static files, admin, etc.)
+        self.tracked_paths = [
+            '/schedule/submit/',
+            '/schedule/my-queue/',
+            '/schedule/queue/',
+            '/schedule/check-in-check-out/',
+            '/schedule/archive/',
+            '/schedule/fridges/',
+            '/',
+        ]
+
+    def __call__(self, request):
+        response = self.get_response(request)
+
+        # Only track GET requests
+        if request.method == 'GET':
+            # Check if path should be tracked
+            if any(request.path.startswith(path) for path in self.tracked_paths):
+                self._track_page_view(request)
+
+        return response
+
+    def _track_page_view(self, request):
+        """Record page view in database"""
+        try:
+            from .models import PageView
+            from .views import parse_user_agent
+
+            # Ensure session exists
+            if not request.session.session_key:
+                request.session.create()
+
+            PageView.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                session_key=request.session.session_key or '',
+                path=request.path,
+                page_title=self._get_page_title(request.path),
+                referrer=request.META.get('HTTP_REFERER', ''),
+                device_info=parse_user_agent(request),
+            )
+        except Exception as e:
+            # Don't break requests if tracking fails
+            pass
+
+    def _get_page_title(self, path):
+        """Map path to readable page title"""
+        title_map = {
+            '/': 'Home',
+            '/schedule/submit/': 'Submit Request',
+            '/schedule/my-queue/': 'My Queue',
+            '/schedule/queue/': 'Public Queue',
+            '/schedule/check-in-check-out/': 'Check-In/Check-Out',
+            '/schedule/archive/': 'Archive',
+            '/schedule/fridges/': 'Fridge Specs',
+        }
+        return title_map.get(path, path)

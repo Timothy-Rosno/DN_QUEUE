@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Developer Data{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Developer Analytics Dashboard</h1>
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary" style="margin-bottom: 1rem;">← Back to Dashboard</a>
+
+    <!-- Summary Stats -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div class="card" style="text-align: center; background: #3498db; color: white;">
+            <h2 style="margin: 0; font-size: 2.5rem;">{{ users_online }}</h2>
+            <p style="margin: 0.5rem 0 0 0;">Users Online</p>
+            <small>(last 15 min)</small>
+        </div>
+        <div class="card" style="text-align: center; background: #27ae60; color: white;">
+            <h2 style="margin: 0; font-size: 2.5rem;">{{ page_views_week }}</h2>
+            <p style="margin: 0.5rem 0 0 0;">Page Views</p>
+            <small>(last 7 days)</small>
+        </div>
+        <div class="card" style="text-align: center; background: #f39c12; color: white;">
+            <h2 style="margin: 0; font-size: 2.5rem;">{{ queue_stats.total_week }}</h2>
+            <p style="margin: 0.5rem 0 0 0;">Queue Requests</p>
+            <small>(last 7 days)</small>
+        </div>
+        <div class="card" style="text-align: center; background: #9b59b6; color: white;">
+            <h2 style="margin: 0; font-size: 2.5rem;">{{ feedback_stats.total }}</h2>
+            <p style="margin: 0.5rem 0 0 0;">Total Feedback</p>
+            <small>({{ feedback_stats.new }} new)</small>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+        <div class="card">
+            <h3>Top Pages (Last 7 Days)</h3>
+            <canvas id="topPagesChart"></canvas>
+        </div>
+        <div class="card">
+            <h3>Device Breakdown (Last 30 Days)</h3>
+            <canvas id="deviceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- User Stats Table -->
+    <div class="card">
+        <h3>User Statistics</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Metric</th>
+                    <th style="padding: 0.75rem; text-align: right; border-bottom: 2px solid #dee2e6;">Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">Total Users</td>
+                    <td style="padding: 0.75rem; text-align: right; border-bottom: 1px solid #dee2e6;">{{ user_types.total }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">Active Users (Last 7 Days)</td>
+                    <td style="padding: 0.75rem; text-align: right; border-bottom: 1px solid #dee2e6;">{{ user_types.active_week }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">Staff Members</td>
+                    <td style="padding: 0.75rem; text-align: right; border-bottom: 1px solid #dee2e6;">{{ user_types.staff }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 0.75rem;">Developers</td>
+                    <td style="padding: 0.75rem; text-align: right;">{{ user_types.developers }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Queue & Feedback Stats -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+        <div class="card">
+            <h3>Queue Activity</h3>
+            <p><strong>Last 7 Days:</strong> {{ queue_stats.total_week }} requests</p>
+            <p><strong>Last 30 Days:</strong> {{ queue_stats.total_month }} requests</p>
+            <p><strong>Completed (Week):</strong> {{ queue_stats.completed_week }} entries</p>
+        </div>
+        <div class="card">
+            <h3>Feedback Status</h3>
+            <p style="color: #e74c3c;"><strong>New:</strong> {{ feedback_stats.new }}</p>
+            <p style="color: #f39c12;"><strong>Reviewed:</strong> {{ feedback_stats.reviewed }}</p>
+            <p style="color: #27ae60;"><strong>Completed:</strong> {{ feedback_stats.completed }}</p>
+        </div>
+    </div>
+
+    <p style="color: #7f8c8d; text-align: center; margin-top: 2rem; font-size: 0.9rem;">
+        Auto-refreshing every 30 seconds...
+    </p>
+</div>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Top Pages Chart
+const topPagesCtx = document.getElementById('topPagesChart').getContext('2d');
+new Chart(topPagesCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for page in top_pages %}'{{ page.page_title }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Page Views',
+            data: [{% for page in top_pages %}{{ page.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: '#3498db',
+            borderColor: '#2980b9',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            x: { beginAtZero: true }
+        }
+    }
+});
+
+// Device Chart
+const deviceCtx = document.getElementById('deviceChart').getContext('2d');
+new Chart(deviceCtx, {
+    type: 'pie',
+    data: {
+        labels: ['Desktop', 'Mobile'],
+        datasets: [{
+            data: [{{ desktop_count }}, {{ mobile_count }}],
+            backgroundColor: ['#3498db', '#e74c3c'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+            }
+        }
+    }
+});
+
+// Auto-refresh every 30 seconds
+setTimeout(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

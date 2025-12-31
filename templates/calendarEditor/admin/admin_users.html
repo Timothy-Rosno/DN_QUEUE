@@ -135,6 +135,9 @@
                                 {% if user_item.is_staff %}
                                     <span style="background-color: #3498db; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">STAFF</span>
                                 {% endif %}
+                                {% if user_item.profile.is_developer %}
+                                    <span style="background-color: #9b59b6; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">DEVELOPER</span>
+                                {% endif %}
                                 {% if user_item.is_superuser %}
                                     <span style="background-color: #e74c3c; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">SUPERUSER</span>
                                 {% endif %}
@@ -163,6 +166,19 @@
                                     </form>
 
                                     <button type="button" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background-color: #3498db; color: white;" onclick="window.location.href='/schedule/admin-users/edit-user-info/{{ user_item.id }}/'">Edit</button>
+
+                                    <!-- Developer promotion/demotion buttons -->
+                                    {% if user_item.profile.is_developer %}
+                                        <form method="post" action="{% url 'demote_from_developer' user_item.id %}" style="display: inline; margin: 0;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;" title="Demote from developer to staff">Demote from Developer</button>
+                                        </form>
+                                    {% else %}
+                                        <form method="post" action="{% url 'promote_to_developer' user_item.id %}" style="display: inline; margin: 0;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background-color: #9b59b6; color: white;" title="Grant access to Tasks and Data pages">Promote to Developer</button>
+                                        </form>
+                                    {% endif %}
                                 {% else %}
                                     <!-- Regular staff cannot manage other staff -->
                                     <span style="color: #7f8c8d; font-size: 0.9rem;">Superuser only</span>
