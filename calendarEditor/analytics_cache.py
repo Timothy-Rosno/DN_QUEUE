@@ -157,6 +157,201 @@ def get_daily_analytics(days_filter=30):
         'active_period': active_period,
     }
 
+    # === ONLINE USERS ===
+    online_threshold = now - timedelta(minutes=15)
+    online_users_data = []
+
+    recent_views = PageView.objects.filter(
+        created_at__gte=online_threshold,
+        user__isnull=False
+    ).select_related('user', 'user__profile').order_by('-created_at')
+
+    seen_users = set()
+    for view in recent_views:
+        if view.user_id not in seen_users:
+            seen_users.add(view.user_id)
+            roles = []
+            if view.user.is_superuser:
+                roles = ['Admin', 'Developer', 'Staff']
+            elif hasattr(view.user, 'profile') and view.user.profile.is_developer:
+                roles = ['Developer', 'Staff']
+            elif view.user.is_staff:
+                roles = ['Staff']
+            else:
+                roles = ['User']
+
+            online_users_data.append({
+                'username': view.user.username,
+                'last_seen': view.created_at,
+                'roles': roles,
+            })
+
+    # === PER-USER STATS ===
+    from django.db.models import Count, Max, Q
+    all_users = User.objects.select_related('profile').annotate(
+        page_views_period=Count('pageview__id', filter=Q(pageview__created_at__gte=start_date) if start_date else Q(), distinct=True),
+        page_views_all_time=Count('pageview__id', distinct=True),
+        last_seen=Max('pageview__created_at'),
+        queue_entries_period=Count('queue_entries__id', filter=Q(queue_entries__created_at__gte=start_date) if start_date else Q(), distinct=True),
+        queue_entries_all_time=Count('queue_entries__id', distinct=True),
+        feedback_submitted_period=Count('feedback_submissions__id', filter=Q(feedback_submissions__created_at__gte=start_date) if start_date else Q(), distinct=True),
+    )
+
+    per_user_stats = []
+    for user in all_users:
+        roles = []
+        if user.is_superuser:
+            roles = ['Admin', 'Developer', 'Staff']
+        elif hasattr(user, 'profile') and user.profile.is_developer:
+            roles = ['Developer', 'Staff']
+        elif user.is_staff:
+            roles = ['Staff']
+        else:
+            roles = ['User']
+
+        per_user_stats.append({
+            'username': user.username,
+            'email': user.email,
+            'roles': roles,
+            'last_seen': user.last_seen,
+            'page_views_period': user.page_views_period,
+            'page_views_all_time': user.page_views_all_time,
+            'queue_entries_period': user.queue_entries_period,
+            'queue_entries_all_time': user.queue_entries_all_time,
+            'feedback_submitted_period': user.feedback_submitted_period,
+            'is_online': user.last_seen and user.last_seen >= online_threshold,
+        })
+
+    per_user_stats.sort(key=lambda x: x['last_seen'] if x['last_seen'] else timezone.datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+    top_10_users = per_user_stats[:10]
+
+    # === SESSION & RETENTION METRICS ===
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=today_start.weekday())
+    month_start = today_start.replace(day=1)
+
+    dau = PageView.objects.filter(created_at__gte=today_start, user__isnull=False).values('user').distinct().count()
+    wau = PageView.objects.filter(created_at__gte=week_start, user__isnull=False).values('user').distinct().count()
+    mau = PageView.objects.filter(created_at__gte=month_start, user__isnull=False).values('user').distinct().count()
+
+    new_users_period = User.objects.filter(date_joined__gte=start_date).count() if start_date else 0
+    returning_users = page_views_filtered.filter(user__isnull=False).exclude(user__date_joined__gte=start_date).values('user').distinct().count() if start_date else 0
+
+    # === QUEUE METRICS ===
+    completed_entries = queue_filtered.filter(status='completed', updated_at__isnull=False).order_by('-updated_at')[:1000]
+    wait_times = []
+    for entry in completed_entries:
+        wait_time = (entry.updated_at - entry.created_at).total_seconds() / 3600
+        if wait_time < 168:
+            wait_times.append(wait_time)
+    avg_queue_wait_time = sum(wait_times) / len(wait_times) if wait_times else 0
+
+    total_queue = queue_filtered.count()
+    completed_queue = queue_filtered.filter(status='completed').count()
+    queue_completion_rate = (completed_queue / total_queue * 100) if total_queue > 0 else 0
+
+    popular_machines = queue_filtered.filter(assigned_machine__isnull=False).values('assigned_machine__name').annotate(count=Count('id')).order_by('-count')[:5]
+
+    # === FEEDBACK RESPONSE TIME ===
+    feedback_reviewed = Feedback.objects.filter(status__in=['reviewed', 'completed'], reviewed_at__isnull=False).order_by('-reviewed_at')[:500]
+    review_times = []
+    for fb in feedback_reviewed:
+        time_diff = (fb.reviewed_at - fb.created_at).total_seconds() / 3600
+        if time_diff < 720:
+            review_times.append(time_diff)
+    avg_feedback_review_time = sum(review_times) / len(review_times) if review_times else 0
+
+    feedback_completed = Feedback.objects.filter(status='completed', reviewed_at__isnull=False, updated_at__isnull=False).order_by('-updated_at')[:500]
+    completion_times = []
+    for fb in feedback_completed:
+        time_diff = (fb.updated_at - fb.reviewed_at).total_seconds() / 3600
+        if time_diff < 720:
+            completion_times.append(time_diff)
+    avg_feedback_completion_time = sum(completion_times) / len(completion_times) if completion_times else 0
+
+    # === ERROR STATISTICS ===
+    error_logs_filtered = ErrorLog.objects.all()
+    if start_date:
+        error_logs_filtered = error_logs_filtered.filter(created_at__gte=start_date)
+
+    total_errors = error_logs_filtered.count()
+    error_404_count = error_logs_filtered.filter(error_type='404').count()
+    error_500_count = error_logs_filtered.filter(error_type='500').count()
+    error_403_count = error_logs_filtered.filter(error_type='403').count()
+    top_error_paths = error_logs_filtered.values('path', 'error_type').annotate(count=Count('id')).order_by('-count')[:10]
+    recent_errors = error_logs_filtered.select_related('user').order_by('-created_at')[:10]
+
+    # === HOURLY/DAILY CHARTS ===
+    from django.db.models import Func, IntegerField
+
+    class Hour(Func):
+        function = 'CAST'
+        template = "%(function)s(strftime('%%H', %(expressions)s) AS INTEGER)"
+        output_field = IntegerField()
+
+    class Weekday(Func):
+        function = 'CAST'
+        template = "%(function)s(strftime('%%w', %(expressions)s) AS INTEGER)"
+        output_field = IntegerField()
+
+    hourly_views = page_views_filtered.annotate(hour=Hour('created_at')).values('hour').annotate(count=Count('id')).order_by('hour')
+    hour_labels = [f"{h['hour']}:00" for h in hourly_views]
+    hour_counts = [h['count'] * 10 for h in hourly_views]  # Scale up from 10% sample
+
+    daily_views = page_views_filtered.annotate(weekday=Weekday('created_at')).values('weekday').annotate(count=Count('id')).order_by('weekday')
+    day_map = {0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday'}
+    day_labels = [day_map.get(d['weekday'], 'Unknown') for d in daily_views]
+    day_counts = [d['count'] * 10 for d in daily_views]  # Scale up from 10% sample
+
+    # === API HITS ===
+    api_hits = {
+        'API Machine Status': page_views_filtered.filter(path__contains='api/machine-status').count() * 10,
+        'Notifications API': page_views_filtered.filter(path__contains='notifications/api/list').count() * 10,
+        'Schedule API': page_views_filtered.filter(path__contains='schedule/api').count() * 10,
+    }
+
+    # === SESSION DURATION ===
+    from django.db.models import Min
+    sessions = page_views_filtered.values('session_key').annotate(
+        first_view=Min('created_at'),
+        last_view=Max('created_at'),
+        view_count=Count('id')
+    ).filter(view_count__gt=1).order_by('-last_view')[:5000]
+
+    session_durations = []
+    for session in sessions:
+        duration = (session['last_view'] - session['first_view']).total_seconds() / 60
+        if duration < 120:
+            session_durations.append(duration)
+    avg_session_duration = sum(session_durations) / len(session_durations) if session_durations else 0
+
+    # Get Turso database usage metrics
+    import os
+    from .turso_api_client import TursoAPIClient
+
+    turso_client = TursoAPIClient()
+    turso_usage = turso_client.get_usage_metrics()
+
+    # Turso plan limits (Free tier defaults)
+    turso_limits = {
+        'storage_mb': int(os.environ.get('TURSO_MAX_STORAGE_MB', 5120)),  # 5GB
+        'rows_read_monthly': int(os.environ.get('TURSO_MAX_ROWS_READ', 500_000_000)),  # 500M
+        'rows_written_monthly': int(os.environ.get('TURSO_MAX_ROWS_WRITTEN', 10_000_000)),  # 10M
+    }
+
+    # Calculate usage percentages
+    turso_stats = None
+    if turso_usage:
+        turso_stats = {
+            'rows_read': turso_usage['rows_read'],
+            'rows_written': turso_usage['rows_written'],
+            'storage_mb': turso_usage['storage_bytes'] / (1024 * 1024),
+            'databases': turso_usage.get('databases', 0),
+            'rows_read_percent': (turso_usage['rows_read'] / turso_limits['rows_read_monthly'] * 100),
+            'rows_written_percent': (turso_usage['rows_written'] / turso_limits['rows_written_monthly'] * 100),
+            'storage_percent': (turso_usage['storage_bytes'] / (turso_limits['storage_mb'] * 1024 * 1024) * 100),
+        }
+
     # === BUILD RESPONSE DATA ===
     analytics_data = {
         # Real-time (today)
@@ -176,33 +371,51 @@ def get_daily_analytics(days_filter=30):
         'top_browsers': top_browsers,
         'browser_device_stats': browser_device_stats,
 
-        # Empty placeholders for features we removed
-        'online_users_data': [],
-        'per_user_stats': [],
-        'api_hits': {},
-        'hour_labels': [],
-        'hour_counts': [],
-        'day_labels': [],
-        'day_counts': [],
-        'avg_session_duration': 0,
-        'dau': today_users,
-        'wau': 0,
-        'mau': 0,
-        'new_users_period': 0,
-        'returning_users': 0,
-        'avg_queue_wait_time': 0,
-        'queue_completion_rate': 0,
-        'popular_machines': [],
-        'top_10_users': [],
-        'avg_feedback_review_time': 0,
-        'avg_feedback_completion_time': 0,
-        'total_errors': 0,
-        'error_404_count': 0,
-        'error_500_count': 0,
-        'error_403_count': 0,
-        'top_error_paths': [],
-        'recent_errors': [],
-        'turso_stats': None,
+        # Turso database stats
+        'turso_usage': turso_stats,
+        'turso_limits': turso_limits,
+        'turso_org_slug': os.environ.get('TURSO_ORG_SLUG', 'unknown'),
+
+        # Online users and per-user stats
+        'online_users_data': online_users_data,
+        'per_user_stats': per_user_stats,
+        'top_10_users': top_10_users,
+
+        # API hits
+        'api_hits': api_hits,
+
+        # Peak usage times (charts)
+        'hour_labels': hour_labels,
+        'hour_counts': hour_counts,
+        'day_labels': day_labels,
+        'day_counts': day_counts,
+
+        # Session metrics
+        'avg_session_duration': round(avg_session_duration, 2),
+
+        # User retention
+        'dau': dau,
+        'wau': wau,
+        'mau': mau,
+        'new_users_period': new_users_period,
+        'returning_users': returning_users,
+
+        # Queue metrics
+        'avg_queue_wait_time': round(avg_queue_wait_time, 2),
+        'queue_completion_rate': round(queue_completion_rate, 1),
+        'popular_machines': popular_machines,
+
+        # Feedback response time
+        'avg_feedback_review_time': round(avg_feedback_review_time, 2),
+        'avg_feedback_completion_time': round(avg_feedback_completion_time, 2),
+
+        # Error statistics
+        'total_errors': total_errors,
+        'error_404_count': error_404_count,
+        'error_500_count': error_500_count,
+        'error_403_count': error_403_count,
+        'top_error_paths': top_error_paths,
+        'recent_errors': recent_errors,
     }
 
     # Cache for 24 hours (expires at midnight)
