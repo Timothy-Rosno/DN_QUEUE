@@ -3321,6 +3321,32 @@ def developer_data(request):
 
 
 @staff_member_required
+def recalculate_analytics(request):
+    """Clear analytics cache and force recalculation."""
+    # Only developers and superusers can access
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_developer) and not request.user.is_superuser:
+        messages.error(request, 'Developer access required.')
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        from django.core.cache import cache
+        from datetime import datetime
+
+        # Get the days filter from request
+        days_filter = int(request.POST.get('days', 30))
+
+        # Clear the cache for this filter
+        today = datetime.now().date()
+        cache_key = f'analytics_daily_{days_filter}_{today}'
+        cache.delete(cache_key)
+
+        messages.success(request, f'Analytics cache cleared! Recalculating for {days_filter} days...')
+        return redirect(f'/schedule/developer/data/?days={days_filter}')
+
+    return redirect('developer_data')
+
+
+@staff_member_required
 def promote_to_developer(request, user_id):
     """Promote a staff user to developer (superuser only)."""
     if not request.user.is_superuser:

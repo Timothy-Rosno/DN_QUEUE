@@ -11,11 +11,20 @@
     </div>
 
     <!-- Date Range Filter -->
-    <div style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; align-items: center;">
+    <div style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
         <span style="font-weight: bold; margin-right: 0.5rem;">Time Range:</span>
         <a href="?days=7" class="btn {% if days_filter == 7 %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 0.5rem 1rem;">Last 7 Days</a>
         <a href="?days=30" class="btn {% if days_filter == 30 %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 0.5rem 1rem;">Last 30 Days</a>
         <a href="?days=0" class="btn {% if days_filter == 0 %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 0.5rem 1rem;">All Time</a>
+
+        <!-- Recalculate Button -->
+        <form method="POST" action="{% url 'recalculate_analytics' %}" style="margin-left: auto;">
+            {% csrf_token %}
+            <input type="hidden" name="days" value="{{ days_filter }}">
+            <button type="submit" class="btn" style="padding: 0.5rem 1rem; background: #e74c3c; color: white; font-weight: bold;">
+                🔄 Force Recalculate
+            </button>
+        </form>
     </div>
 
     <!-- Summary Stats -->
