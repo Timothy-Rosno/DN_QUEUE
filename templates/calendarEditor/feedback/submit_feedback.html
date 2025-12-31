@@ -145,15 +145,62 @@
             const feedbackTypeSelect = document.getElementById('id_feedback_type');
             const replicationStepsField = document.getElementById('replicationStepsField');
             const consoleLogsField = document.getElementById('consoleLogsField');
+            const titleInput = document.getElementById('{{ form.title.id_for_label }}');
+            const descriptionInput = document.getElementById('{{ form.description.id_for_label }}');
+            const titleLabel = document.querySelector('label[for="{{ form.title.id_for_label }}"]');
+            const descriptionLabel = document.querySelector('label[for="{{ form.description.id_for_label }}"]');
+
+            // Define context-specific text for each feedback type
+            const feedbackTypeText = {
+                'bug': {
+                    titleLabel: 'Bug Summary',
+                    titlePlaceholder: 'Brief description of the bug (e.g., "Submit button not working on mobile")',
+                    descriptionLabel: 'What happened?',
+                    descriptionPlaceholder: 'Describe what went wrong, what you expected to happen, and any error messages you saw...'
+                },
+                'feature': {
+                    titleLabel: 'Feature Name',
+                    titlePlaceholder: 'What feature would you like? (e.g., "Export queue history to CSV")',
+                    descriptionLabel: 'Feature Details',
+                    descriptionPlaceholder: 'Describe how this feature would work and why it would be useful...'
+                },
+                'opinion': {
+                    titleLabel: 'Topic',
+                    titlePlaceholder: 'What would you like to share your thoughts about?',
+                    descriptionLabel: 'Your Thoughts',
+                    descriptionPlaceholder: 'Share your suggestions, ideas, or general feedback about the application...'
+                }
+            };
 
             function updateFieldVisibility() {
                 const selectedValue = feedbackTypeSelect.value;
+
+                // Update visibility
                 if (selectedValue === 'bug') {
                     replicationStepsField.style.display = 'block';
                     consoleLogsField.style.display = 'block';
                 } else {
                     replicationStepsField.style.display = 'none';
                     consoleLogsField.style.display = 'none';
+                }
+
+                // Update labels and placeholders based on feedback type
+                if (selectedValue && feedbackTypeText[selectedValue]) {
+                    const text = feedbackTypeText[selectedValue];
+
+                    // Update title field
+                    titleLabel.innerHTML = text.titleLabel + ' <span style="color: #e74c3c;">*</span>';
+                    titleInput.placeholder = text.titlePlaceholder;
+
+                    // Update description field
+                    descriptionLabel.innerHTML = text.descriptionLabel + ' <span style="color: #e74c3c;">*</span>';
+                    descriptionInput.placeholder = text.descriptionPlaceholder;
+                } else {
+                    // Default text if no type selected
+                    titleLabel.innerHTML = 'Title <span style="color: #e74c3c;">*</span>';
+                    titleInput.placeholder = 'Brief summary of your feedback';
+                    descriptionLabel.innerHTML = 'Description <span style="color: #e74c3c;">*</span>';
+                    descriptionInput.placeholder = 'Provide detailed information...';
                 }
             }
 
@@ -166,8 +213,6 @@
             const form = document.getElementById('feedbackForm');
             const submitBtn = document.getElementById('submitBtn');
             const validationTooltip = document.getElementById('validationTooltip');
-            const titleInput = document.getElementById('{{ form.title.id_for_label }}');
-            const descriptionInput = document.getElementById('{{ form.description.id_for_label }}');
 
             function validateForm() {
                 const errors = [];
