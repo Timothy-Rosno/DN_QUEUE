@@ -108,6 +108,12 @@ def get_daily_analytics(days_filter=30):
         'completed': feedback_all.filter(status='completed').count(),
     }
 
+    # Calculate active users for the period (before slicing)
+    if days_filter <= 1:
+        active_period = today_users
+    else:
+        active_period = page_views_filtered.filter(user__isnull=False).values('user').distinct().count()
+
     # Device/Browser breakdown from sampled data
     device_counts = {'mobile': 0, 'desktop': 0, 'tablet': 0}
     browser_counts = Counter()
@@ -148,7 +154,7 @@ def get_daily_analytics(days_filter=30):
         'total': User.objects.count(),
         'staff': User.objects.filter(is_staff=True).count(),
         'developers': User.objects.filter(profile__is_developer=True).count(),
-        'active_period': today_users if days_filter <= 1 else sampled_views.values('user').distinct().count(),
+        'active_period': active_period,
     }
 
     # === BUILD RESPONSE DATA ===
