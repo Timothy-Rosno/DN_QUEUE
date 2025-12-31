@@ -68,16 +68,18 @@ def get_daily_analytics(days_filter=30):
     page_views_period = sampled_count * 10  # We only store 10%, so multiply by 10
     page_views_all_time = page_views_query.count() * 10
 
-    # Top pages (from cache counters for today, DB for historical)
-    top_pages_data = []
-    for page_title in ['Home', 'Submit Request', 'My Queue', 'Public Queue',
-                       'Check-In/Check-Out', 'Archive', 'Fridge Specs']:
-        count = cache.get(f'analytics:page:{page_title}:{today}', 0)
-        if count > 0:
-            top_pages_data.append({'page_title': page_title, 'count': count})
+    # Top pages from database (excluding API endpoints)
+    api_endpoint_patterns = ['api/machine-status', 'notifications/api/list', 'schedule/api']
+    top_pages_qs = page_views_filtered
+    for pattern in api_endpoint_patterns:
+        top_pages_qs = top_pages_qs.exclude(path__contains=pattern)
 
-    # Sort and limit
-    top_pages = sorted(top_pages_data, key=lambda x: x['count'], reverse=True)[:10]
+    top_pages = top_pages_qs.values('page_title').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+
+    # Scale up counts from 10% sample
+    top_pages = [{'page_title': p['page_title'], 'count': p['count'] * 10} for p in top_pages]
 
     # Queue stats
     queue_all = QueueEntry.objects.all()
@@ -170,19 +172,61 @@ def get_daily_analytics(days_filter=30):
     for view in recent_views:
         if view.user_id not in seen_users:
             seen_users.add(view.user_id)
+            user = view.user
+
+            # Extract device info
+            browser = 'Unknown'
+            os = 'Unknown'
+            device_type = 'Unknown'
+            ip_address = 'Unknown'
+
+            if isinstance(view.device_info, dict):
+                browser_full = view.device_info.get('browser', 'Unknown')
+                browser_parts = browser_full.split() if browser_full else []
+                if browser_parts:
+                    if browser_parts[0] == 'Mobile' and len(browser_parts) > 1:
+                        browser = browser_parts[1]
+                    elif len(browser_parts) > 1 and browser_parts[-1] == 'Mobile':
+                        browser = browser_parts[0]
+                    else:
+                        browser = browser_parts[0]
+
+                os = view.device_info.get('os', 'Unknown')
+
+                if view.device_info.get('is_mobile'):
+                    device_type = 'Mobile'
+                elif view.device_info.get('is_tablet'):
+                    device_type = 'Tablet'
+                elif view.device_info.get('is_pc'):
+                    device_type = 'Desktop'
+
+                ip_address = view.device_info.get('ip_address', 'Unknown')
+
+            # Build roles list
             roles = []
-            if view.user.is_superuser:
+            if user.is_superuser:
                 roles = ['Admin', 'Developer', 'Staff']
-            elif hasattr(view.user, 'profile') and view.user.profile.is_developer:
+            elif hasattr(user, 'profile') and user.profile.is_developer:
                 roles = ['Developer', 'Staff']
-            elif view.user.is_staff:
+            elif user.is_staff:
                 roles = ['Staff']
             else:
                 roles = ['User']
 
+            # Count page views in last 15 min
+            page_count = PageView.objects.filter(
+                user=user,
+                created_at__gte=online_threshold
+            ).count()
+
             online_users_data.append({
-                'username': view.user.username,
+                'username': user.username,
                 'last_seen': view.created_at,
+                'page_count': page_count,
+                'browser': browser,
+                'os': os,
+                'device_type': device_type,
+                'ip_address': ip_address,
                 'roles': roles,
             })
 
@@ -210,6 +254,7 @@ def get_daily_analytics(days_filter=30):
             roles = ['User']
 
         per_user_stats.append({
+            'user': user,  # Include user object for template
             'username': user.username,
             'email': user.email,
             'roles': roles,
@@ -219,6 +264,11 @@ def get_daily_analytics(days_filter=30):
             'queue_entries_period': user.queue_entries_period,
             'queue_entries_all_time': user.queue_entries_all_time,
             'feedback_submitted_period': user.feedback_submitted_period,
+            # Aliases for template compatibility
+            'page_views': user.page_views_period,
+            'queue_submissions': user.queue_entries_period,
+            'feedback_count': user.feedback_submitted_period,
+            'last_activity': user.last_seen,
             'is_online': user.last_seen and user.last_seen >= online_threshold,
         })
 
@@ -354,6 +404,9 @@ def get_daily_analytics(days_filter=30):
 
     # === BUILD RESPONSE DATA ===
     analytics_data = {
+        # Cache metadata
+        'cache_calculated_at': datetime.now(),
+
         # Real-time (today)
         'users_online': users_online_now,
         'today_views': today_views,

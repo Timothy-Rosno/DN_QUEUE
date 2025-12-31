@@ -17,14 +17,19 @@
         <a href="?days=30" class="btn {% if days_filter == 30 %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 0.5rem 1rem;">Last 30 Days</a>
         <a href="?days=0" class="btn {% if days_filter == 0 %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 0.5rem 1rem;">All Time</a>
 
-        <!-- Recalculate Button -->
-        <form method="POST" action="{% url 'recalculate_analytics' %}" style="margin-left: auto;">
-            {% csrf_token %}
-            <input type="hidden" name="days" value="{{ days_filter }}">
-            <button type="submit" class="btn" style="padding: 0.5rem 1rem; background: #e74c3c; color: white; font-weight: bold;">
-                🔄 Force Recalculate
-            </button>
-        </form>
+        <!-- Last Calculated & Recalculate Button -->
+        <div style="margin-left: auto; display: flex; align-items: center; gap: 1rem;">
+            <span style="color: #7f8c8d; font-size: 0.9rem;">
+                Last calculated: {{ cache_calculated_at|date:"Y-m-d H:i:s" }}
+            </span>
+            <form method="POST" action="{% url 'recalculate_analytics' %}" style="margin: 0;">
+                {% csrf_token %}
+                <input type="hidden" name="days" value="{{ days_filter }}">
+                <button type="submit" class="btn" style="padding: 0.5rem 1rem; background: #e74c3c; color: white; font-weight: bold;">
+                    Force Recalculate
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- Summary Stats -->
