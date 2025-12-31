@@ -27,6 +27,7 @@ def get_daily_analytics(days_filter=30):
     """
     from .models import PageView, QueueEntry, User, Feedback, ErrorLog
     from .analytics_utils import get_set_size, get_sorted_set_count
+    from django.db.models import Count, Max, Min, Q, Func, IntegerField
 
     # Cache key includes filter to support different views
     today = datetime.now().date()
@@ -231,7 +232,6 @@ def get_daily_analytics(days_filter=30):
             })
 
     # === PER-USER STATS ===
-    from django.db.models import Count, Max, Q
     all_users = User.objects.select_related('profile').annotate(
         page_views_period=Count('pageview__id', filter=Q(pageview__created_at__gte=start_date) if start_date else Q(), distinct=True),
         page_views_all_time=Count('pageview__id', distinct=True),
@@ -332,8 +332,6 @@ def get_daily_analytics(days_filter=30):
     recent_errors = error_logs_filtered.select_related('user').order_by('-created_at')[:10]
 
     # === HOURLY/DAILY CHARTS ===
-    from django.db.models import Func, IntegerField
-
     class Hour(Func):
         function = 'CAST'
         template = "%(function)s(strftime('%%H', %(expressions)s) AS INTEGER)"
@@ -361,7 +359,6 @@ def get_daily_analytics(days_filter=30):
     }
 
     # === SESSION DURATION ===
-    from django.db.models import Min
     sessions = page_views_filtered.values('session_key').annotate(
         first_view=Min('created_at'),
         last_view=Max('created_at'),
