@@ -176,7 +176,9 @@
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
         <div class="card">
             <h3>Top Pages {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
-            <canvas id="topPagesChart"></canvas>
+            <div style="overflow-x: auto;">
+                <canvas id="topPagesChart"></canvas>
+            </div>
 
             <!-- API Endpoint Hits (excluded from chart) -->
             <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #eee;">
@@ -188,11 +190,15 @@
         </div>
         <div class="card">
             <h3>Top Browsers {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
-            <canvas id="browsersChart"></canvas>
+            <div style="overflow-x: auto;">
+                <canvas id="browsersChart"></canvas>
+            </div>
         </div>
         <div class="card">
             <h3>Device Breakdown {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
-            <canvas id="deviceChart"></canvas>
+            <div style="overflow-x: auto;">
+                <canvas id="deviceChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -200,7 +206,9 @@
     <div style="margin-bottom: 1.5rem;">
         <div class="card">
             <h3>Browser × Device Type {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
-            <canvas id="browserDeviceChart"></canvas>
+            <div style="overflow-x: auto;">
+                <canvas id="browserDeviceChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -267,11 +275,15 @@
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
         <div class="card">
             <h3>Peak Usage by Hour {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
-            <canvas id="hourlyChart"></canvas>
+            <div style="overflow-x: auto;">
+                <canvas id="hourlyChart"></canvas>
+            </div>
         </div>
         <div class="card">
             <h3>Peak Usage by Day {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
-            <canvas id="dailyChart"></canvas>
+            <div style="overflow-x: auto;">
+                <canvas id="dailyChart"></canvas>
+            </div>
         </div>
     </div>
 

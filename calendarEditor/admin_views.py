@@ -3444,6 +3444,15 @@ def developer_data(request):
             'email': user.email,
             'roles': roles,
             'last_seen': user.last_seen,
+            # Period data (what user requested)
+            'page_views_period': user.page_views_period,
+            'queue_entries_period': user.queue_entries_period,
+            'feedback_submitted_period': user.feedback_submitted_period,
+            # All-time data (for comparison)
+            'page_views_all_time': user.page_views_all_time,
+            'queue_entries_all_time': user.queue_entries_all_time,
+            'feedback_submitted_all_time': user.feedback_submitted_all_time,
+            # Also keep these for the "Top 10 Recently Active Users" table
             'page_views': user.page_views_period,
             'queue_submissions': user.queue_entries_period,
             'feedback_count': user.feedback_submitted_period,
