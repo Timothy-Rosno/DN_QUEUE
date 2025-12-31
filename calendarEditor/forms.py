@@ -578,7 +578,7 @@ class FeedbackForm(forms.ModelForm):
                 'rows': 4,
                 'class': 'char-counter-input',
                 'maxlength': '2000',
-                'placeholder': 'Paste F12 console logs here if available'
+                'placeholder': 'eg '
             }),
         }
         labels = {

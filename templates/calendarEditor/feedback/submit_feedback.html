@@ -35,8 +35,8 @@
             <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.feedback_type.help_text }}</small>
         </div>
 
-        <!-- Title -->
-        <div style="margin-bottom: 1.5rem;">
+        <!-- Title (shown after feedback type is selected) -->
+        <div id="titleField" style="margin-bottom: 1.5rem; display: none;">
             <label for="{{ form.title.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
                 {{ form.title.label }} <span style="color: #e74c3c;">*</span>
             </label>
@@ -48,8 +48,8 @@
             <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.title.help_text }}</small>
         </div>
 
-        <!-- Description -->
-        <div style="margin-bottom: 1.5rem;">
+        <!-- Description (shown after feedback type is selected) -->
+        <div id="descriptionField" style="margin-bottom: 1.5rem; display: none;">
             <label for="{{ form.description.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
                 {{ form.description.label }} <span style="color: #e74c3c;">*</span>
             </label>
@@ -143,6 +143,8 @@
         // Show/hide bug-specific fields based on feedback type
         document.addEventListener('DOMContentLoaded', function() {
             const feedbackTypeSelect = document.getElementById('id_feedback_type');
+            const titleField = document.getElementById('titleField');
+            const descriptionField = document.getElementById('descriptionField');
             const replicationStepsField = document.getElementById('replicationStepsField');
             const consoleLogsField = document.getElementById('consoleLogsField');
             const titleInput = document.getElementById('{{ form.title.id_for_label }}');
@@ -175,32 +177,37 @@
             function updateFieldVisibility() {
                 const selectedValue = feedbackTypeSelect.value;
 
-                // Update visibility
-                if (selectedValue === 'bug') {
-                    replicationStepsField.style.display = 'block';
-                    consoleLogsField.style.display = 'block';
+                // Show/hide title and description fields based on whether a type is selected
+                if (selectedValue && selectedValue !== '') {
+                    titleField.style.display = 'block';
+                    descriptionField.style.display = 'block';
+
+                    // Update labels and placeholders based on feedback type
+                    const text = feedbackTypeText[selectedValue];
+                    if (text) {
+                        // Update title field
+                        titleLabel.innerHTML = text.titleLabel + ' <span style="color: #e74c3c;">*</span>';
+                        titleInput.placeholder = text.titlePlaceholder;
+
+                        // Update description field
+                        descriptionLabel.innerHTML = text.descriptionLabel + ' <span style="color: #e74c3c;">*</span>';
+                        descriptionInput.placeholder = text.descriptionPlaceholder;
+                    }
+
+                    // Show bug-specific fields only for bugs
+                    if (selectedValue === 'bug') {
+                        replicationStepsField.style.display = 'block';
+                        consoleLogsField.style.display = 'block';
+                    } else {
+                        replicationStepsField.style.display = 'none';
+                        consoleLogsField.style.display = 'none';
+                    }
                 } else {
+                    // Hide all fields if no type selected
+                    titleField.style.display = 'none';
+                    descriptionField.style.display = 'none';
                     replicationStepsField.style.display = 'none';
                     consoleLogsField.style.display = 'none';
-                }
-
-                // Update labels and placeholders based on feedback type
-                if (selectedValue && feedbackTypeText[selectedValue]) {
-                    const text = feedbackTypeText[selectedValue];
-
-                    // Update title field
-                    titleLabel.innerHTML = text.titleLabel + ' <span style="color: #e74c3c;">*</span>';
-                    titleInput.placeholder = text.titlePlaceholder;
-
-                    // Update description field
-                    descriptionLabel.innerHTML = text.descriptionLabel + ' <span style="color: #e74c3c;">*</span>';
-                    descriptionInput.placeholder = text.descriptionPlaceholder;
-                } else {
-                    // Default text if no type selected
-                    titleLabel.innerHTML = 'Title <span style="color: #e74c3c;">*</span>';
-                    titleInput.placeholder = 'Brief summary of your feedback';
-                    descriptionLabel.innerHTML = 'Description <span style="color: #e74c3c;">*</span>';
-                    descriptionInput.placeholder = 'Provide detailed information...';
                 }
             }
 
