@@ -121,21 +121,24 @@ def admin_users(request):
     # OPTIMIZED: Single aggregated query instead of N+1 queries
     all_users = User.objects.select_related('profile').annotate(
         page_views_period=Count(
-            'pageview',
-            filter=Q(pageview__created_at__gte=start_date) if start_date else Q()
+            'pageview__id',
+            filter=Q(pageview__created_at__gte=start_date) if start_date else Q(),
+            distinct=True
         ),
-        page_views_all_time=Count('pageview'),
+        page_views_all_time=Count('pageview__id', distinct=True),
         last_seen=Max('pageview__created_at'),
         queue_entries_period=Count(
-            'queue_entries',
-            filter=Q(queue_entries__created_at__gte=start_date) if start_date else Q()
+            'queue_entries__id',
+            filter=Q(queue_entries__created_at__gte=start_date) if start_date else Q(),
+            distinct=True
         ),
-        queue_entries_all_time=Count('queue_entries'),
+        queue_entries_all_time=Count('queue_entries__id', distinct=True),
         feedback_submitted_period=Count(
-            'feedback_submissions',
-            filter=Q(feedback_submissions__created_at__gte=start_date) if start_date else Q()
+            'feedback_submissions__id',
+            filter=Q(feedback_submissions__created_at__gte=start_date) if start_date else Q(),
+            distinct=True
         ),
-        feedback_submitted_all_time=Count('feedback_submissions'),
+        feedback_submitted_all_time=Count('feedback_submissions__id', distinct=True),
     ).filter(
         # Only include users with activity in the period
         Q(page_views_period__gt=0) | Q(queue_entries_period__gt=0) | Q(feedback_submitted_period__gt=0)
@@ -3396,23 +3399,26 @@ def developer_data(request):
     all_users = User.objects.select_related('profile').annotate(
         # Page view stats
         page_views_period=Count(
-            'pageview',
-            filter=Q(pageview__created_at__gte=start_date) if start_date else Q()
+            'pageview__id',
+            filter=Q(pageview__created_at__gte=start_date) if start_date else Q(),
+            distinct=True
         ),
-        page_views_all_time=Count('pageview'),
+        page_views_all_time=Count('pageview__id', distinct=True),
         last_seen=Max('pageview__created_at'),
         # Queue entry stats
         queue_entries_period=Count(
-            'queue_entries',
-            filter=Q(queue_entries__created_at__gte=start_date) if start_date else Q()
+            'queue_entries__id',
+            filter=Q(queue_entries__created_at__gte=start_date) if start_date else Q(),
+            distinct=True
         ),
-        queue_entries_all_time=Count('queue_entries'),
+        queue_entries_all_time=Count('queue_entries__id', distinct=True),
         # Feedback stats
         feedback_submitted_period=Count(
-            'feedback_submissions',
-            filter=Q(feedback_submissions__created_at__gte=start_date) if start_date else Q()
+            'feedback_submissions__id',
+            filter=Q(feedback_submissions__created_at__gte=start_date) if start_date else Q(),
+            distinct=True
         ),
-        feedback_submitted_all_time=Count('feedback_submissions'),
+        feedback_submitted_all_time=Count('feedback_submissions__id', distinct=True),
     ).filter(
         # Only include users with some activity
         Q(page_views_period__gt=0) | Q(queue_entries_period__gt=0) | Q(feedback_submitted_period__gt=0)
