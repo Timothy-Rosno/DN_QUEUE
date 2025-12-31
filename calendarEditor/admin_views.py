@@ -3309,14 +3309,22 @@ def developer_data(request):
     online_threshold = now - timedelta(minutes=15)
     online_users_data = []
 
-    # Get users with recent page views - use select_related to avoid N+1 queries
+    # Get all recent page views, then deduplicate in Python (efficient for small dataset)
     recent_views = PageView.objects.filter(
         created_at__gte=online_threshold,
         user__isnull=False
-    ).select_related('user', 'user__profile').order_by('user', '-created_at').distinct('user')
+    ).select_related('user', 'user__profile').order_by('-created_at')
 
-    # Process users (already have latest view per user from distinct)
-    for latest_view in recent_views:
+    # Deduplicate to get latest view per user
+    seen_users = set()
+    latest_views_per_user = []
+    for view in recent_views:
+        if view.user_id not in seen_users:
+            seen_users.add(view.user_id)
+            latest_views_per_user.append(view)
+
+    # Build user data from latest views
+    for latest_view in latest_views_per_user:
         user = latest_view.user
 
         browser = 'Unknown'
@@ -3326,7 +3334,6 @@ def developer_data(request):
 
         if isinstance(latest_view.device_info, dict):
             browser_full = latest_view.device_info.get('browser', 'Unknown')
-            # Extract browser family, handling mobile browsers properly
             browser_parts = browser_full.split() if browser_full else []
             if browser_parts:
                 if browser_parts[0] == 'Mobile' and len(browser_parts) > 1:
@@ -3339,7 +3346,6 @@ def developer_data(request):
                 browser = 'Unknown'
             os = latest_view.device_info.get('os', 'Unknown')
 
-            # Determine device type
             if latest_view.device_info.get('is_mobile'):
                 device_type = 'Mobile'
             elif latest_view.device_info.get('is_tablet'):
@@ -3386,7 +3392,6 @@ def developer_data(request):
 
     # === PER-USER ANALYTICS (OPTIMIZED) ===
     # Use aggregation to calculate all stats in a few queries instead of N+1 queries
-    from django.db.models import Exists, OuterRef, Subquery
 
     # Get all users with aggregated stats
     all_users = User.objects.select_related('profile').annotate(
