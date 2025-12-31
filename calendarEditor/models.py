@@ -984,3 +984,40 @@ class UserActivity(models.Model):
     def __str__(self):
         user_str = self.user.username if self.user else 'Anonymous'
         return f"{user_str} - {self.get_action_type_display()} - {self.target}"
+
+
+class ErrorLog(models.Model):
+    """Track errors (404s, 500s, exceptions)"""
+    ERROR_TYPE_CHOICES = [
+        ('404', '404 Not Found'),
+        ('500', '500 Server Error'),
+        ('403', '403 Forbidden'),
+        ('400', '400 Bad Request'),
+        ('exception', 'Unhandled Exception'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    session_key = models.CharField(max_length=40, blank=True)
+    error_type = models.CharField(max_length=20, choices=ERROR_TYPE_CHOICES)
+    path = models.CharField(max_length=500)
+    method = models.CharField(max_length=10)  # GET, POST, etc.
+    status_code = models.IntegerField()
+    error_message = models.TextField(blank=True)
+    stack_trace = models.TextField(blank=True)
+    user_agent = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Error Log"
+        verbose_name_plural = "Error Logs"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['error_type', '-created_at']),
+            models.Index(fields=['status_code', '-created_at']),
+        ]
+
+    def __str__(self):
+        user_str = self.user.username if self.user else 'Anonymous'
+        return f"{self.status_code} {self.error_type} - {self.path} - {user_str}"

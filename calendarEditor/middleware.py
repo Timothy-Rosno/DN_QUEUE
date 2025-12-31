@@ -292,3 +292,97 @@ class AnalyticsMiddleware:
             '/schedule/fridges/': 'Fridge Specs',
         }
         return title_map.get(path, path)
+
+
+class ErrorLoggingMiddleware:
+    """
+    Middleware to log errors (404s, 500s, exceptions) for analytics.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+
+        # Log 404 errors
+        if response.status_code == 404:
+            self._log_error(request, response, '404')
+        # Log 403 errors
+        elif response.status_code == 403:
+            self._log_error(request, response, '403')
+        # Log 400 errors
+        elif response.status_code == 400:
+            self._log_error(request, response, '400')
+        # Log 500 errors
+        elif response.status_code >= 500:
+            self._log_error(request, response, '500')
+
+        return response
+
+    def process_exception(self, request, exception):
+        """Log unhandled exceptions"""
+        try:
+            import traceback
+            from .models import ErrorLog
+
+            # Ensure session exists
+            if not request.session.session_key:
+                request.session.create()
+
+            # Extract IP address
+            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+            if x_forwarded_for:
+                ip_address = x_forwarded_for.split(',')[0].strip()
+            else:
+                ip_address = request.META.get('REMOTE_ADDR', None)
+
+            ErrorLog.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                session_key=request.session.session_key or '',
+                error_type='exception',
+                path=request.path,
+                method=request.method,
+                status_code=500,
+                error_message=str(exception),
+                stack_trace=traceback.format_exc(),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                ip_address=ip_address,
+            )
+        except Exception:
+            # Don't break if logging fails
+            pass
+
+        # Return None to allow Django's default exception handling
+        return None
+
+    def _log_error(self, request, response, error_type):
+        """Log error to database"""
+        try:
+            from .models import ErrorLog
+
+            # Ensure session exists
+            if not request.session.session_key:
+                request.session.create()
+
+            # Extract IP address
+            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+            if x_forwarded_for:
+                ip_address = x_forwarded_for.split(',')[0].strip()
+            else:
+                ip_address = request.META.get('REMOTE_ADDR', None)
+
+            ErrorLog.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                session_key=request.session.session_key or '',
+                error_type=error_type,
+                path=request.path,
+                method=request.method,
+                status_code=response.status_code,
+                error_message=f"{response.status_code} error on {request.path}",
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                ip_address=ip_address,
+            )
+        except Exception:
+            # Don't break if logging fails
+            pass

@@ -79,6 +79,7 @@ MIDDLEWARE = [
     "calendarEditor.middleware.CheckReminderMiddleware",  # Check for pending checkout reminders
     "calendarEditor.middleware.RenderUsageMiddleware",  # Track Render usage
     "calendarEditor.middleware.AnalyticsMiddleware",  # Track page views for developer analytics
+    "calendarEditor.middleware.ErrorLoggingMiddleware",  # Log errors for analytics
 ]
 
 ROOT_URLCONF = "mysite.urls"

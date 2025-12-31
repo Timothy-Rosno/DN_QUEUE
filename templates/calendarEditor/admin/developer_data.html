@@ -266,6 +266,198 @@
         </div>
     </div>
 
+    <!-- Peak Usage Times -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+        <div class="card">
+            <h3>Peak Usage by Hour {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
+            <canvas id="hourlyChart"></canvas>
+        </div>
+        <div class="card">
+            <h3>Peak Usage by Day {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
+            <canvas id="dailyChart"></canvas>
+        </div>
+    </div>
+
+    <!-- User Retention & Session Metrics -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+        <div class="card">
+            <h3>User Retention</h3>
+            <p><strong>Daily Active Users (DAU):</strong> {{ dau }}</p>
+            <p><strong>Weekly Active Users (WAU):</strong> {{ wau }}</p>
+            <p><strong>Monthly Active Users (MAU):</strong> {{ mau }}</p>
+            <p style="margin-top: 1rem;"><strong>New Users (Period):</strong> {{ new_users_period }}</p>
+            <p><strong>Returning Users (Period):</strong> {{ returning_users }}</p>
+        </div>
+        <div class="card">
+            <h3>Session Metrics</h3>
+            <p><strong>Avg Session Duration:</strong> {{ avg_session_duration }} minutes</p>
+            <p style="color: #7f8c8d; font-size: 0.9rem; margin-top: 0.5rem;">Average time between first and last page view in a session</p>
+        </div>
+    </div>
+
+    <!-- Queue Advanced Metrics -->
+    <div style="margin-bottom: 1.5rem;">
+        <div class="card">
+            <h3>Queue Performance Metrics {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div>
+                    <p style="font-size: 2rem; font-weight: bold; color: #3498db; margin: 0;">{{ avg_queue_wait_time|floatformat:1 }}h</p>
+                    <p style="color: #7f8c8d;">Avg Wait Time</p>
+                </div>
+                <div>
+                    <p style="font-size: 2rem; font-weight: bold; color: #27ae60; margin: 0;">{{ queue_completion_rate|floatformat:1 }}%</p>
+                    <p style="color: #7f8c8d;">Completion Rate</p>
+                </div>
+            </div>
+            <h4 style="margin-top: 1.5rem;">Most Popular Machines</h4>
+            {% for machine in popular_machines %}
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #eee;">
+                    <span>{{ machine.assigned_machine__name }}</span>
+                    <span style="font-weight: bold;">{{ machine.count }} requests</span>
+                </div>
+            {% empty %}
+                <p style="color: #7f8c8d;">No queue data available</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Top 10 Active Users -->
+    <div style="margin-bottom: 1.5rem;">
+        <div class="card">
+            <h3>Top 10 Most Active Users {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead style="background: #f8f9fa;">
+                        <tr style="border-bottom: 2px solid #ddd;">
+                            <th style="padding: 0.75rem; text-align: left;">Rank</th>
+                            <th style="padding: 0.75rem; text-align: left;">Username</th>
+                            <th style="padding: 0.75rem; text-align: center;">Page Views</th>
+                            <th style="padding: 0.75rem; text-align: center;">Queue Submissions</th>
+                            <th style="padding: 0.75rem; text-align: center;">Feedback</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in top_10_users %}
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 0.75rem; font-weight: bold;">{{ forloop.counter }}</td>
+                            <td style="padding: 0.75rem;">{{ stat.user.username }}</td>
+                            <td style="padding: 0.75rem; text-align: center;">{{ stat.page_views }}</td>
+                            <td style="padding: 0.75rem; text-align: center;">{{ stat.queue_submissions }}</td>
+                            <td style="padding: 0.75rem; text-align: center;">{{ stat.feedback_count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" style="padding: 1rem; text-align: center; color: #7f8c8d;">No user activity data</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Response Time -->
+    <div style="margin-bottom: 1.5rem;">
+        <div class="card">
+            <h3>Feedback Response Time</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                <div>
+                    <p style="font-size: 2rem; font-weight: bold; color: #f39c12; margin: 0;">{{ avg_feedback_review_time|floatformat:1 }}h</p>
+                    <p style="color: #7f8c8d;">Avg Time to Review</p>
+                    <p style="font-size: 0.85rem; color: #7f8c8d;">From submission to first review</p>
+                </div>
+                <div>
+                    <p style="font-size: 2rem; font-weight: bold; color: #27ae60; margin: 0;">{{ avg_feedback_completion_time|floatformat:1 }}h</p>
+                    <p style="color: #7f8c8d;">Avg Time to Complete</p>
+                    <p style="font-size: 0.85rem; color: #7f8c8d;">From review to completion</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Statistics -->
+    <div style="margin-bottom: 1.5rem;">
+        <div class="card" style="border-left: 4px solid #e74c3c;">
+            <h3 style="color: #e74c3c;">Error Tracking {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="text-align: center;">
+                    <p style="font-size: 2rem; font-weight: bold; color: #e74c3c; margin: 0;">{{ total_errors }}</p>
+                    <p style="color: #7f8c8d; font-size: 0.9rem;">Total Errors</p>
+                </div>
+                <div style="text-align: center;">
+                    <p style="font-size: 2rem; font-weight: bold; color: #e67e22; margin: 0;">{{ error_404_count }}</p>
+                    <p style="color: #7f8c8d; font-size: 0.9rem;">404 Not Found</p>
+                </div>
+                <div style="text-align: center;">
+                    <p style="font-size: 2rem; font-weight: bold; color: #c0392b; margin: 0;">{{ error_500_count }}</p>
+                    <p style="color: #7f8c8d; font-size: 0.9rem;">500 Server Errors</p>
+                </div>
+                <div style="text-align: center;">
+                    <p style="font-size: 2rem; font-weight: bold; color: #e74c3c; margin: 0;">{{ error_403_count }}</p>
+                    <p style="color: #7f8c8d; font-size: 0.9rem;">403 Forbidden</p>
+                </div>
+            </div>
+
+            <h4>Top Error Paths</h4>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem;">
+                    <thead style="background: #f8f9fa;">
+                        <tr style="border-bottom: 2px solid #ddd;">
+                            <th style="padding: 0.5rem; text-align: left;">Path</th>
+                            <th style="padding: 0.5rem; text-align: center;">Type</th>
+                            <th style="padding: 0.5rem; text-align: center;">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for error in top_error_paths %}
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 0.5rem; font-family: monospace; font-size: 0.85rem;">{{ error.path }}</td>
+                            <td style="padding: 0.5rem; text-align: center;">
+                                <span style="background-color: {% if error.error_type == '404' %}#e67e22{% elif error.error_type == '500' %}#c0392b{% else %}#e74c3c{% endif %}; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem;">{{ error.error_type }}</span>
+                            </td>
+                            <td style="padding: 0.5rem; text-align: center; font-weight: bold;">{{ error.count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" style="padding: 1rem; text-align: center; color: #27ae60;">No errors recorded!</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <h4>Recent Errors</h4>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead style="background: #f8f9fa;">
+                        <tr style="border-bottom: 2px solid #ddd;">
+                            <th style="padding: 0.5rem; text-align: left;">Time</th>
+                            <th style="padding: 0.5rem; text-align: left;">User</th>
+                            <th style="padding: 0.5rem; text-align: left;">Path</th>
+                            <th style="padding: 0.5rem; text-align: center;">Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for error in recent_errors %}
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 0.5rem; font-size: 0.85rem;">{{ error.created_at|date:"M d, H:i" }}</td>
+                            <td style="padding: 0.5rem;">{{ error.user.username|default:"Anonymous" }}</td>
+                            <td style="padding: 0.5rem; font-family: monospace; font-size: 0.85rem;">{{ error.path|truncatechars:50 }}</td>
+                            <td style="padding: 0.5rem; text-align: center;">
+                                <span style="background-color: {% if error.error_type == '404' %}#e67e22{% elif error.error_type == '500' %}#c0392b{% else %}#e74c3c{% endif %}; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem;">{{ error.error_type }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="padding: 1rem; text-align: center; color: #27ae60;">No recent errors!</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Detailed Stats Row -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
         <div class="card">
@@ -397,6 +589,60 @@ new Chart(browserDeviceCtx, {
         },
         scales: {
             x: { beginAtZero: true }
+        }
+    }
+});
+
+// Hourly Usage Chart
+const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+new Chart(hourlyCtx, {
+    type: 'line',
+    data: {
+        labels: [{% for label in hour_labels %}'{{ label }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Page Views',
+            data: [{% for count in hour_counts %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: 'rgba(52, 152, 219, 0.2)',
+            borderColor: '#3498db',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+
+// Daily Usage Chart
+const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+new Chart(dailyCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for label in day_labels %}'{{ label }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Page Views',
+            data: [{% for count in day_counts %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: ['#3498db', '#e74c3c', '#f39c12', '#9b59b6', '#27ae60', '#16a085', '#2980b9'],
+            borderColor: '#fff',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: { beginAtZero: true }
         }
     }
 });

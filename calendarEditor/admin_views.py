@@ -108,9 +108,9 @@ def admin_users(request):
     unapproved_users.sort(key=lambda u: u.username.lower())
     approved_users.sort(key=lambda u: u.username.lower())
 
-    # === PER-USER ANALYTICS ===
+    # === PER-USER ANALYTICS (OPTIMIZED) ===
     from .models import PageView, QueueEntry, Feedback
-    from django.db.models import Max
+    from django.db.models import Max, Count, Q
     from django.utils import timezone
     from datetime import timedelta
 
@@ -118,22 +118,32 @@ def admin_users(request):
     days_filter = 30  # Default to last 30 days for admin-users
     start_date = now - timedelta(days=days_filter)
 
-    all_users = User.objects.select_related('profile').all()
+    # OPTIMIZED: Single aggregated query instead of N+1 queries
+    all_users = User.objects.select_related('profile').annotate(
+        page_views_period=Count(
+            'pageview',
+            filter=Q(pageview__created_at__gte=start_date) if start_date else Q()
+        ),
+        page_views_all_time=Count('pageview'),
+        last_seen=Max('pageview__created_at'),
+        queue_entries_period=Count(
+            'queueentry',
+            filter=Q(queueentry__created_at__gte=start_date) if start_date else Q()
+        ),
+        queue_entries_all_time=Count('queueentry'),
+        feedback_submitted_period=Count(
+            'feedback',
+            filter=Q(feedback__created_at__gte=start_date) if start_date else Q()
+        ),
+        feedback_submitted_all_time=Count('feedback'),
+    ).filter(
+        # Only include users with activity in the period
+        Q(page_views_period__gt=0) | Q(queue_entries_period__gt=0) | Q(feedback_submitted_period__gt=0)
+    )
+
+    # Build per-user stats from annotated query
     per_user_stats = []
-
     for user in all_users:
-        # Get user's page views
-        user_views_filtered = PageView.objects.filter(user=user, created_at__gte=start_date)
-
-        # Get last activity
-        last_activity = PageView.objects.filter(user=user).aggregate(last_seen=Max('created_at'))['last_seen']
-
-        # Get queue entries
-        user_queue_filtered = QueueEntry.objects.filter(user=user, created_at__gte=start_date)
-
-        # Get feedback submitted
-        user_feedback_filtered = Feedback.objects.filter(user=user, created_at__gte=start_date)
-
         # Build roles list
         roles = []
         if user.is_superuser:
@@ -149,16 +159,14 @@ def admin_users(request):
         if not roles:
             roles.append('User')
 
-        # Only include users with activity
-        if user_views_filtered.count() > 0 or user_queue_filtered.count() > 0 or user_feedback_filtered.count() > 0:
-            per_user_stats.append({
-                'user': user,
-                'page_views': user_views_filtered.count(),
-                'queue_submissions': user_queue_filtered.count(),
-                'feedback_count': user_feedback_filtered.count(),
-                'last_activity': last_activity,
-                'roles': roles,
-            })
+        per_user_stats.append({
+            'user': user,
+            'page_views': user.page_views_period,
+            'queue_submissions': user.queue_entries_period,
+            'feedback_count': user.feedback_submitted_period,
+            'last_activity': user.last_seen,
+            'roles': roles,
+        })
 
     # Sort by page views (most active first)
     per_user_stats.sort(key=lambda x: x['page_views'], reverse=True)
@@ -3379,59 +3387,62 @@ def developer_data(request):
     # Sort by last seen (most recent first)
     online_users_data.sort(key=lambda x: x['last_seen'], reverse=True)
 
-    # === PER-USER ANALYTICS ===
-    all_users = User.objects.select_related('profile').all()
+    # === PER-USER ANALYTICS (OPTIMIZED) ===
+    # Use aggregation to calculate all stats in a few queries instead of N+1 queries
+    from django.db.models import Exists, OuterRef, Subquery
+
+    # Get all users with aggregated stats
+    all_users = User.objects.select_related('profile').annotate(
+        # Page view stats
+        page_views_period=Count(
+            'pageview',
+            filter=Q(pageview__created_at__gte=start_date) if start_date else Q()
+        ),
+        page_views_all_time=Count('pageview'),
+        last_seen=Max('pageview__created_at'),
+        # Queue entry stats
+        queue_entries_period=Count(
+            'queueentry',
+            filter=Q(queueentry__created_at__gte=start_date) if start_date else Q()
+        ),
+        queue_entries_all_time=Count('queueentry'),
+        # Feedback stats
+        feedback_submitted_period=Count(
+            'feedback',
+            filter=Q(feedback__created_at__gte=start_date) if start_date else Q()
+        ),
+        feedback_submitted_all_time=Count('feedback'),
+    ).filter(
+        # Only include users with some activity
+        Q(page_views_period__gt=0) | Q(queue_entries_period__gt=0) | Q(feedback_submitted_period__gt=0)
+    )
+
+    # Build per_user_stats from annotated queryset
     per_user_stats = []
-
     for user in all_users:
-        # Get user's page views
-        user_views = PageView.objects.filter(user=user)
-        if start_date:
-            user_views_filtered = user_views.filter(created_at__gte=start_date)
-        else:
-            user_views_filtered = user_views
-
-        # Get last activity
-        last_activity = user_views.aggregate(last_seen=Max('created_at'))['last_seen']
-
-        # Get queue entries
-        user_queue = QueueEntry.objects.filter(user=user)
-        if start_date:
-            user_queue_filtered = user_queue.filter(created_at__gte=start_date)
-        else:
-            user_queue_filtered = user_queue
-
-        # Get feedback submitted
-        user_feedback = Feedback.objects.filter(user=user)
-        if start_date:
-            user_feedback_filtered = user_feedback.filter(created_at__gte=start_date)
-        else:
-            user_feedback_filtered = user_feedback
-
         # Build roles list
         roles = []
         if user.is_superuser:
             roles.append('Admin')
-            roles.append('Developer')  # Admins are developers by nature
-            roles.append('Staff')      # Admins are staff by nature
+            roles.append('Developer')
+            roles.append('Staff')
         elif hasattr(user, 'profile') and user.profile.is_developer:
             roles.append('Developer')
-            roles.append('Staff')      # Developers are staff by requirement
+            roles.append('Staff')
         elif user.is_staff:
             roles.append('Staff')
 
         per_user_stats.append({
+            'user': user,  # Include user object for template
             'username': user.username,
             'email': user.email,
             'roles': roles,
-            'last_seen': last_activity,
-            'page_views_period': user_views_filtered.count(),
-            'page_views_all_time': user_views.count(),
-            'queue_entries_period': user_queue_filtered.count(),
-            'queue_entries_all_time': user_queue.count(),
-            'feedback_submitted_period': user_feedback_filtered.count(),
-            'feedback_submitted_all_time': user_feedback.count(),
-            'is_online': last_activity and last_activity >= online_threshold,
+            'last_seen': user.last_seen,
+            'page_views': user.page_views_period,
+            'queue_submissions': user.queue_entries_period,
+            'feedback_count': user.feedback_submitted_period,
+            'last_activity': user.last_seen,
+            'is_online': user.last_seen and user.last_seen >= online_threshold,
         })
 
     # Sort by last seen (most recent first)
@@ -3560,6 +3571,148 @@ def developer_data(request):
         'active_period': page_views_filtered.filter(user__isnull=False).values('user').distinct().count(),
     }
 
+    # === PEAK USAGE TIMES ===
+    from django.db.models.functions import ExtractHour, ExtractWeekDay
+
+    # Hour of day breakdown
+    hourly_views = page_views_filtered.annotate(
+        hour=ExtractHour('created_at')
+    ).values('hour').annotate(
+        count=Count('id')
+    ).order_by('hour')
+
+    hour_labels = [f"{h['hour']}:00" for h in hourly_views]
+    hour_counts = [h['count'] for h in hourly_views]
+
+    # Day of week breakdown (1=Sunday, 7=Saturday)
+    daily_views = page_views_filtered.annotate(
+        weekday=ExtractWeekDay('created_at')
+    ).values('weekday').annotate(
+        count=Count('id')
+    ).order_by('weekday')
+
+    day_map = {1: 'Sunday', 2: 'Monday', 3: 'Tuesday', 4: 'Wednesday', 5: 'Thursday', 6: 'Friday', 7: 'Saturday'}
+    day_labels = [day_map.get(d['weekday'], 'Unknown') for d in daily_views]
+    day_counts = [d['count'] for d in daily_views]
+
+    # === SESSION DURATION ===
+    # Calculate average session duration
+    sessions = page_views_filtered.values('session_key').annotate(
+        first_view=models.Min('created_at'),
+        last_view=models.Max('created_at'),
+        view_count=Count('id')
+    ).filter(view_count__gt=1)  # Only sessions with multiple views
+
+    session_durations = []
+    for session in sessions:
+        duration = (session['last_view'] - session['first_view']).total_seconds() / 60  # minutes
+        if duration < 120:  # Ignore sessions longer than 2 hours (likely stale)
+            session_durations.append(duration)
+
+    avg_session_duration = sum(session_durations) / len(session_durations) if session_durations else 0
+
+    # === USER RETENTION ===
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=today_start.weekday())
+    month_start = today_start.replace(day=1)
+
+    dau = PageView.objects.filter(
+        created_at__gte=today_start,
+        user__isnull=False
+    ).values('user').distinct().count()
+
+    wau = PageView.objects.filter(
+        created_at__gte=week_start,
+        user__isnull=False
+    ).values('user').distinct().count()
+
+    mau = PageView.objects.filter(
+        created_at__gte=month_start,
+        user__isnull=False
+    ).values('user').distinct().count()
+
+    # New vs Returning users (this period)
+    new_users_period = User.objects.filter(date_joined__gte=start_date).count() if start_date else 0
+    returning_users = page_views_filtered.filter(user__isnull=False).exclude(
+        user__date_joined__gte=start_date
+    ).values('user').distinct().count() if start_date else 0
+
+    # === QUEUE METRICS ===
+    # Calculate average wait time (time from submission to completion)
+    completed_queue_entries = queue_filtered.filter(status='completed', updated_at__isnull=False)
+    wait_times = []
+    for entry in completed_queue_entries:
+        wait_time = (entry.updated_at - entry.created_at).total_seconds() / 3600  # hours
+        if wait_time < 168:  # Ignore entries over 1 week
+            wait_times.append(wait_time)
+
+    avg_queue_wait_time = sum(wait_times) / len(wait_times) if wait_times else 0
+
+    # Queue completion rate
+    total_queue_submissions = queue_filtered.count()
+    completed_queue_count = queue_filtered.filter(status='completed').count()
+    queue_completion_rate = (completed_queue_count / total_queue_submissions * 100) if total_queue_submissions > 0 else 0
+
+    # Most popular machines
+    popular_machines = queue_filtered.filter(
+        assigned_machine__isnull=False
+    ).values(
+        'assigned_machine__name'
+    ).annotate(
+        count=Count('id')
+    ).order_by('-count')[:5]
+
+    # === TOP 10 ACTIVE USERS ===
+    top_10_users = per_user_stats[:10] if len(per_user_stats) >= 10 else per_user_stats
+
+    # === FEEDBACK RESPONSE TIME ===
+    # Average time from new → reviewed
+    feedback_to_reviewed = Feedback.objects.filter(
+        status__in=['reviewed', 'completed'],
+        reviewed_at__isnull=False
+    )
+    review_times = []
+    for fb in feedback_to_reviewed:
+        time_diff = (fb.reviewed_at - fb.created_at).total_seconds() / 3600  # hours
+        if time_diff < 720:  # Ignore outliers over 30 days
+            review_times.append(time_diff)
+
+    avg_feedback_review_time = sum(review_times) / len(review_times) if review_times else 0
+
+    # Average time from reviewed → completed
+    feedback_to_completed = Feedback.objects.filter(
+        status='completed',
+        reviewed_at__isnull=False,
+        updated_at__isnull=False
+    )
+    completion_times = []
+    for fb in feedback_to_completed:
+        time_diff = (fb.updated_at - fb.reviewed_at).total_seconds() / 3600  # hours
+        if time_diff < 720:  # Ignore outliers over 30 days
+            completion_times.append(time_diff)
+
+    avg_feedback_completion_time = sum(completion_times) / len(completion_times) if completion_times else 0
+
+    # === ERROR STATISTICS ===
+    from .models import ErrorLog
+
+    error_logs_filtered = ErrorLog.objects.all()
+    if start_date:
+        error_logs_filtered = error_logs_filtered.filter(created_at__gte=start_date)
+
+    total_errors = error_logs_filtered.count()
+    error_404_count = error_logs_filtered.filter(error_type='404').count()
+    error_500_count = error_logs_filtered.filter(error_type='500').count()
+    error_403_count = error_logs_filtered.filter(error_type='403').count()
+
+    # Most common error paths
+    top_error_paths = error_logs_filtered.values('path', 'error_type').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+
+    # Recent errors (last 10)
+    recent_errors = error_logs_filtered.select_related('user').order_by('-created_at')[:10]
+
     # Get Turso database usage metrics
     import os
     from .turso_api_client import TursoAPIClient
@@ -3609,6 +3762,35 @@ def developer_data(request):
         'turso_usage': turso_stats,
         'turso_limits': turso_limits,
         'turso_org_slug': os.environ.get('TURSO_ORG_SLUG', 'unknown'),
+        # Peak usage times
+        'hour_labels': hour_labels,
+        'hour_counts': hour_counts,
+        'day_labels': day_labels,
+        'day_counts': day_counts,
+        # Session metrics
+        'avg_session_duration': round(avg_session_duration, 2),
+        # User retention
+        'dau': dau,
+        'wau': wau,
+        'mau': mau,
+        'new_users_period': new_users_period,
+        'returning_users': returning_users,
+        # Queue metrics
+        'avg_queue_wait_time': round(avg_queue_wait_time, 2),
+        'queue_completion_rate': round(queue_completion_rate, 1),
+        'popular_machines': popular_machines,
+        # Top users
+        'top_10_users': top_10_users,
+        # Feedback response time
+        'avg_feedback_review_time': round(avg_feedback_review_time, 2),
+        'avg_feedback_completion_time': round(avg_feedback_completion_time, 2),
+        # Error statistics
+        'total_errors': total_errors,
+        'error_404_count': error_404_count,
+        'error_500_count': error_500_count,
+        'error_403_count': error_403_count,
+        'top_error_paths': top_error_paths,
+        'recent_errors': recent_errors,
     }
 
     return render(request, 'calendarEditor/admin/developer_data.html', context)
