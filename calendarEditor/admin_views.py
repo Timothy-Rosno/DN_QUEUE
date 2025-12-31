@@ -3094,15 +3094,25 @@ def admin_import_database(request):
 def developer_tasks(request):
     """Developer task management page - view and manage feedback."""
     from .models import Feedback
+    from django.db.models import Case, When, IntegerField
 
     # Only developers and superusers can access
     if not (hasattr(request.user, 'profile') and request.user.profile.is_developer) and not request.user.is_superuser:
         messages.error(request, 'Developer access required.')
         return redirect('admin_dashboard')
 
+    # Priority ordering: critical (0) > high (1) > medium (2) > low (3)
+    priority_order = Case(
+        When(priority='critical', then=0),
+        When(priority='high', then=1),
+        When(priority='medium', then=2),
+        When(priority='low', then=3),
+        output_field=IntegerField(),
+    )
+
     # Separate feedback by status
-    new_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='new').order_by('-created_at')
-    reviewed_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='reviewed').order_by('-created_at')
+    new_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='new').order_by(priority_order, '-created_at')
+    reviewed_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='reviewed').order_by(priority_order, '-created_at')
     completed_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='completed').order_by('-created_at')
 
     context = {
@@ -3371,18 +3381,40 @@ def developer_data(request):
             elif device_info.get('is_pc'):
                 desktop_count += 1
 
-    # Browser breakdown
+    # Browser breakdown (filter out generic/non-browser names)
     browser_counts = {}
+    browser_device_breakdown = {}  # Track browser × device type
+
+    # List of generic terms to exclude
+    generic_browsers = {'Mobile', 'Other', 'Unknown', 'Generic', 'Tablet', 'Desktop', 'Android', 'iPhone', 'iPad'}
+
     for pv in device_views:
         device_info = pv.device_info
         if isinstance(device_info, dict):
             browser = device_info.get('browser', 'Unknown')
             # Extract browser family (e.g., "Chrome 120.0.0" -> "Chrome")
             browser_family = browser.split()[0] if browser else 'Unknown'
-            browser_counts[browser_family] = browser_counts.get(browser_family, 0) + 1
+
+            # Filter out generic names
+            if browser_family not in generic_browsers:
+                browser_counts[browser_family] = browser_counts.get(browser_family, 0) + 1
+
+                # Determine device type
+                device_type = 'Desktop'
+                if device_info.get('is_mobile'):
+                    device_type = 'Mobile'
+                elif device_info.get('is_tablet'):
+                    device_type = 'Tablet'
+
+                # Track browser × device combination
+                key = f"{browser_family} on {device_type}"
+                browser_device_breakdown[key] = browser_device_breakdown.get(key, 0) + 1
 
     # Sort browsers by count
     top_browsers = sorted(browser_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+
+    # Sort browser-device combinations by count
+    browser_device_stats = sorted(browser_device_breakdown.items(), key=lambda x: x[1], reverse=True)[:10]
 
     # User type breakdown
     user_types = {
@@ -3409,6 +3441,7 @@ def developer_data(request):
             'tablet': tablet_count,
         },
         'top_browsers': top_browsers,
+        'browser_device_stats': browser_device_stats,
     }
 
     return render(request, 'calendarEditor/admin/developer_data.html', context)

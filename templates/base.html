@@ -453,7 +453,14 @@
                         <li><a href="{% url 'admin_dashboard' %}" style="color: #f39c12; font-weight: bold;">Admin</a></li>
                     {% endif %}
                     {% if user.profile.is_developer or user.is_superuser %}
-                        <li><a href="{% url 'developer_tasks' %}" style="color: #9b59b6; font-weight: bold;">Tasks</a></li>
+                        <li><a href="{% url 'developer_tasks' %}" style="color: #9b59b6; font-weight: bold;">
+                            Tasks
+                            {% load developer_tasks_tags %}
+                            {% get_active_tasks_count as active_tasks_count %}
+                            {% if active_tasks_count > 0 %}
+                                <span class="notification-badge" style="background: #9b59b6;">{{ active_tasks_count }}</span>
+                            {% endif %}
+                        </a></li>
                         <li><a href="{% url 'developer_data' %}" style="color: #9b59b6; font-weight: bold;">Data</a></li>
                     {% endif %}
                     <li><a href="{% url 'logout' %}">Logout ({{ user.username }})</a></li>

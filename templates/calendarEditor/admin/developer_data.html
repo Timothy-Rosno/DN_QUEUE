@@ -68,11 +68,11 @@
                         <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6; font-size: 0.85rem; color: #7f8c8d;">{{ user_data.os }}</td>
                         <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6; font-size: 0.85rem;">
                             {% if user_data.device_type == 'Mobile' %}
-                                <span style="color: #e74c3c;">📱 {{ user_data.device_type }}</span>
+                                <span style="color: #e74c3c;">{{ user_data.device_type }}</span>
                             {% elif user_data.device_type == 'Tablet' %}
-                                <span style="color: #f39c12;">📱 {{ user_data.device_type }}</span>
+                                <span style="color: #f39c12;">{{ user_data.device_type }}</span>
                             {% else %}
-                                <span style="color: #3498db;">🖥️ {{ user_data.device_type }}</span>
+                                <span style="color: #3498db;">{{ user_data.device_type }}</span>
                             {% endif %}
                         </td>
                         <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6; font-size: 0.85rem; font-family: monospace; color: #7f8c8d;">{{ user_data.ip_address }}</td>
@@ -172,7 +172,7 @@
         </p>
     </div>
 
-    <!-- Charts Row -->
+    <!-- Charts Row 1 -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
         <div class="card">
             <h3>Top Pages {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
@@ -185,6 +185,14 @@
         <div class="card">
             <h3>Device Breakdown {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
             <canvas id="deviceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Charts Row 2: Browser × Device Type -->
+    <div style="margin-bottom: 1.5rem;">
+        <div class="card">
+            <h3>Browser × Device Type {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
+            <canvas id="browserDeviceChart"></canvas>
         </div>
     </div>
 
@@ -289,6 +297,36 @@ new Chart(deviceCtx, {
             legend: {
                 position: 'bottom',
             }
+        }
+    }
+});
+
+// Browser × Device Type Chart
+const browserDeviceCtx = document.getElementById('browserDeviceChart').getContext('2d');
+new Chart(browserDeviceCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for combo, count in browser_device_stats %}'{{ combo }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Page Views',
+            data: [{% for combo, count in browser_device_stats %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: [
+                '#3498db', '#e74c3c', '#f39c12', '#9b59b6', '#27ae60',
+                '#16a085', '#2980b9', '#8e44ad', '#c0392b', '#d35400'
+            ],
+            borderColor: '#fff',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            x: { beginAtZero: true }
         }
     }
 });

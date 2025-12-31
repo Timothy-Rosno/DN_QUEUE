@@ -71,10 +71,10 @@
         <p style="color: #7f8c8d; padding: 1rem; background: #f8f9fa; border-radius: 4px;">No new tasks</p>
     {% endif %}
 
-    <!-- REVIEWED TASKS (Collapsible) -->
+    <!-- CURRENT TASKS (Collapsible) -->
     <h2 style="margin-top: 2rem; margin-bottom: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;" onclick="toggleSection('reviewed')">
         <span id="reviewed-arrow" style="transition: transform 0.2s;">▶</span>
-        Reviewed Tasks ({{ reviewed_feedback|length }})
+        Current Tasks ({{ reviewed_feedback|length }})
     </h2>
     <div id="reviewed-section" style="display: none;">
         {% if reviewed_feedback %}
@@ -102,15 +102,17 @@
                                 <p><strong>Replication:</strong> {{ feedback.replication_steps }}</p>
                             {% endif %}
                             {% if feedback.console_logs %}
+                                <p><strong>Console Logs:</strong></p>
                                 <pre style="background: #2c3e50; color: #ecf0f1; padding: 0.5rem; border-radius: 4px; overflow-x: auto; font-size: 0.8rem;">{{ feedback.console_logs }}</pre>
                             {% endif %}
+                            <p><strong>Device:</strong> {{ feedback.device_info.browser }} on {{ feedback.device_info.os }} ({{ feedback.device_info.device }})</p>
                         </div>
                     </div>
                 </div>
             </div>
             {% endfor %}
         {% else %}
-            <p style="color: #7f8c8d; padding: 1rem; background: #f8f9fa; border-radius: 4px;">No reviewed tasks</p>
+            <p style="color: #7f8c8d; padding: 1rem; background: #f8f9fa; border-radius: 4px;">No current tasks</p>
         {% endif %}
     </div>
 
@@ -141,6 +143,14 @@
                             {% if feedback.developer_notes %}
                                 <p><strong>Developer Notes:</strong> {{ feedback.developer_notes }}</p>
                             {% endif %}
+                            {% if feedback.replication_steps %}
+                                <p><strong>Replication:</strong> {{ feedback.replication_steps }}</p>
+                            {% endif %}
+                            {% if feedback.console_logs %}
+                                <p><strong>Console Logs:</strong></p>
+                                <pre style="background: #2c3e50; color: #ecf0f1; padding: 0.5rem; border-radius: 4px; overflow-x: auto; font-size: 0.8rem;">{{ feedback.console_logs }}</pre>
+                            {% endif %}
+                            <p><strong>Device:</strong> {{ feedback.device_info.browser }} on {{ feedback.device_info.os }} ({{ feedback.device_info.device }})</p>
                         </div>
                     </div>
                 </div>
