@@ -3579,11 +3579,24 @@ def developer_data(request):
     }
 
     # === PEAK USAGE TIMES ===
-    from django.db.models.functions import ExtractHour, ExtractWeekDay
+    # Use SQLite's strftime function (Turso-compatible)
+    from django.db.models import Func, IntegerField
 
-    # Hour of day breakdown
+    # Custom function for extracting hour using SQLite's strftime
+    class Hour(Func):
+        function = 'CAST'
+        template = "%(function)s(strftime('%%H', %(expressions)s) AS INTEGER)"
+        output_field = IntegerField()
+
+    # Custom function for extracting weekday using SQLite's strftime
+    class Weekday(Func):
+        function = 'CAST'
+        template = "%(function)s(strftime('%%w', %(expressions)s) AS INTEGER)"
+        output_field = IntegerField()
+
+    # Hour of day breakdown (0-23)
     hourly_views = page_views_filtered.annotate(
-        hour=ExtractHour('created_at')
+        hour=Hour('created_at')
     ).values('hour').annotate(
         count=Count('id')
     ).order_by('hour')
@@ -3591,14 +3604,15 @@ def developer_data(request):
     hour_labels = [f"{h['hour']}:00" for h in hourly_views]
     hour_counts = [h['count'] for h in hourly_views]
 
-    # Day of week breakdown (1=Sunday, 7=Saturday)
+    # Day of week breakdown (0=Sunday, 6=Saturday in SQLite)
     daily_views = page_views_filtered.annotate(
-        weekday=ExtractWeekDay('created_at')
+        weekday=Weekday('created_at')
     ).values('weekday').annotate(
         count=Count('id')
     ).order_by('weekday')
 
-    day_map = {1: 'Sunday', 2: 'Monday', 3: 'Tuesday', 4: 'Wednesday', 5: 'Thursday', 6: 'Friday', 7: 'Saturday'}
+    # SQLite strftime %w returns 0=Sunday, 6=Saturday
+    day_map = {0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday'}
     day_labels = [day_map.get(d['weekday'], 'Unknown') for d in daily_views]
     day_counts = [d['count'] for d in daily_views]
 
