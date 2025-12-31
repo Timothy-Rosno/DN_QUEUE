@@ -540,6 +540,12 @@ class ArchivedMeasurementForm(forms.ModelForm):
 class FeedbackForm(forms.ModelForm):
     """Form for submitting user feedback (bugs, feature requests, opinions)."""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set empty_label for feedback_type dropdown
+        self.fields['feedback_type'].empty_label = "Select feedback type..."
+        self.fields['feedback_type'].required = True
+
     class Meta:
         model = Feedback
         fields = [
@@ -550,7 +556,7 @@ class FeedbackForm(forms.ModelForm):
             'console_logs'
         ]
         widgets = {
-            'feedback_type': forms.RadioSelect(),
+            'feedback_type': forms.Select(attrs={'id': 'id_feedback_type'}),
             'title': forms.TextInput(attrs={
                 'class': 'char-counter-input',
                 'maxlength': '150',

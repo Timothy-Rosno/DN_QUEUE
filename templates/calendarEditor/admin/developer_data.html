@@ -5,25 +5,35 @@
 
 {% block content %}
 <div class="card">
-    <h1>Developer Analytics Dashboard</h1>
-    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary" style="margin-bottom: 1rem;">← Back to Dashboard</a>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h1 style="margin: 0;">Developer Analytics Dashboard</h1>
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; align-items: center;">
+        <span style="font-weight: bold; margin-right: 0.5rem;">Time Range:</span>
+        <a href="?days=7" class="btn {% if days_filter == 7 %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 0.5rem 1rem;">Last 7 Days</a>
+        <a href="?days=30" class="btn {% if days_filter == 30 %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 0.5rem 1rem;">Last 30 Days</a>
+        <a href="?days=0" class="btn {% if days_filter == 0 %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 0.5rem 1rem;">All Time</a>
+    </div>
 
     <!-- Summary Stats -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
         <div class="card" style="text-align: center; background: #3498db; color: white;">
             <h2 style="margin: 0; font-size: 2.5rem;">{{ users_online }}</h2>
-            <p style="margin: 0.5rem 0 0 0;">Users Online</p>
+            <p style="margin: 0.5rem 0 0 0;">Users Online Now</p>
             <small>(last 15 min)</small>
         </div>
         <div class="card" style="text-align: center; background: #27ae60; color: white;">
-            <h2 style="margin: 0; font-size: 2.5rem;">{{ page_views_week }}</h2>
+            <h2 style="margin: 0; font-size: 2.5rem;">{{ page_views_period }}</h2>
             <p style="margin: 0.5rem 0 0 0;">Page Views</p>
-            <small>(last 7 days)</small>
+            <small>{% if days_filter == 0 %}(all time){% elif days_filter == 7 %}(last 7 days){% else %}(last 30 days){% endif %} / {{ page_views_all_time }} total</small>
         </div>
         <div class="card" style="text-align: center; background: #f39c12; color: white;">
-            <h2 style="margin: 0; font-size: 2.5rem;">{{ queue_stats.total_week }}</h2>
+            <h2 style="margin: 0; font-size: 2.5rem;">{{ queue_stats.total_period }}</h2>
             <p style="margin: 0.5rem 0 0 0;">Queue Requests</p>
-            <small>(last 7 days)</small>
+            <small>{% if days_filter == 0 %}(all time){% elif days_filter == 7 %}(last 7 days){% else %}(last 30 days){% endif %} / {{ queue_stats.total_all_time }} total</small>
         </div>
         <div class="card" style="text-align: center; background: #9b59b6; color: white;">
             <h2 style="margin: 0; font-size: 2.5rem;">{{ feedback_stats.total }}</h2>
@@ -32,68 +42,158 @@
         </div>
     </div>
 
-    <!-- Charts Row 1 -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+    <!-- Currently Online Users -->
+    {% if online_users_data %}
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <h3>Currently Online Users ({{ online_users_data|length }})</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Username</th>
+                    <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Browser</th>
+                    <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Last Seen</th>
+                    <th style="padding: 0.75rem; text-align: center; border-bottom: 2px solid #dee2e6;">Page Views (15 min)</th>
+                    <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Roles</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user_data in online_users_data %}
+                <tr>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">{{ user_data.username }}</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6; font-size: 0.9rem; color: #7f8c8d;">{{ user_data.browser }}</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">{{ user_data.last_seen|timesince }} ago</td>
+                    <td style="padding: 0.75rem; text-align: center; border-bottom: 1px solid #dee2e6;">{{ user_data.page_count }}</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">
+                        {% for role in user_data.roles %}
+                            {% if role == 'Admin' %}
+                                <span style="background-color: #e74c3c; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-right: 0.25rem;">{{ role }}</span>
+                            {% elif role == 'Developer' %}
+                                <span style="background-color: #9b59b6; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-right: 0.25rem;">{{ role }}</span>
+                            {% elif role == 'Staff' %}
+                                <span style="background-color: #f39c12; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-right: 0.25rem;">{{ role }}</span>
+                            {% else %}
+                                <span style="background-color: #95a5a6; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-right: 0.25rem;">{{ role }}</span>
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Per-User Analytics -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <h3>Per-User Analytics (All Users)</h3>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th style="padding: 0.6rem; text-align: left; border-bottom: 2px solid #dee2e6;">Username</th>
+                        <th style="padding: 0.6rem; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>
+                        <th style="padding: 0.6rem; text-align: left; border-bottom: 2px solid #dee2e6;">Roles</th>
+                        <th style="padding: 0.6rem; text-align: center; border-bottom: 2px solid #dee2e6;">Status</th>
+                        <th style="padding: 0.6rem; text-align: left; border-bottom: 2px solid #dee2e6;">Last Seen</th>
+                        <th style="padding: 0.6rem; text-align: center; border-bottom: 2px solid #dee2e6;">Page Views<br><small>(period / all)</small></th>
+                        <th style="padding: 0.6rem; text-align: center; border-bottom: 2px solid #dee2e6;">Queue Entries<br><small>(period / all)</small></th>
+                        <th style="padding: 0.6rem; text-align: center; border-bottom: 2px solid #dee2e6;">Feedback<br><small>(period / all)</small></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user_stat in per_user_stats %}
+                    <tr {% if user_stat.is_online %}style="background-color: #e8f8f5;"{% endif %}>
+                        <td style="padding: 0.6rem; border-bottom: 1px solid #dee2e6;">{{ user_stat.username }}</td>
+                        <td style="padding: 0.6rem; border-bottom: 1px solid #dee2e6; font-size: 0.85rem;">{{ user_stat.email }}</td>
+                        <td style="padding: 0.6rem; border-bottom: 1px solid #dee2e6;">
+                            {% for role in user_stat.roles %}
+                                {% if role == 'Admin' %}
+                                    <span style="background-color: #e74c3c; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.2rem;">A</span>
+                                {% elif role == 'Developer' %}
+                                    <span style="background-color: #9b59b6; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.2rem;">D</span>
+                                {% elif role == 'Staff' %}
+                                    <span style="background-color: #f39c12; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.2rem;">S</span>
+                                {% endif %}
+                            {% empty %}
+                                <span style="color: #95a5a6; font-size: 0.85rem;">User</span>
+                            {% endfor %}
+                        </td>
+                        <td style="padding: 0.6rem; text-align: center; border-bottom: 1px solid #dee2e6;">
+                            {% if user_stat.is_online %}
+                                <span style="color: #27ae60; font-weight: bold;">●</span>
+                            {% else %}
+                                <span style="color: #95a5a6;">○</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.6rem; border-bottom: 1px solid #dee2e6; font-size: 0.85rem;">
+                            {% if user_stat.last_seen %}
+                                {{ user_stat.last_seen|timesince }} ago
+                            {% else %}
+                                <span style="color: #95a5a6;">Never</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.6rem; text-align: center; border-bottom: 1px solid #dee2e6;">
+                            <strong>{{ user_stat.page_views_period }}</strong> / {{ user_stat.page_views_all_time }}
+                        </td>
+                        <td style="padding: 0.6rem; text-align: center; border-bottom: 1px solid #dee2e6;">
+                            <strong>{{ user_stat.queue_entries_period }}</strong> / {{ user_stat.queue_entries_all_time }}
+                        </td>
+                        <td style="padding: 0.6rem; text-align: center; border-bottom: 1px solid #dee2e6;">
+                            <strong>{{ user_stat.feedback_submitted_period }}</strong> / {{ user_stat.feedback_submitted_all_time }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p style="color: #7f8c8d; margin-top: 1rem; font-size: 0.85rem;">
+            <strong>Legend:</strong>
+            <span style="color: #27ae60; font-weight: bold;">●</span> Online now |
+            <span style="color: #95a5a6;">○</span> Offline |
+            Green background = Currently online
+        </p>
+    </div>
+
+    <!-- Charts Row -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
         <div class="card">
-            <h3>Top Pages (Last 7 Days)</h3>
+            <h3>Top Pages {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
             <canvas id="topPagesChart"></canvas>
         </div>
         <div class="card">
-            <h3>Device Breakdown (Last 30 Days)</h3>
+            <h3>Top Browsers {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
+            <canvas id="browsersChart"></canvas>
+        </div>
+        <div class="card">
+            <h3>Device Breakdown {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
             <canvas id="deviceChart"></canvas>
         </div>
     </div>
 
-    <!-- User Stats Table -->
-    <div class="card">
-        <h3>User Statistics</h3>
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="background: #f8f9fa;">
-                    <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Metric</th>
-                    <th style="padding: 0.75rem; text-align: right; border-bottom: 2px solid #dee2e6;">Count</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">Total Users</td>
-                    <td style="padding: 0.75rem; text-align: right; border-bottom: 1px solid #dee2e6;">{{ user_types.total }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">Active Users (Last 7 Days)</td>
-                    <td style="padding: 0.75rem; text-align: right; border-bottom: 1px solid #dee2e6;">{{ user_types.active_week }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">Staff Members</td>
-                    <td style="padding: 0.75rem; text-align: right; border-bottom: 1px solid #dee2e6;">{{ user_types.staff }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 0.75rem;">Developers</td>
-                    <td style="padding: 0.75rem; text-align: right;">{{ user_types.developers }}</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Queue & Feedback Stats -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+    <!-- Detailed Stats Row -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
         <div class="card">
             <h3>Queue Activity</h3>
-            <p><strong>Last 7 Days:</strong> {{ queue_stats.total_week }} requests</p>
-            <p><strong>Last 30 Days:</strong> {{ queue_stats.total_month }} requests</p>
-            <p><strong>Completed (Week):</strong> {{ queue_stats.completed_week }} entries</p>
+            <p><strong>Period:</strong> {{ queue_stats.total_period }} requests</p>
+            <p><strong>All Time:</strong> {{ queue_stats.total_all_time }} requests</p>
+            <p><strong>Completed (Period):</strong> {{ queue_stats.completed_period }} entries</p>
+            <p><strong>Completed (All Time):</strong> {{ queue_stats.completed_all_time }} entries</p>
         </div>
         <div class="card">
             <h3>Feedback Status</h3>
             <p style="color: #e74c3c;"><strong>New:</strong> {{ feedback_stats.new }}</p>
             <p style="color: #f39c12;"><strong>Reviewed:</strong> {{ feedback_stats.reviewed }}</p>
             <p style="color: #27ae60;"><strong>Completed:</strong> {{ feedback_stats.completed }}</p>
+            <p><strong>Total:</strong> {{ feedback_stats.total }}</p>
+        </div>
+        <div class="card">
+            <h3>User Statistics</h3>
+            <p><strong>Total Users:</strong> {{ user_types.total }}</p>
+            <p><strong>Active (Period):</strong> {{ user_types.active_period }}</p>
+            <p><strong>Staff Members:</strong> {{ user_types.staff }}</p>
+            <p><strong>Developers:</strong> {{ user_types.developers }}</p>
         </div>
     </div>
-
-    <p style="color: #7f8c8d; text-align: center; margin-top: 2rem; font-size: 0.9rem;">
-        Auto-refreshing every 30 seconds...
-    </p>
 </div>
 
 <!-- Chart.js Library -->
@@ -127,15 +227,15 @@ new Chart(topPagesCtx, {
     }
 });
 
-// Device Chart
-const deviceCtx = document.getElementById('deviceChart').getContext('2d');
-new Chart(deviceCtx, {
-    type: 'pie',
+// Browsers Chart
+const browsersCtx = document.getElementById('browsersChart').getContext('2d');
+new Chart(browsersCtx, {
+    type: 'doughnut',
     data: {
-        labels: ['Desktop', 'Mobile'],
+        labels: [{% for browser, count in top_browsers %}'{{ browser }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
         datasets: [{
-            data: [{{ desktop_count }}, {{ mobile_count }}],
-            backgroundColor: ['#3498db', '#e74c3c'],
+            data: [{% for browser, count in top_browsers %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: ['#3498db', '#e74c3c', '#f39c12', '#9b59b6', '#27ae60'],
             borderWidth: 2,
             borderColor: '#fff'
         }]
@@ -151,9 +251,28 @@ new Chart(deviceCtx, {
     }
 });
 
-// Auto-refresh every 30 seconds
-setTimeout(function() {
-    location.reload();
-}, 30000);
+// Device Chart
+const deviceCtx = document.getElementById('deviceChart').getContext('2d');
+new Chart(deviceCtx, {
+    type: 'pie',
+    data: {
+        labels: ['Desktop', 'Mobile', 'Tablet'],
+        datasets: [{
+            data: [{{ device_breakdown.desktop }}, {{ device_breakdown.mobile }}, {{ device_breakdown.tablet }}],
+            backgroundColor: ['#3498db', '#e74c3c', '#f39c12'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+            }
+        }
+    }
+});
 </script>
 {% endblock %}

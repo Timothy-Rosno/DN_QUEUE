@@ -139,10 +139,4 @@ urlpatterns = [
     # Developer role promotions (superuser only)
     path('admin-users/promote-developer/<int:user_id>/', admin_views.promote_to_developer, name='promote_to_developer'),
     path('admin-users/demote-developer/<int:user_id>/', admin_views.demote_from_developer, name='demote_from_developer'),
-
-    # LEGACY ROUTES - Scheduled for removal (Old ScheduleEntry system)
-    path('schedule/', views.schedule_list, name='schedule'),  # LEGACY: Old schedule list view
-    path('create/', views.create_schedule, name='create_schedule'),  # LEGACY: Create schedule
-    path('edit/<int:pk>/', views.edit_schedule, name='edit_schedule'),  # LEGACY: Edit schedule
-    path('delete/<int:pk>/', views.delete_schedule, name='delete_schedule'),  # LEGACY: Delete schedule
 ]

@@ -171,12 +171,12 @@
                                     {% if user_item.profile.is_developer %}
                                         <form method="post" action="{% url 'demote_from_developer' user_item.id %}" style="display: inline; margin: 0;">
                                             {% csrf_token %}
-                                            <button type="submit" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;" title="Demote from developer to staff">Demote from Developer</button>
+                                            <button type="submit" class="btn btn-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Demote from developer to staff">↓</button>
                                         </form>
                                     {% else %}
                                         <form method="post" action="{% url 'promote_to_developer' user_item.id %}" style="display: inline; margin: 0;">
                                             {% csrf_token %}
-                                            <button type="submit" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background-color: #9b59b6; color: white;" title="Grant access to Tasks and Data pages">Promote to Developer</button>
+                                            <button type="submit" class="btn" style="padding: 0.15rem 0.4rem; font-size: 0.75rem; background-color: #9b59b6; color: white;" title="Promote to developer">↑</button>
                                         </form>
                                     {% endif %}
                                 {% else %}

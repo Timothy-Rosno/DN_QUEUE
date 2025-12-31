@@ -3167,9 +3167,9 @@ def update_feedback_status(request, feedback_id):
 @staff_member_required
 @never_cache
 def developer_data(request):
-    """Developer analytics dashboard."""
+    """Developer analytics dashboard with comprehensive per-user and global data."""
     from .models import PageView, UserActivity, QueueEntry, Feedback
-    from django.db.models import Count
+    from django.db.models import Count, Max, Q
     from datetime import timedelta
 
     # Only developers and superusers can access
@@ -3178,75 +3178,215 @@ def developer_data(request):
         return redirect('admin_dashboard')
 
     now = timezone.now()
-    week_ago = now - timedelta(days=7)
-    month_ago = now - timedelta(days=30)
 
-    # Users online (active in last 15 minutes)
+    # Get date range from request (default to last 30 days for filtered views)
+    days_filter = int(request.GET.get('days', 30))
+    if days_filter == 0:  # All time
+        start_date = None
+    else:
+        start_date = now - timedelta(days=days_filter)
+
+    # === CURRENTLY ONLINE USERS ===
     online_threshold = now - timedelta(minutes=15)
-    users_online = PageView.objects.filter(
-        created_at__gte=online_threshold
-    ).values('session_key').distinct().count()
+    online_users_data = []
 
-    # Page views stats
-    page_views_week = PageView.objects.filter(created_at__gte=week_ago).count()
-    page_views_month = PageView.objects.filter(created_at__gte=month_ago).count()
+    # Get users with recent page views
+    recent_views = PageView.objects.filter(
+        created_at__gte=online_threshold,
+        user__isnull=False
+    ).values('user').annotate(
+        last_seen=Max('created_at'),
+        page_count=Count('id')
+    )
 
-    # Top pages (last 7 days)
-    top_pages = PageView.objects.filter(
-        created_at__gte=week_ago
-    ).values('page_title').annotate(
+    for view_data in recent_views:
+        user = User.objects.get(id=view_data['user'])
+        # Get most recent browser from recent page views
+        latest_view = PageView.objects.filter(
+            user=user,
+            created_at__gte=online_threshold
+        ).order_by('-created_at').first()
+
+        browser = 'Unknown'
+        if latest_view and isinstance(latest_view.device_info, dict):
+            browser_full = latest_view.device_info.get('browser', 'Unknown')
+            browser = browser_full.split()[0] if browser_full else 'Unknown'
+
+        # Build roles list
+        roles = []
+        if user.is_superuser:
+            roles.append('Admin')
+        if hasattr(user, 'profile') and user.profile.is_developer:
+            roles.append('Developer')
+        elif user.is_staff:
+            roles.append('Staff')
+        if not roles:
+            roles.append('User')
+
+        online_users_data.append({
+            'username': user.username,
+            'last_seen': view_data['last_seen'],
+            'page_count': view_data['page_count'],
+            'browser': browser,
+            'roles': roles,
+        })
+
+    # Sort by last seen (most recent first)
+    online_users_data.sort(key=lambda x: x['last_seen'], reverse=True)
+
+    # === PER-USER ANALYTICS ===
+    all_users = User.objects.select_related('profile').all()
+    per_user_stats = []
+
+    for user in all_users:
+        # Get user's page views
+        user_views = PageView.objects.filter(user=user)
+        if start_date:
+            user_views_filtered = user_views.filter(created_at__gte=start_date)
+        else:
+            user_views_filtered = user_views
+
+        # Get last activity
+        last_activity = user_views.aggregate(last_seen=Max('created_at'))['last_seen']
+
+        # Get queue entries
+        user_queue = QueueEntry.objects.filter(user=user)
+        if start_date:
+            user_queue_filtered = user_queue.filter(created_at__gte=start_date)
+        else:
+            user_queue_filtered = user_queue
+
+        # Get feedback submitted
+        user_feedback = Feedback.objects.filter(user=user)
+        if start_date:
+            user_feedback_filtered = user_feedback.filter(created_at__gte=start_date)
+        else:
+            user_feedback_filtered = user_feedback
+
+        # Build roles list
+        roles = []
+        if user.is_superuser:
+            roles.append('Admin')
+        if hasattr(user, 'profile') and user.profile.is_developer:
+            roles.append('Developer')
+        elif user.is_staff:
+            roles.append('Staff')
+
+        per_user_stats.append({
+            'username': user.username,
+            'email': user.email,
+            'roles': roles,
+            'last_seen': last_activity,
+            'page_views_period': user_views_filtered.count(),
+            'page_views_all_time': user_views.count(),
+            'queue_entries_period': user_queue_filtered.count(),
+            'queue_entries_all_time': user_queue.count(),
+            'feedback_submitted_period': user_feedback_filtered.count(),
+            'feedback_submitted_all_time': user_feedback.count(),
+            'is_online': last_activity and last_activity >= online_threshold,
+        })
+
+    # Sort by last seen (most recent first)
+    per_user_stats.sort(key=lambda x: x['last_seen'] if x['last_seen'] else timezone.datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+
+    # === GLOBAL ANALYTICS ===
+    # Page views
+    page_views_query = PageView.objects.all()
+    if start_date:
+        page_views_filtered = page_views_query.filter(created_at__gte=start_date)
+    else:
+        page_views_filtered = page_views_query
+
+    page_views_all_time = page_views_query.count()
+    page_views_period = page_views_filtered.count()
+
+    # Top pages
+    top_pages = page_views_filtered.values('page_title').annotate(
         count=Count('id')
     ).order_by('-count')[:10]
 
-    # Queue request stats
+    # Queue stats
+    queue_all = QueueEntry.objects.all()
+    if start_date:
+        queue_filtered = queue_all.filter(created_at__gte=start_date)
+    else:
+        queue_filtered = queue_all
+
     queue_stats = {
-        'total_week': QueueEntry.objects.filter(created_at__gte=week_ago).count(),
-        'total_month': QueueEntry.objects.filter(created_at__gte=month_ago).count(),
-        'completed_week': QueueEntry.objects.filter(
-            status='completed',
-            completed_at__gte=week_ago
-        ).count(),
+        'total_period': queue_filtered.count(),
+        'total_all_time': queue_all.count(),
+        'completed_period': queue_filtered.filter(status='completed').count(),
+        'completed_all_time': queue_all.filter(status='completed').count(),
     }
 
     # Feedback stats
+    feedback_all = Feedback.objects.all()
+    if start_date:
+        feedback_filtered = feedback_all.filter(created_at__gte=start_date)
+    else:
+        feedback_filtered = feedback_all
+
     feedback_stats = {
-        'total': Feedback.objects.count(),
-        'new': Feedback.objects.filter(status='new').count(),
-        'reviewed': Feedback.objects.filter(status='reviewed').count(),
-        'completed': Feedback.objects.filter(status='completed').count(),
+        'total': feedback_all.count(),
+        'total_period': feedback_filtered.count(),
+        'new': feedback_all.filter(status='new').count(),
+        'reviewed': feedback_all.filter(status='reviewed').count(),
+        'completed': feedback_all.filter(status='completed').count(),
     }
 
-    # User activity breakdown
-    user_types = {
-        'total': User.objects.count(),
-        'active_week': PageView.objects.filter(
-            created_at__gte=week_ago,
-            user__isnull=False
-        ).values('user').distinct().count(),
-        'staff': User.objects.filter(is_staff=True).count(),
-        'developers': UserProfile.objects.filter(is_developer=True).count(),
-    }
-
-    # Device breakdown (last 30 days)
-    device_views = PageView.objects.filter(created_at__gte=month_ago).values('device_info')
+    # Device breakdown
+    device_views = page_views_filtered.all()
     mobile_count = 0
     desktop_count = 0
+    tablet_count = 0
     for pv in device_views:
-        if pv.get('device_info', {}).get('is_mobile'):
-            mobile_count += 1
-        elif pv.get('device_info', {}).get('is_pc'):
-            desktop_count += 1
+        device_info = pv.device_info
+        if isinstance(device_info, dict):
+            if device_info.get('is_mobile'):
+                mobile_count += 1
+            elif device_info.get('is_tablet'):
+                tablet_count += 1
+            elif device_info.get('is_pc'):
+                desktop_count += 1
+
+    # Browser breakdown
+    browser_counts = {}
+    for pv in device_views:
+        device_info = pv.device_info
+        if isinstance(device_info, dict):
+            browser = device_info.get('browser', 'Unknown')
+            # Extract browser family (e.g., "Chrome 120.0.0" -> "Chrome")
+            browser_family = browser.split()[0] if browser else 'Unknown'
+            browser_counts[browser_family] = browser_counts.get(browser_family, 0) + 1
+
+    # Sort browsers by count
+    top_browsers = sorted(browser_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+
+    # User type breakdown
+    user_types = {
+        'total': User.objects.count(),
+        'staff': User.objects.filter(is_staff=True).count(),
+        'developers': UserProfile.objects.filter(is_developer=True).count(),
+        'active_period': page_views_filtered.filter(user__isnull=False).values('user').distinct().count(),
+    }
 
     context = {
-        'users_online': users_online,
-        'page_views_week': page_views_week,
-        'page_views_month': page_views_month,
+        'days_filter': days_filter,
+        'online_users_data': online_users_data,
+        'users_online': len(online_users_data),
+        'per_user_stats': per_user_stats,
+        'page_views_period': page_views_period,
+        'page_views_all_time': page_views_all_time,
         'top_pages': top_pages,
         'queue_stats': queue_stats,
         'feedback_stats': feedback_stats,
         'user_types': user_types,
-        'mobile_count': mobile_count,
-        'desktop_count': desktop_count,
+        'device_breakdown': {
+            'mobile': mobile_count,
+            'desktop': desktop_count,
+            'tablet': tablet_count,
+        },
+        'top_browsers': top_browsers,
     }
 
     return render(request, 'calendarEditor/admin/developer_data.html', context)
