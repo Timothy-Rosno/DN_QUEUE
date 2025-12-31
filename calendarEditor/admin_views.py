@@ -121,11 +121,11 @@ def admin_users(request):
     # OPTIMIZED: Single aggregated query instead of N+1 queries
     all_users = User.objects.select_related('profile').annotate(
         page_views_period=Count(
-            'pageview_set',
-            filter=Q(pageview_set__created_at__gte=start_date) if start_date else Q()
+            'pageview',
+            filter=Q(pageview__created_at__gte=start_date) if start_date else Q()
         ),
-        page_views_all_time=Count('pageview_set'),
-        last_seen=Max('pageview_set__created_at'),
+        page_views_all_time=Count('pageview'),
+        last_seen=Max('pageview__created_at'),
         queue_entries_period=Count(
             'queue_entries',
             filter=Q(queue_entries__created_at__gte=start_date) if start_date else Q()
@@ -3394,20 +3394,20 @@ def developer_data(request):
 
     # Get all users with aggregated stats
     all_users = User.objects.select_related('profile').annotate(
-        # Page view stats (using pageview_set since PageView has no related_name)
+        # Page view stats
         page_views_period=Count(
-            'pageview_set',
-            filter=Q(pageview_set__created_at__gte=start_date) if start_date else Q()
+            'pageview',
+            filter=Q(pageview__created_at__gte=start_date) if start_date else Q()
         ),
-        page_views_all_time=Count('pageview_set'),
-        last_seen=Max('pageview_set__created_at'),
-        # Queue entry stats (using queue_entries related_name)
+        page_views_all_time=Count('pageview'),
+        last_seen=Max('pageview__created_at'),
+        # Queue entry stats
         queue_entries_period=Count(
             'queue_entries',
             filter=Q(queue_entries__created_at__gte=start_date) if start_date else Q()
         ),
         queue_entries_all_time=Count('queue_entries'),
-        # Feedback stats (using feedback_submissions related_name)
+        # Feedback stats
         feedback_submitted_period=Count(
             'feedback_submissions',
             filter=Q(feedback_submissions__created_at__gte=start_date) if start_date else Q()
