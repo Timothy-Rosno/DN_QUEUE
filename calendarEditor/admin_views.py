@@ -3290,7 +3290,7 @@ def clear_all_completed_feedback(request):
 def developer_data(request):
     """Developer analytics dashboard with comprehensive per-user and global data."""
     from .models import PageView, UserActivity, QueueEntry, Feedback
-    from django.db.models import Count, Max, Q
+    from django.db.models import Count, Max, Min, Q
     from datetime import timedelta
 
     # Only developers and superusers can access
@@ -3619,8 +3619,8 @@ def developer_data(request):
     # === SESSION DURATION ===
     # Calculate average session duration
     sessions = page_views_filtered.values('session_key').annotate(
-        first_view=models.Min('created_at'),
-        last_view=models.Max('created_at'),
+        first_view=Min('created_at'),
+        last_view=Max('created_at'),
         view_count=Count('id')
     ).filter(view_count__gt=1)  # Only sessions with multiple views
 
