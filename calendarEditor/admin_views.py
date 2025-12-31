@@ -3475,12 +3475,13 @@ def developer_data(request):
     page_views_period = page_views_filtered.count()
 
     # API endpoints to exclude from top pages (tracked separately)
-    api_endpoint_patterns = ['api/machine-status', 'notifications/api/list']
+    api_endpoint_patterns = ['api/machine-status', 'notifications/api/list', 'schedule/api']
 
     # Count API endpoint hits using contains
     api_hits = {}
     api_hits['API Machine Status'] = page_views_filtered.filter(path__contains='api/machine-status').count()
     api_hits['Notifications API'] = page_views_filtered.filter(path__contains='notifications/api/list').count()
+    api_hits['Schedule API'] = page_views_filtered.filter(path__contains='schedule/api').count()
 
     # Top pages (excluding API endpoints using Q objects for OR conditions)
     top_pages_qs = page_views_filtered

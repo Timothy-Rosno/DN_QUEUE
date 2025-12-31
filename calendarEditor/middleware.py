@@ -326,9 +326,17 @@ class ErrorLoggingMiddleware:
             import traceback
             from .models import ErrorLog
 
-            # Ensure session exists
-            if not request.session.session_key:
-                request.session.create()
+            # Get session key safely
+            session_key = ''
+            try:
+                if hasattr(request, 'session'):
+                    session_key = request.session.session_key or ''
+                    if not session_key and hasattr(request.session, 'create'):
+                        request.session.create()
+                        session_key = request.session.session_key or ''
+            except Exception:
+                # Skip session if it causes issues
+                pass
 
             # Extract IP address
             x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -338,8 +346,8 @@ class ErrorLoggingMiddleware:
                 ip_address = request.META.get('REMOTE_ADDR', None)
 
             ErrorLog.objects.create(
-                user=request.user if request.user.is_authenticated else None,
-                session_key=request.session.session_key or '',
+                user=request.user if hasattr(request, 'user') and request.user.is_authenticated else None,
+                session_key=session_key,
                 error_type='exception',
                 path=request.path,
                 method=request.method,
@@ -361,9 +369,17 @@ class ErrorLoggingMiddleware:
         try:
             from .models import ErrorLog
 
-            # Ensure session exists
-            if not request.session.session_key:
-                request.session.create()
+            # Get session key safely
+            session_key = ''
+            try:
+                if hasattr(request, 'session'):
+                    session_key = request.session.session_key or ''
+                    if not session_key and hasattr(request.session, 'create'):
+                        request.session.create()
+                        session_key = request.session.session_key or ''
+            except Exception:
+                # Skip session if it causes issues
+                pass
 
             # Extract IP address
             x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -373,8 +389,8 @@ class ErrorLoggingMiddleware:
                 ip_address = request.META.get('REMOTE_ADDR', None)
 
             ErrorLog.objects.create(
-                user=request.user if request.user.is_authenticated else None,
-                session_key=request.session.session_key or '',
+                user=request.user if hasattr(request, 'user') and request.user.is_authenticated else None,
+                session_key=session_key,
                 error_type=error_type,
                 path=request.path,
                 method=request.method,

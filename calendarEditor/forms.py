@@ -572,28 +572,28 @@ class FeedbackForm(forms.ModelForm):
                 'rows': 4,
                 'class': 'char-counter-input',
                 'maxlength': '1000',
-                'placeholder': 'For bugs: Step 1, Step 2, etc.'
+                'placeholder': 'Step 1, Step 2, etc.'
             }),
             'console_logs': forms.Textarea(attrs={
                 'rows': 4,
                 'class': 'char-counter-input',
                 'maxlength': '2000',
-                'placeholder': 'For bugs: Paste F12 console logs here'
+                'placeholder': 'Paste F12 console logs here if available'
             }),
         }
         labels = {
             'feedback_type': 'Feedback Type',
             'title': 'Title',
             'description': 'Description',
-            'replication_steps': 'Steps to Reproduce (for bugs)',
-            'console_logs': 'Console Logs/Error Messages (for bugs)',
+            'replication_steps': 'Steps to Reproduce',
+            'console_logs': 'Console Logs/Error Messages',
         }
         help_texts = {
             'feedback_type': 'Select the type of feedback you want to submit',
-            'title': 'Brief summary (max 150 characters)',
-            'description': 'Detailed description of your feedback (max 1000 characters)',
-            'replication_steps': 'If reporting a bug, explain how to reproduce it',
-            'console_logs': 'If reporting a bug, paste any error messages from browser console (F12)',
+            'title': '(max 150 characters)',
+            'description': '(max 1000 characters)',
+            'replication_steps': 'Explain in sufficient detail how to reproduce the bug',
+            'console_logs': 'Copy and paste any error messages from the console (F12) if available',
         }
 
     def clean_title(self):
