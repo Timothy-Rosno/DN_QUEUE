@@ -177,6 +177,14 @@
         <div class="card">
             <h3>Top Pages {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
             <canvas id="topPagesChart"></canvas>
+
+            <!-- API Endpoint Hits (excluded from chart) -->
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                <h4 style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 0.5rem;">API Endpoints (excluded from chart):</h4>
+                {% for endpoint, count in api_hits.items %}
+                    <p style="margin: 0.25rem 0;"><strong>{{ endpoint }}:</strong> {{ count|floatformat:0 }} hits</p>
+                {% endfor %}
+            </div>
         </div>
         <div class="card">
             <h3>Top Browsers {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
@@ -252,17 +260,6 @@
             {% else %}
                 <p style="color: #e74c3c;">Unable to fetch Turso usage metrics. Please verify TURSO_ORG_SLUG and TURSO_API_TOKEN environment variables.</p>
             {% endif %}
-        </div>
-    </div>
-
-    <!-- API Endpoint Hits -->
-    <div style="margin-bottom: 1.5rem;">
-        <div class="card">
-            <h3>API Endpoint Hits {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
-            <p style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 1rem;">Frequently-polled endpoints excluded from Top Pages chart</p>
-            {% for endpoint, count in api_hits.items %}
-                <p><strong>{{ endpoint }}:</strong> {{ count|floatformat:0 }} hits</p>
-            {% endfor %}
         </div>
     </div>
 

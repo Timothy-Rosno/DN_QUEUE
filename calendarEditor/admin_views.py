@@ -139,10 +139,8 @@ def admin_users(request):
             distinct=True
         ),
         feedback_submitted_all_time=Count('feedback_submissions__id', distinct=True),
-    ).filter(
-        # Only include users with activity in the period
-        Q(page_views_period__gt=0) | Q(queue_entries_period__gt=0) | Q(feedback_submitted_period__gt=0)
     )
+    # Don't filter - show all users including those with 0 activity
 
     # Build per-user stats from annotated query
     per_user_stats = []
@@ -3419,10 +3417,8 @@ def developer_data(request):
             distinct=True
         ),
         feedback_submitted_all_time=Count('feedback_submissions__id', distinct=True),
-    ).filter(
-        # Only include users with some activity
-        Q(page_views_period__gt=0) | Q(queue_entries_period__gt=0) | Q(feedback_submitted_period__gt=0)
     )
+    # Don't filter - show all users including those with 0 activity
 
     # Build per_user_stats from annotated queryset
     per_user_stats = []
@@ -3438,6 +3434,9 @@ def developer_data(request):
             roles.append('Staff')
         elif user.is_staff:
             roles.append('Staff')
+
+        if not roles:
+            roles.append('User')
 
         per_user_stats.append({
             'user': user,  # Include user object for template
