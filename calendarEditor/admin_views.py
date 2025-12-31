@@ -3100,31 +3100,15 @@ def developer_tasks(request):
         messages.error(request, 'Developer access required.')
         return redirect('admin_dashboard')
 
-    # Get filters from query params
-    status_filter = request.GET.get('status', 'all')
-    type_filter = request.GET.get('type', 'all')
-    priority_filter = request.GET.get('priority', 'all')
-
-    # Base queryset
-    feedback = Feedback.objects.select_related('user', 'reviewed_by').all()
-
-    # Apply filters
-    if status_filter != 'all':
-        feedback = feedback.filter(status=status_filter)
-    if type_filter != 'all':
-        feedback = feedback.filter(feedback_type=type_filter)
-    if priority_filter != 'all':
-        feedback = feedback.filter(priority=priority_filter)
-
-    # Count new feedback for notification badge
-    new_count = Feedback.objects.filter(status='new').count()
+    # Separate feedback by status
+    new_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='new').order_by('-created_at')
+    reviewed_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='reviewed').order_by('-created_at')
+    completed_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='completed').order_by('-created_at')
 
     context = {
-        'feedback_list': feedback,
-        'status_filter': status_filter,
-        'type_filter': type_filter,
-        'priority_filter': priority_filter,
-        'new_count': new_count,
+        'new_feedback': new_feedback,
+        'reviewed_feedback': reviewed_feedback,
+        'completed_feedback': completed_feedback,
     }
 
     return render(request, 'calendarEditor/admin/developer_tasks.html', context)
@@ -3133,7 +3117,7 @@ def developer_tasks(request):
 @staff_member_required
 def update_feedback_status(request, feedback_id):
     """Update feedback status (developer action)."""
-    from .models import Feedback
+    from .models import Feedback, Notification
 
     if not (hasattr(request.user, 'profile') and request.user.profile.is_developer) and not request.user.is_superuser:
         messages.error(request, 'Developer access required.')
@@ -3145,6 +3129,7 @@ def update_feedback_status(request, feedback_id):
         new_status = request.POST.get('status')
         priority = request.POST.get('priority')
         developer_notes = request.POST.get('developer_notes', '')
+        feedback_message = request.POST.get('feedback_message', '')
 
         if new_status in dict(Feedback.STATUS_CHOICES):
             feedback.status = new_status
@@ -3159,6 +3144,16 @@ def update_feedback_status(request, feedback_id):
             feedback.developer_notes = developer_notes
 
         feedback.save()
+
+        # Send notification to user when completed with message
+        if new_status == 'completed' and feedback_message:
+            Notification.objects.create(
+                recipient=feedback.user,
+                notification_type='feedback_completed',
+                title=f'Feedback Update: {feedback.title}',
+                message=feedback_message,
+            )
+
         messages.success(request, f'Feedback #{feedback.id} updated.')
 
     return redirect('developer_tasks')
@@ -3208,18 +3203,39 @@ def developer_data(request):
         ).order_by('-created_at').first()
 
         browser = 'Unknown'
+        os = 'Unknown'
+        device_type = 'Unknown'
+        ip_address = 'Unknown'
+
         if latest_view and isinstance(latest_view.device_info, dict):
             browser_full = latest_view.device_info.get('browser', 'Unknown')
             browser = browser_full.split()[0] if browser_full else 'Unknown'
+            os = latest_view.device_info.get('os', 'Unknown')
+
+            # Determine device type
+            if latest_view.device_info.get('is_mobile'):
+                device_type = 'Mobile'
+            elif latest_view.device_info.get('is_tablet'):
+                device_type = 'Tablet'
+            elif latest_view.device_info.get('is_pc'):
+                device_type = 'Desktop'
+
+        # Get IP address from device_info
+        if latest_view and isinstance(latest_view.device_info, dict):
+            ip_address = latest_view.device_info.get('ip_address', 'Unknown')
 
         # Build roles list
         roles = []
         if user.is_superuser:
             roles.append('Admin')
-        if hasattr(user, 'profile') and user.profile.is_developer:
+            roles.append('Developer')  # Admins are developers by nature
+            roles.append('Staff')      # Admins are staff by nature
+        elif hasattr(user, 'profile') and user.profile.is_developer:
             roles.append('Developer')
+            roles.append('Staff')      # Developers are staff by requirement
         elif user.is_staff:
             roles.append('Staff')
+
         if not roles:
             roles.append('User')
 
@@ -3228,6 +3244,9 @@ def developer_data(request):
             'last_seen': view_data['last_seen'],
             'page_count': view_data['page_count'],
             'browser': browser,
+            'os': os,
+            'device_type': device_type,
+            'ip_address': ip_address,
             'roles': roles,
         })
 
@@ -3267,8 +3286,11 @@ def developer_data(request):
         roles = []
         if user.is_superuser:
             roles.append('Admin')
-        if hasattr(user, 'profile') and user.profile.is_developer:
+            roles.append('Developer')  # Admins are developers by nature
+            roles.append('Staff')      # Admins are staff by nature
+        elif hasattr(user, 'profile') and user.profile.is_developer:
             roles.append('Developer')
+            roles.append('Staff')      # Developers are staff by requirement
         elif user.is_staff:
             roles.append('Staff')
 

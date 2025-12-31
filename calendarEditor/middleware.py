@@ -256,13 +256,25 @@ class AnalyticsMiddleware:
             if not request.session.session_key:
                 request.session.create()
 
+            # Get device info and add IP address
+            device_info = parse_user_agent(request)
+
+            # Extract IP address
+            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+            if x_forwarded_for:
+                ip_address = x_forwarded_for.split(',')[0].strip()
+            else:
+                ip_address = request.META.get('REMOTE_ADDR', 'Unknown')
+
+            device_info['ip_address'] = ip_address
+
             PageView.objects.create(
                 user=request.user if request.user.is_authenticated else None,
                 session_key=request.session.session_key or '',
                 path=request.path,
                 page_title=self._get_page_title(request.path),
                 referrer=request.META.get('HTTP_REFERER', ''),
-                device_info=parse_user_agent(request),
+                device_info=device_info,
             )
         except Exception as e:
             # Don't break requests if tracking fails

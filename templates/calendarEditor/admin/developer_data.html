@@ -46,40 +46,56 @@
     {% if online_users_data %}
     <div class="card" style="margin-bottom: 1.5rem;">
         <h3>Currently Online Users ({{ online_users_data|length }})</h3>
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="background: #f8f9fa;">
-                    <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Username</th>
-                    <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Browser</th>
-                    <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Last Seen</th>
-                    <th style="padding: 0.75rem; text-align: center; border-bottom: 2px solid #dee2e6;">Page Views (15 min)</th>
-                    <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Roles</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user_data in online_users_data %}
-                <tr>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">{{ user_data.username }}</td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6; font-size: 0.9rem; color: #7f8c8d;">{{ user_data.browser }}</td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">{{ user_data.last_seen|timesince }} ago</td>
-                    <td style="padding: 0.75rem; text-align: center; border-bottom: 1px solid #dee2e6;">{{ user_data.page_count }}</td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">
-                        {% for role in user_data.roles %}
-                            {% if role == 'Admin' %}
-                                <span style="background-color: #e74c3c; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-right: 0.25rem;">{{ role }}</span>
-                            {% elif role == 'Developer' %}
-                                <span style="background-color: #9b59b6; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-right: 0.25rem;">{{ role }}</span>
-                            {% elif role == 'Staff' %}
-                                <span style="background-color: #f39c12; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-right: 0.25rem;">{{ role }}</span>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Username</th>
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Browser</th>
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">OS</th>
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Device</th>
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">IP Address</th>
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Last Seen</th>
+                        <th style="padding: 0.75rem; text-align: center; border-bottom: 2px solid #dee2e6;">Views (15m)</th>
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #dee2e6;">Roles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user_data in online_users_data %}
+                    <tr>
+                        <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">{{ user_data.username }}</td>
+                        <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6; font-size: 0.85rem; color: #7f8c8d;">{{ user_data.browser }}</td>
+                        <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6; font-size: 0.85rem; color: #7f8c8d;">{{ user_data.os }}</td>
+                        <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6; font-size: 0.85rem;">
+                            {% if user_data.device_type == 'Mobile' %}
+                                <span style="color: #e74c3c;">📱 {{ user_data.device_type }}</span>
+                            {% elif user_data.device_type == 'Tablet' %}
+                                <span style="color: #f39c12;">📱 {{ user_data.device_type }}</span>
                             {% else %}
-                                <span style="background-color: #95a5a6; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-right: 0.25rem;">{{ role }}</span>
+                                <span style="color: #3498db;">🖥️ {{ user_data.device_type }}</span>
                             {% endif %}
-                        {% endfor %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </td>
+                        <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6; font-size: 0.85rem; font-family: monospace; color: #7f8c8d;">{{ user_data.ip_address }}</td>
+                        <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6; font-size: 0.85rem;">{{ user_data.last_seen|timesince }} ago</td>
+                        <td style="padding: 0.75rem; text-align: center; border-bottom: 1px solid #dee2e6;">{{ user_data.page_count }}</td>
+                        <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">
+                            {% for role in user_data.roles %}
+                                {% if role == 'Admin' %}
+                                    <span style="background-color: #e74c3c; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.2rem;">{{ role }}</span>
+                                {% elif role == 'Developer' %}
+                                    <span style="background-color: #9b59b6; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.2rem;">{{ role }}</span>
+                                {% elif role == 'Staff' %}
+                                    <span style="background-color: #f39c12; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.2rem;">{{ role }}</span>
+                                {% else %}
+                                    <span style="background-color: #95a5a6; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.2rem;">{{ role }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
     {% endif %}
 
@@ -106,17 +122,19 @@
                         <td style="padding: 0.6rem; border-bottom: 1px solid #dee2e6;">{{ user_stat.username }}</td>
                         <td style="padding: 0.6rem; border-bottom: 1px solid #dee2e6; font-size: 0.85rem;">{{ user_stat.email }}</td>
                         <td style="padding: 0.6rem; border-bottom: 1px solid #dee2e6;">
-                            {% for role in user_stat.roles %}
-                                {% if role == 'Admin' %}
-                                    <span style="background-color: #e74c3c; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.2rem;">A</span>
-                                {% elif role == 'Developer' %}
-                                    <span style="background-color: #9b59b6; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.2rem;">D</span>
-                                {% elif role == 'Staff' %}
-                                    <span style="background-color: #f39c12; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.2rem;">S</span>
-                                {% endif %}
-                            {% empty %}
+                            {% if user_stat.roles %}
+                                {% for role in user_stat.roles %}
+                                    {% if role == 'Admin' %}
+                                        <span style="background-color: #e74c3c; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.2rem;">A</span>
+                                    {% elif role == 'Developer' %}
+                                        <span style="background-color: #9b59b6; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.2rem;">D</span>
+                                    {% elif role == 'Staff' %}
+                                        <span style="background-color: #f39c12; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.2rem;">S</span>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
                                 <span style="color: #95a5a6; font-size: 0.85rem;">User</span>
-                            {% endfor %}
+                            {% endif %}
                         </td>
                         <td style="padding: 0.6rem; text-align: center; border-bottom: 1px solid #dee2e6;">
                             {% if user_stat.is_online %}

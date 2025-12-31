@@ -5,115 +5,201 @@
 
 {% block content %}
 <div class="card">
-    <h1>Developer Tasks{% if new_count > 0 %} <span style="background: #e74c3c; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.9rem;">{{ new_count }} New</span>{% endif %}</h1>
+    <h1>Developer Tasks{% if new_feedback|length > 0 %} <span style="background: #e74c3c; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.9rem;">{{ new_feedback|length }} New</span>{% endif %}</h1>
     <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary" style="margin-bottom: 1rem;">← Back to Dashboard</a>
 
-    <!-- Filters -->
-    <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-        <div>
-            <label>Status:</label>
-            <select id="statusFilter" onchange="applyFilters()" style="padding: 0.5rem;">
-                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
-                <option value="new" {% if status_filter == 'new' %}selected{% endif %}>New</option>
-                <option value="reviewed" {% if status_filter == 'reviewed' %}selected{% endif %}>Reviewed</option>
-                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
-            </select>
-        </div>
-        <div>
-            <label>Type:</label>
-            <select id="typeFilter" onchange="applyFilters()" style="padding: 0.5rem;">
-                <option value="all" {% if type_filter == 'all' %}selected{% endif %}>All</option>
-                <option value="bug" {% if type_filter == 'bug' %}selected{% endif %}>Bug</option>
-                <option value="feature" {% if type_filter == 'feature' %}selected{% endif %}>Feature Request</option>
-                <option value="opinion" {% if type_filter == 'opinion' %}selected{% endif %}>Opinion</option>
-            </select>
-        </div>
-        <div>
-            <label>Priority:</label>
-            <select id="priorityFilter" onchange="applyFilters()" style="padding: 0.5rem;">
-                <option value="all" {% if priority_filter == 'all' %}selected{% endif %}>All</option>
-                <option value="critical" {% if priority_filter == 'critical' %}selected{% endif %}>Critical</option>
-                <option value="high" {% if priority_filter == 'high' %}selected{% endif %}>High</option>
-                <option value="medium" {% if priority_filter == 'medium' %}selected{% endif %}>Medium</option>
-                <option value="low" {% if priority_filter == 'low' %}selected{% endif %}>Low</option>
-            </select>
-        </div>
-    </div>
-
-    <!-- Feedback List -->
-    {% if feedback_list %}
-        {% for feedback in feedback_list %}
+    <!-- NEW TASKS (Always Expanded) -->
+    <h2 style="margin-top: 1.5rem; margin-bottom: 1rem;">New Tasks ({{ new_feedback|length }})</h2>
+    {% if new_feedback %}
+        {% for feedback in new_feedback %}
         <div class="card" style="margin-bottom: 1rem; border-left: 4px solid {% if feedback.feedback_type == 'bug' %}#e74c3c{% elif feedback.feedback_type == 'feature' %}#3498db{% else %}#27ae60{% endif %};">
             <div style="display: flex; justify-content: space-between; align-items: start;">
                 <div style="flex: 1;">
                     <h3 style="margin: 0 0 0.5rem 0;">
                         <span style="background: {% if feedback.feedback_type == 'bug' %}#e74c3c{% elif feedback.feedback_type == 'feature' %}#3498db{% else %}#27ae60{% endif %}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">{{ feedback.get_feedback_type_display }}</span>
                         {{ feedback.title }}
+                        {% if feedback.priority != 'low' %}
+                            <span style="background: {% if feedback.priority == 'critical' %}#e74c3c{% elif feedback.priority == 'high' %}#f39c12{% else %}#3498db{% endif %}; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">{{ feedback.get_priority_display|upper }}</span>
+                        {% endif %}
                     </h3>
                     <p style="color: #7f8c8d; margin: 0.25rem 0;">
                         By <strong>{{ feedback.user.username }}</strong> ({{ feedback.user_level }}) - {{ feedback.created_at|date:"M d, Y g:i A" }}
                     </p>
-                    <p style="margin: 0.5rem 0;">{{ feedback.description|truncatewords:30 }}</p>
+                    <p style="margin: 0.5rem 0;">{{ feedback.description }}</p>
 
-                    <!-- Action Form -->
-                    <form method="post" action="{% url 'update_feedback_status' feedback.id %}" style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: end; flex-wrap: wrap;">
-                        {% csrf_token %}
-                        <div>
-                            <label style="font-size: 0.9rem; display: block;">Status:</label>
-                            <select name="status" style="padding: 0.5rem;">
-                                <option value="new" {% if feedback.status == 'new' %}selected{% endif %}>New</option>
-                                <option value="reviewed" {% if feedback.status == 'reviewed' %}selected{% endif %}>Reviewed</option>
-                                <option value="completed" {% if feedback.status == 'completed' %}selected{% endif %}>Completed</option>
-                            </select>
+                    {% if feedback.replication_steps %}
+                        <div style="margin-top: 0.75rem; padding: 0.75rem; background: #fff3cd; border-radius: 4px;">
+                            <strong>Replication Steps:</strong>
+                            <p style="margin: 0.25rem 0 0 0;">{{ feedback.replication_steps }}</p>
                         </div>
-                        <div>
-                            <label style="font-size: 0.9rem; display: block;">Priority:</label>
-                            <select name="priority" style="padding: 0.5rem;">
-                                <option value="low" {% if feedback.priority == 'low' %}selected{% endif %}>Low</option>
-                                <option value="medium" {% if feedback.priority == 'medium' %}selected{% endif %}>Medium</option>
-                                <option value="high" {% if feedback.priority == 'high' %}selected{% endif %}>High</option>
-                                <option value="critical" {% if feedback.priority == 'critical' %}selected{% endif %}>Critical</option>
-                            </select>
+                    {% endif %}
+                    {% if feedback.console_logs %}
+                        <div style="margin-top: 0.75rem;">
+                            <strong>Console Logs:</strong>
+                            <pre style="background: #2c3e50; color: #ecf0f1; padding: 0.75rem; border-radius: 4px; overflow-x: auto; margin: 0.25rem 0 0 0; font-size: 0.85rem;">{{ feedback.console_logs }}</pre>
                         </div>
-                        <button type="submit" class="btn" style="padding: 0.5rem 1rem;">Update</button>
-                        <button type="button" class="btn btn-secondary" onclick="toggleDetails({{ feedback.id }})" style="padding: 0.5rem 1rem;">Details</button>
-                    </form>
+                    {% endif %}
 
-                    <!-- Expanded Details -->
-                    <div id="details-{{ feedback.id }}" style="display: none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
-                        <h4>Full Description:</h4>
-                        <p>{{ feedback.description }}</p>
-                        {% if feedback.replication_steps %}
-                            <h4>Replication Steps:</h4>
-                            <p>{{ feedback.replication_steps }}</p>
-                        {% endif %}
-                        {% if feedback.console_logs %}
-                            <h4>Console Logs:</h4>
-                            <pre style="background: #2c3e50; color: #ecf0f1; padding: 1rem; border-radius: 4px; overflow-x: auto;">{{ feedback.console_logs }}</pre>
-                        {% endif %}
-                        <h4>Device Info:</h4>
-                        <p>{{ feedback.device_info.browser }} on {{ feedback.device_info.os }} ({{ feedback.device_info.device }})</p>
-                        {% if feedback.reviewed_by %}
-                            <p><strong>Reviewed by:</strong> {{ feedback.reviewed_by.username }} on {{ feedback.reviewed_at|date:"M d, Y g:i A" }}</p>
-                        {% endif %}
+                    <div style="margin-top: 0.75rem; padding: 0.5rem; background: #f8f9fa; border-radius: 4px; font-size: 0.9rem;">
+                        <strong>Device:</strong> {{ feedback.device_info.browser }} on {{ feedback.device_info.os }} ({{ feedback.device_info.device }})
+                    </div>
+
+                    <!-- Quick Action Buttons -->
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <form method="post" action="{% url 'update_feedback_status' feedback.id %}" style="display: inline; margin: 0;">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="reviewed">
+                            <input type="hidden" name="priority" value="{{ feedback.priority }}">
+                            <button type="submit" class="btn" style="background-color: #f39c12; color: white; padding: 0.5rem 1rem;">Mark Reviewed</button>
+                        </form>
+                        <button type="button" class="btn" style="background-color: #27ae60; color: white; padding: 0.5rem 1rem;" onclick="openCompleteModal({{ feedback.id }}, '{{ feedback.user.username }}', '{{ feedback.title|escapejs }}')">Mark Completed</button>
+
+                        <!-- Priority Selection -->
+                        <select id="priority-{{ feedback.id }}" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="low" {% if feedback.priority == 'low' %}selected{% endif %}>Low Priority</option>
+                            <option value="medium" {% if feedback.priority == 'medium' %}selected{% endif %}>Medium Priority</option>
+                            <option value="high" {% if feedback.priority == 'high' %}selected{% endif %}>High Priority</option>
+                            <option value="critical" {% if feedback.priority == 'critical' %}selected{% endif %}>Critical</option>
+                        </select>
+                        <button type="button" class="btn btn-secondary" onclick="updatePriority({{ feedback.id }})" style="padding: 0.5rem 1rem;">Update Priority</button>
                     </div>
                 </div>
             </div>
         </div>
         {% endfor %}
     {% else %}
-        <p style="color: #7f8c8d; text-align: center; padding: 2rem;">No feedback found with the selected filters.</p>
+        <p style="color: #7f8c8d; padding: 1rem; background: #f8f9fa; border-radius: 4px;">No new tasks</p>
     {% endif %}
+
+    <!-- REVIEWED TASKS (Collapsible) -->
+    <h2 style="margin-top: 2rem; margin-bottom: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;" onclick="toggleSection('reviewed')">
+        <span id="reviewed-arrow" style="transition: transform 0.2s;">▶</span>
+        Reviewed Tasks ({{ reviewed_feedback|length }})
+    </h2>
+    <div id="reviewed-section" style="display: none;">
+        {% if reviewed_feedback %}
+            {% for feedback in reviewed_feedback %}
+            <div class="card" style="margin-bottom: 1rem; opacity: 0.9; border-left: 4px solid #f39c12;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem;">
+                            <span style="background: {% if feedback.feedback_type == 'bug' %}#e74c3c{% elif feedback.feedback_type == 'feature' %}#3498db{% else %}#27ae60{% endif %}; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem;">{{ feedback.get_feedback_type_display }}</span>
+                            {{ feedback.title }}
+                        </h3>
+                        <p style="color: #7f8c8d; margin: 0.25rem 0; font-size: 0.85rem;">
+                            By {{ feedback.user.username }} - {{ feedback.created_at|date:"M d, Y" }}
+                            {% if feedback.reviewed_by %} | Reviewed by {{ feedback.reviewed_by.username }}{% endif %}
+                        </p>
+                        <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
+                            <button type="button" class="btn" style="background-color: #27ae60; color: white; padding: 0.4rem 0.8rem; font-size: 0.9rem;" onclick="openCompleteModal({{ feedback.id }}, '{{ feedback.user.username }}', '{{ feedback.title|escapejs }}')">Mark Completed</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleDetails({{ feedback.id }})" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Details</button>
+                        </div>
+
+                        <!-- Details (hidden by default) -->
+                        <div id="details-{{ feedback.id }}" style="display: none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; font-size: 0.9rem;">
+                            <p><strong>Description:</strong> {{ feedback.description }}</p>
+                            {% if feedback.replication_steps %}
+                                <p><strong>Replication:</strong> {{ feedback.replication_steps }}</p>
+                            {% endif %}
+                            {% if feedback.console_logs %}
+                                <pre style="background: #2c3e50; color: #ecf0f1; padding: 0.5rem; border-radius: 4px; overflow-x: auto; font-size: 0.8rem;">{{ feedback.console_logs }}</pre>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: #7f8c8d; padding: 1rem; background: #f8f9fa; border-radius: 4px;">No reviewed tasks</p>
+        {% endif %}
+    </div>
+
+    <!-- COMPLETED TASKS (Collapsible) -->
+    <h2 style="margin-top: 2rem; margin-bottom: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;" onclick="toggleSection('completed')">
+        <span id="completed-arrow" style="transition: transform 0.2s;">▶</span>
+        Completed Tasks ({{ completed_feedback|length }})
+    </h2>
+    <div id="completed-section" style="display: none;">
+        {% if completed_feedback %}
+            {% for feedback in completed_feedback %}
+            <div class="card" style="margin-bottom: 1rem; opacity: 0.8; border-left: 4px solid #27ae60;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem;">
+                            <span style="background: {% if feedback.feedback_type == 'bug' %}#e74c3c{% elif feedback.feedback_type == 'feature' %}#3498db{% else %}#27ae60{% endif %}; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem;">{{ feedback.get_feedback_type_display }}</span>
+                            {{ feedback.title }}
+                        </h3>
+                        <p style="color: #7f8c8d; margin: 0.25rem 0; font-size: 0.85rem;">
+                            By {{ feedback.user.username }} - {{ feedback.created_at|date:"M d, Y" }}
+                            {% if feedback.reviewed_by %} | Completed by {{ feedback.reviewed_by.username }} on {{ feedback.reviewed_at|date:"M d, Y" }}{% endif %}
+                        </p>
+                        <button type="button" class="btn btn-secondary" onclick="toggleDetails({{ feedback.id }})" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; margin-top: 0.5rem;">Details</button>
+
+                        <!-- Details (hidden by default) -->
+                        <div id="details-{{ feedback.id }}" style="display: none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; font-size: 0.9rem;">
+                            <p><strong>Description:</strong> {{ feedback.description }}</p>
+                            {% if feedback.developer_notes %}
+                                <p><strong>Developer Notes:</strong> {{ feedback.developer_notes }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: #7f8c8d; padding: 1rem; background: #f8f9fa; border-radius: 4px;">No completed tasks</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Completion Modal -->
+<div id="completeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+        <h2 style="margin: 0 0 1rem 0;">Complete Task & Send Feedback</h2>
+        <form id="completeForm" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="completed">
+            <input type="hidden" id="completePriority" name="priority" value="">
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Task:</label>
+                <p id="completeTaskTitle" style="margin: 0; padding: 0.5rem; background: #f8f9fa; border-radius: 4px;"></p>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Send message to user:</label>
+                <input type="text" id="completeUsername" readonly style="width: 100%; padding: 0.5rem; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 0.5rem;">
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label for="feedbackMessage" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Message:</label>
+                <textarea id="feedbackMessage" name="feedback_message" rows="5" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; resize: vertical;"></textarea>
+                <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">This message will be sent to the user as a notification.</small>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeCompleteModal()">Cancel</button>
+                <button type="submit" class="btn" style="background-color: #27ae60; color: white;">Complete & Send</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
-function applyFilters() {
-    const status = document.getElementById('statusFilter').value;
-    const type = document.getElementById('typeFilter').value;
-    const priority = document.getElementById('priorityFilter').value;
-    window.location.href = '{% url "developer_tasks" %}?status=' + status + '&type=' + type + '&priority=' + priority;
+// Toggle collapsible sections
+function toggleSection(section) {
+    const element = document.getElementById(section + '-section');
+    const arrow = document.getElementById(section + '-arrow');
+    if (element.style.display === 'none') {
+        element.style.display = 'block';
+        arrow.style.transform = 'rotate(90deg)';
+    } else {
+        element.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
+    }
 }
 
+// Toggle details
 function toggleDetails(id) {
     const details = document.getElementById('details-' + id);
     if (details.style.display === 'none') {
@@ -122,5 +208,68 @@ function toggleDetails(id) {
         details.style.display = 'none';
     }
 }
+
+// Update priority
+function updatePriority(feedbackId) {
+    const priority = document.getElementById('priority-' + feedbackId).value;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{% url "update_feedback_status" 0 %}'.replace('/0/', '/' + feedbackId + '/');
+
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = '{{ csrf_token }}';
+    form.appendChild(csrfInput);
+
+    const statusInput = document.createElement('input');
+    statusInput.type = 'hidden';
+    statusInput.name = 'status';
+    statusInput.value = 'new';
+    form.appendChild(statusInput);
+
+    const priorityInput = document.createElement('input');
+    priorityInput.type = 'hidden';
+    priorityInput.name = 'priority';
+    priorityInput.value = priority;
+    form.appendChild(priorityInput);
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Complete modal functions
+let currentFeedbackId = null;
+
+function openCompleteModal(feedbackId, username, title) {
+    currentFeedbackId = feedbackId;
+    document.getElementById('completeTaskTitle').textContent = title;
+    document.getElementById('completeUsername').value = username;
+
+    // Get current priority
+    const prioritySelect = document.getElementById('priority-' + feedbackId);
+    const priority = prioritySelect ? prioritySelect.value : 'medium';
+    document.getElementById('completePriority').value = priority;
+
+    // Set default message
+    document.getElementById('feedbackMessage').value = 'Thank you for your feedback! We have reviewed and addressed your ' +
+        (title.toLowerCase().indexOf('bug') !== -1 ? 'bug report' : 'suggestion') + '. ' +
+        'The changes should be live soon.';
+
+    document.getElementById('completeModal').style.display = 'flex';
+    document.getElementById('completeForm').action = '{% url "update_feedback_status" 0 %}'.replace('/0/', '/' + feedbackId + '/');
+}
+
+function closeCompleteModal() {
+    document.getElementById('completeModal').style.display = 'none';
+    currentFeedbackId = null;
+}
+
+// Close modal when clicking outside
+document.getElementById('completeModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCompleteModal();
+    }
+});
 </script>
 {% endblock %}

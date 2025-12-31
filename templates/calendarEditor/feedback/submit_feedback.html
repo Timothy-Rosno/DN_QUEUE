@@ -13,18 +13,11 @@
         We value your input! Report bugs, request features, or share your thoughts to help us improve.
     </p>
 
-    <!-- Auto-Collected Information -->
-    <div style="background-color: #ecf0f1; border-left: 4px solid #3498db; padding: 1rem; margin-bottom: 1.5rem;">
-        <p style="margin: 0 0 0.5rem 0; font-weight: bold; color: #2c3e50;">Auto-Collected Information:</p>
+    <!-- Auto-Collected Information Notice -->
+    <div style="background-color: #ecf0f1; border-left: 4px solid #3498db; padding: 0.75rem; margin-bottom: 1.5rem;">
         <p style="margin: 0; font-size: 0.9rem; color: #7f8c8d;">
-            The following information will be automatically included with your submission to help us better understand and resolve issues:
+            <strong>Note:</strong> Browser information is included as an additional diagnostic tool.
         </p>
-        <ul style="margin: 0.5rem 0 0 1.5rem; font-size: 0.9rem; color: #7f8c8d;">
-            <li><strong>Browser:</strong> <span id="browserInfo">Loading...</span></li>
-            <li><strong>Operating System:</strong> <span id="osInfo">Loading...</span></li>
-            <li><strong>Device Type:</strong> <span id="deviceInfo">Loading...</span></li>
-            <li><strong>User Level:</strong> {{ request.user.profile.is_developer|yesno:"Developer,Staff,User" }}{% if request.user.is_superuser %} (Admin){% elif request.user.is_staff and not request.user.profile.is_developer %} (Staff){% endif %}</li>
-        </ul>
     </div>
 
     <form method="post" id="feedbackForm" action="{% url 'submit_feedback' %}">
@@ -147,46 +140,8 @@
     </style>
 
     <script>
-        // Detect and display browser/OS/device info
-        function detectDeviceInfo() {
-            const ua = navigator.userAgent;
-
-            // Detect browser
-            let browser = 'Unknown';
-            if (ua.indexOf('Edg') > -1) browser = 'Edge';
-            else if (ua.indexOf('Chrome') > -1) browser = 'Chrome';
-            else if (ua.indexOf('Safari') > -1) browser = 'Safari';
-            else if (ua.indexOf('Firefox') > -1) browser = 'Firefox';
-            else if (ua.indexOf('Opera') > -1 || ua.indexOf('OPR') > -1) browser = 'Opera';
-
-            // Detect OS
-            let os = 'Unknown';
-            if (ua.indexOf('Win') > -1) os = 'Windows';
-            else if (ua.indexOf('Mac') > -1) os = 'macOS';
-            else if (ua.indexOf('Linux') > -1) os = 'Linux';
-            else if (ua.indexOf('Android') > -1) os = 'Android';
-            else if (ua.indexOf('iOS') > -1 || ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) os = 'iOS';
-
-            // Detect device type
-            let deviceType = 'Desktop';
-            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
-                if (/iPad|Android(?!.*Mobile)/i.test(ua)) {
-                    deviceType = 'Tablet';
-                } else {
-                    deviceType = 'Mobile';
-                }
-            }
-
-            // Update the display
-            document.getElementById('browserInfo').textContent = browser;
-            document.getElementById('osInfo').textContent = os;
-            document.getElementById('deviceInfo').textContent = deviceType;
-        }
-
         // Show/hide bug-specific fields based on feedback type
         document.addEventListener('DOMContentLoaded', function() {
-            // Detect and display device info
-            detectDeviceInfo();
             const feedbackTypeSelect = document.getElementById('id_feedback_type');
             const replicationStepsField = document.getElementById('replicationStepsField');
             const consoleLogsField = document.getElementById('consoleLogsField');

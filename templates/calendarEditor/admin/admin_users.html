@@ -117,15 +117,29 @@
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
                             <!-- Promote/Demote button (superuser only) -->
                             {% if user.is_superuser and not user_item.is_superuser %}
-                                {% if user_item.is_staff %}
-                                    <form method="post" action="{% url 'demote_from_staff' user_item.id %}" style="display: inline; margin: 0;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Demote to regular user">↓</button>
-                                    </form>
-                                {% else %}
+                                {% if not user_item.is_staff %}
+                                    <!-- Non-staff: show orange up arrow to promote to staff -->
                                     <form method="post" action="{% url 'promote_to_staff' user_item.id %}" style="display: inline; margin: 0;">
                                         {% csrf_token %}
-                                        <button type="submit" class="btn" style="background-color: #3498db; color: white; padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Promote to staff">↑</button>
+                                        <button type="submit" class="btn" style="background-color: #f39c12; color: white; padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Promote to staff">↑</button>
+                                    </form>
+                                {% elif user_item.is_staff and not user_item.profile.is_developer %}
+                                    <!-- Staff (non-developer): show purple up arrow (to dev) above gray down arrow (demote from staff) -->
+                                    <div style="display: flex; flex-direction: column; gap: 0.1rem;">
+                                        <form method="post" action="{% url 'promote_to_developer' user_item.id %}" style="margin: 0;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn" style="background-color: #9b59b6; color: white; padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Promote to developer">↑</button>
+                                        </form>
+                                        <form method="post" action="{% url 'demote_from_staff' user_item.id %}" style="margin: 0;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Demote to regular user">↓</button>
+                                        </form>
+                                    </div>
+                                {% elif user_item.profile.is_developer %}
+                                    <!-- Developer: only show gray down arrow (demote from developer) -->
+                                    <form method="post" action="{% url 'demote_from_developer' user_item.id %}" style="display: inline; margin: 0;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Demote from developer to staff">↓</button>
                                     </form>
                                 {% endif %}
                             {% endif %}
@@ -166,19 +180,6 @@
                                     </form>
 
                                     <button type="button" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background-color: #3498db; color: white;" onclick="window.location.href='/schedule/admin-users/edit-user-info/{{ user_item.id }}/'">Edit</button>
-
-                                    <!-- Developer promotion/demotion buttons -->
-                                    {% if user_item.profile.is_developer %}
-                                        <form method="post" action="{% url 'demote_from_developer' user_item.id %}" style="display: inline; margin: 0;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Demote from developer to staff">↓</button>
-                                        </form>
-                                    {% else %}
-                                        <form method="post" action="{% url 'promote_to_developer' user_item.id %}" style="display: inline; margin: 0;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn" style="padding: 0.15rem 0.4rem; font-size: 0.75rem; background-color: #9b59b6; color: white;" title="Promote to developer">↑</button>
-                                        </form>
-                                    {% endif %}
                                 {% else %}
                                     <!-- Regular staff cannot manage other staff -->
                                     <span style="color: #7f8c8d; font-size: 0.9rem;">Superuser only</span>
