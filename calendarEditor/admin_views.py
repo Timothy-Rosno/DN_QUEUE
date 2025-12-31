@@ -121,21 +121,21 @@ def admin_users(request):
     # OPTIMIZED: Single aggregated query instead of N+1 queries
     all_users = User.objects.select_related('profile').annotate(
         page_views_period=Count(
-            'pageview',
-            filter=Q(pageview__created_at__gte=start_date) if start_date else Q()
+            'pageview_set',
+            filter=Q(pageview_set__created_at__gte=start_date) if start_date else Q()
         ),
-        page_views_all_time=Count('pageview'),
-        last_seen=Max('pageview__created_at'),
+        page_views_all_time=Count('pageview_set'),
+        last_seen=Max('pageview_set__created_at'),
         queue_entries_period=Count(
-            'queueentry',
-            filter=Q(queueentry__created_at__gte=start_date) if start_date else Q()
+            'queue_entries',
+            filter=Q(queue_entries__created_at__gte=start_date) if start_date else Q()
         ),
-        queue_entries_all_time=Count('queueentry'),
+        queue_entries_all_time=Count('queue_entries'),
         feedback_submitted_period=Count(
-            'feedback',
-            filter=Q(feedback__created_at__gte=start_date) if start_date else Q()
+            'feedback_submissions',
+            filter=Q(feedback_submissions__created_at__gte=start_date) if start_date else Q()
         ),
-        feedback_submitted_all_time=Count('feedback'),
+        feedback_submitted_all_time=Count('feedback_submissions'),
     ).filter(
         # Only include users with activity in the period
         Q(page_views_period__gt=0) | Q(queue_entries_period__gt=0) | Q(feedback_submitted_period__gt=0)
@@ -3176,8 +3176,9 @@ def developer_tasks(request):
     )
 
     # Separate feedback by status
-    new_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='new').order_by(priority_order, '-created_at')
-    reviewed_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='reviewed').order_by(priority_order, '-created_at')
+    # Order by priority (critical first), then by date submitted (older first, newer lower)
+    new_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='new').order_by(priority_order, 'created_at')
+    reviewed_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='reviewed').order_by(priority_order, 'created_at')
 
     # Organize completed feedback by type (alphabetically), then by date (newest first)
     completed_bugs = Feedback.objects.select_related('user', 'reviewed_by').filter(status='completed', feedback_type='bug').order_by('-created_at')
@@ -3393,25 +3394,25 @@ def developer_data(request):
 
     # Get all users with aggregated stats
     all_users = User.objects.select_related('profile').annotate(
-        # Page view stats
+        # Page view stats (using pageview_set since PageView has no related_name)
         page_views_period=Count(
-            'pageview',
-            filter=Q(pageview__created_at__gte=start_date) if start_date else Q()
+            'pageview_set',
+            filter=Q(pageview_set__created_at__gte=start_date) if start_date else Q()
         ),
-        page_views_all_time=Count('pageview'),
-        last_seen=Max('pageview__created_at'),
-        # Queue entry stats
+        page_views_all_time=Count('pageview_set'),
+        last_seen=Max('pageview_set__created_at'),
+        # Queue entry stats (using queue_entries related_name)
         queue_entries_period=Count(
-            'queueentry',
-            filter=Q(queueentry__created_at__gte=start_date) if start_date else Q()
+            'queue_entries',
+            filter=Q(queue_entries__created_at__gte=start_date) if start_date else Q()
         ),
-        queue_entries_all_time=Count('queueentry'),
-        # Feedback stats
+        queue_entries_all_time=Count('queue_entries'),
+        # Feedback stats (using feedback_submissions related_name)
         feedback_submitted_period=Count(
-            'feedback',
-            filter=Q(feedback__created_at__gte=start_date) if start_date else Q()
+            'feedback_submissions',
+            filter=Q(feedback_submissions__created_at__gte=start_date) if start_date else Q()
         ),
-        feedback_submitted_all_time=Count('feedback'),
+        feedback_submitted_all_time=Count('feedback_submissions'),
     ).filter(
         # Only include users with some activity
         Q(page_views_period__gt=0) | Q(queue_entries_period__gt=0) | Q(feedback_submitted_period__gt=0)
