@@ -243,6 +243,58 @@
     </div>
 </div>
 
+<!-- PER-USER ANALYTICS -->
+<div class="card" style="margin-top: 2rem;">
+    <h2 style="margin-bottom: 1rem;">Per-User Analytics (Last {{ days_filter }} Days)</h2>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; min-width: 800px; border-collapse: collapse;">
+            <thead style="background: #f8f9fa;">
+                <tr style="border-bottom: 2px solid #ddd;">
+                    <th style="padding: 0.75rem; text-align: left;">Username</th>
+                    <th style="padding: 0.75rem; text-align: left;">Roles</th>
+                    <th style="padding: 0.75rem; text-align: center;">Page Views</th>
+                    <th style="padding: 0.75rem; text-align: center;">Queue Submissions</th>
+                    <th style="padding: 0.75rem; text-align: center;">Feedback</th>
+                    <th style="padding: 0.75rem; text-align: left;">Last Activity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in per_user_stats %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 0.75rem;">{{ stat.user.username }}</td>
+                    <td style="padding: 0.75rem;">
+                        {% for role in stat.roles %}
+                            <span style="
+                                background-color: {% if role == 'Admin' %}#e74c3c{% elif role == 'Developer' %}#9b59b6{% elif role == 'Staff' %}#f39c12{% else %}#3498db{% endif %};
+                                color: white;
+                                padding: 0.2rem 0.4rem;
+                                border-radius: 3px;
+                                font-size: 0.75rem;
+                                margin-right: 0.25rem;
+                            ">{{ role }}</span>
+                        {% endfor %}
+                    </td>
+                    <td style="padding: 0.75rem; text-align: center;">{{ stat.page_views }}</td>
+                    <td style="padding: 0.75rem; text-align: center;">{{ stat.queue_submissions }}</td>
+                    <td style="padding: 0.75rem; text-align: center;">{{ stat.feedback_count }}</td>
+                    <td style="padding: 0.75rem;">
+                        {% if stat.last_activity %}
+                            {{ stat.last_activity|date:"M d, Y H:i" }}
+                        {% else %}
+                            Never
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="padding: 1rem; text-align: center; color: #7f8c8d;">No user activity in the selected period</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <script>
 function clearFilters() {
     // Clear search input

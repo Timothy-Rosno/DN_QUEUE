@@ -108,12 +108,69 @@ def admin_users(request):
     unapproved_users.sort(key=lambda u: u.username.lower())
     approved_users.sort(key=lambda u: u.username.lower())
 
+    # === PER-USER ANALYTICS ===
+    from .models import PageView, QueueEntry, Feedback
+    from django.db.models import Max
+    from django.utils import timezone
+    from datetime import timedelta
+
+    now = timezone.now()
+    days_filter = 30  # Default to last 30 days for admin-users
+    start_date = now - timedelta(days=days_filter)
+
+    all_users = User.objects.select_related('profile').all()
+    per_user_stats = []
+
+    for user in all_users:
+        # Get user's page views
+        user_views_filtered = PageView.objects.filter(user=user, created_at__gte=start_date)
+
+        # Get last activity
+        last_activity = PageView.objects.filter(user=user).aggregate(last_seen=Max('created_at'))['last_seen']
+
+        # Get queue entries
+        user_queue_filtered = QueueEntry.objects.filter(user=user, created_at__gte=start_date)
+
+        # Get feedback submitted
+        user_feedback_filtered = Feedback.objects.filter(user=user, created_at__gte=start_date)
+
+        # Build roles list
+        roles = []
+        if user.is_superuser:
+            roles.append('Admin')
+            roles.append('Developer')
+            roles.append('Staff')
+        elif hasattr(user, 'profile') and user.profile.is_developer:
+            roles.append('Developer')
+            roles.append('Staff')
+        elif user.is_staff:
+            roles.append('Staff')
+
+        if not roles:
+            roles.append('User')
+
+        # Only include users with activity
+        if user_views_filtered.count() > 0 or user_queue_filtered.count() > 0 or user_feedback_filtered.count() > 0:
+            per_user_stats.append({
+                'user': user,
+                'page_views': user_views_filtered.count(),
+                'queue_submissions': user_queue_filtered.count(),
+                'feedback_count': user_feedback_filtered.count(),
+                'last_activity': last_activity,
+                'roles': roles,
+            })
+
+    # Sort by page views (most active first)
+    per_user_stats.sort(key=lambda x: x['page_views'], reverse=True)
+
     context = {
         'users': users,
         'unapproved_users': unapproved_users,
         'approved_users': approved_users,
         'status_filter': status_filter,
         'search_query': search_query,
+        'per_user_stats': per_user_stats,
+        'days_filter': days_filter,
     }
 
     return render(request, 'calendarEditor/admin/admin_users.html', context)
@@ -3113,12 +3170,18 @@ def developer_tasks(request):
     # Separate feedback by status
     new_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='new').order_by(priority_order, '-created_at')
     reviewed_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='reviewed').order_by(priority_order, '-created_at')
-    completed_feedback = Feedback.objects.select_related('user', 'reviewed_by').filter(status='completed').order_by('-created_at')
+
+    # Organize completed feedback by type (alphabetically), then by date (newest first)
+    completed_bugs = Feedback.objects.select_related('user', 'reviewed_by').filter(status='completed', feedback_type='bug').order_by('-created_at')
+    completed_features = Feedback.objects.select_related('user', 'reviewed_by').filter(status='completed', feedback_type='feature').order_by('-created_at')
+    completed_opinions = Feedback.objects.select_related('user', 'reviewed_by').filter(status='completed', feedback_type='opinion').order_by('-created_at')
 
     context = {
         'new_feedback': new_feedback,
         'reviewed_feedback': reviewed_feedback,
-        'completed_feedback': completed_feedback,
+        'completed_bugs': completed_bugs,
+        'completed_features': completed_features,
+        'completed_opinions': completed_opinions,
     }
 
     return render(request, 'calendarEditor/admin/developer_tasks.html', context)
@@ -3155,16 +3218,57 @@ def update_feedback_status(request, feedback_id):
 
         feedback.save()
 
-        # Send notification to user when completed with message
-        if new_status == 'completed' and feedback_message:
+        # Send notification to user when completed (always, with custom or default message)
+        if new_status == 'completed':
+            message_to_send = feedback_message if feedback_message else f'Your feedback "{feedback.title}" has been reviewed and completed. Thank you for your contribution!'
             Notification.objects.create(
                 recipient=feedback.user,
                 notification_type='feedback_completed',
                 title=f'Feedback Update: {feedback.title}',
-                message=feedback_message,
+                message=message_to_send,
             )
 
         messages.success(request, f'Feedback #{feedback.id} updated.')
+
+    return redirect('developer_tasks')
+
+
+@staff_member_required
+def delete_feedback(request, feedback_id):
+    """Delete a completed feedback (developer action)."""
+    from .models import Feedback
+
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_developer) and not request.user.is_superuser:
+        messages.error(request, 'Developer access required.')
+        return redirect('admin_dashboard')
+
+    feedback = get_object_or_404(Feedback, id=feedback_id)
+
+    # Only allow deleting completed feedback
+    if feedback.status != 'completed':
+        messages.error(request, 'Only completed feedback can be deleted.')
+        return redirect('developer_tasks')
+
+    if request.method == 'POST':
+        feedback_title = feedback.title
+        feedback.delete()
+        messages.success(request, f'Completed feedback "{feedback_title}" has been deleted.')
+
+    return redirect('developer_tasks')
+
+
+@staff_member_required
+def clear_all_completed_feedback(request):
+    """Clear all completed feedback (developer action)."""
+    from .models import Feedback
+
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_developer) and not request.user.is_superuser:
+        messages.error(request, 'Developer access required.')
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        count = Feedback.objects.filter(status='completed').delete()[0]
+        messages.success(request, f'Cleared {count} completed feedback items.')
 
     return redirect('developer_tasks')
 
@@ -3219,7 +3323,19 @@ def developer_data(request):
 
         if latest_view and isinstance(latest_view.device_info, dict):
             browser_full = latest_view.device_info.get('browser', 'Unknown')
-            browser = browser_full.split()[0] if browser_full else 'Unknown'
+            # Extract browser family, handling mobile browsers properly
+            # "Mobile Safari 18.6" -> "Safari", "Chrome 143.0.0" -> "Chrome"
+            browser_parts = browser_full.split() if browser_full else []
+            if browser_parts:
+                # Handle cases like "Mobile Safari" or "Chrome Mobile"
+                if browser_parts[0] == 'Mobile' and len(browser_parts) > 1:
+                    browser = browser_parts[1]  # "Mobile Safari" -> "Safari"
+                elif len(browser_parts) > 1 and browser_parts[-1] == 'Mobile':
+                    browser = browser_parts[0]  # "Chrome Mobile" -> "Chrome"
+                else:
+                    browser = browser_parts[0]  # "Chrome" -> "Chrome"
+            else:
+                browser = 'Unknown'
             os = latest_view.device_info.get('os', 'Unknown')
 
             # Determine device type
@@ -3332,8 +3448,17 @@ def developer_data(request):
     page_views_all_time = page_views_query.count()
     page_views_period = page_views_filtered.count()
 
-    # Top pages
-    top_pages = page_views_filtered.values('page_title').annotate(
+    # API endpoints to exclude from top pages (tracked separately)
+    api_endpoints = ['/schedule/api/machine-status', '/schedule/notifications/api/list']
+
+    # Count API endpoint hits
+    api_hits = {}
+    for endpoint in api_endpoints:
+        count = page_views_filtered.filter(path=endpoint).count()
+        api_hits[endpoint] = count
+
+    # Top pages (excluding API endpoints)
+    top_pages = page_views_filtered.exclude(path__in=api_endpoints).values('page_title').annotate(
         count=Count('id')
     ).order_by('-count')[:10]
 
@@ -3435,6 +3560,33 @@ def developer_data(request):
         'active_period': page_views_filtered.filter(user__isnull=False).values('user').distinct().count(),
     }
 
+    # Get Turso database usage metrics
+    import os
+    from .turso_api_client import TursoAPIClient
+
+    turso_client = TursoAPIClient()
+    turso_usage = turso_client.get_usage_metrics()
+
+    # Turso plan limits (Free tier defaults)
+    turso_limits = {
+        'storage_mb': int(os.environ.get('TURSO_MAX_STORAGE_MB', 5120)),  # 5GB
+        'rows_read_monthly': int(os.environ.get('TURSO_MAX_ROWS_READ', 500_000_000)),  # 500M
+        'rows_written_monthly': int(os.environ.get('TURSO_MAX_ROWS_WRITTEN', 10_000_000)),  # 10M
+    }
+
+    # Calculate usage percentages
+    turso_stats = None
+    if turso_usage:
+        turso_stats = {
+            'rows_read': turso_usage['rows_read'],
+            'rows_written': turso_usage['rows_written'],
+            'storage_mb': turso_usage['storage_bytes'] / (1024 * 1024),
+            'databases': turso_usage.get('databases', 0),
+            'rows_read_percent': (turso_usage['rows_read'] / turso_limits['rows_read_monthly'] * 100),
+            'rows_written_percent': (turso_usage['rows_written'] / turso_limits['rows_written_monthly'] * 100),
+            'storage_percent': (turso_usage['storage_bytes'] / (turso_limits['storage_mb'] * 1024 * 1024) * 100),
+        }
+
     context = {
         'days_filter': days_filter,
         'online_users_data': online_users_data,
@@ -3453,6 +3605,10 @@ def developer_data(request):
         },
         'top_browsers': top_browsers,
         'browser_device_stats': browser_device_stats,
+        'api_hits': api_hits,
+        'turso_usage': turso_stats,
+        'turso_limits': turso_limits,
+        'turso_org_slug': os.environ.get('TURSO_ORG_SLUG', 'unknown'),
     }
 
     return render(request, 'calendarEditor/admin/developer_data.html', context)

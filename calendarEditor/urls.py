@@ -134,6 +134,8 @@ urlpatterns = [
     # Developer pages (Tasks and Data)
     path('developer/tasks/', admin_views.developer_tasks, name='developer_tasks'),
     path('developer/tasks/update/<int:feedback_id>/', admin_views.update_feedback_status, name='update_feedback_status'),
+    path('developer/tasks/delete/<int:feedback_id>/', admin_views.delete_feedback, name='delete_feedback'),
+    path('developer/tasks/clear-all-completed/', admin_views.clear_all_completed_feedback, name='clear_all_completed_feedback'),
     path('developer/data/', admin_views.developer_data, name='developer_data'),
 
     # Developer role promotions (superuser only)

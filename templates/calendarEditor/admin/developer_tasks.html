@@ -116,48 +116,115 @@
         {% endif %}
     </div>
 
-    <!-- COMPLETED TASKS (Collapsible) -->
-    <h2 style="margin-top: 2rem; margin-bottom: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;" onclick="toggleSection('completed')">
-        <span id="completed-arrow" style="transition: transform 0.2s;">▶</span>
-        Completed Tasks ({{ completed_feedback|length }})
-    </h2>
-    <div id="completed-section" style="display: none;">
-        {% if completed_feedback %}
-            {% for feedback in completed_feedback %}
-            <div class="card" style="margin-bottom: 1rem; opacity: 0.8; border-left: 4px solid #27ae60;">
+    <!-- COMPLETED TASKS (Organized by Type) -->
+    <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0;">
+            Completed Tasks ({{ completed_bugs|length|add:completed_features|length|add:completed_opinions|length }})
+        </h2>
+        {% if completed_bugs or completed_features or completed_opinions %}
+            <form method="post" action="{% url 'clear_all_completed_feedback' %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete ALL completed feedback?');">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="background-color: #e74c3c; color: white; padding: 0.5rem 1rem; font-size: 0.9rem;">Clear All</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <!-- Bugs (Collapsible) -->
+    <h3 style="margin-top: 1rem; margin-bottom: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;" onclick="toggleSection('bugs')">
+        <span id="bugs-arrow" style="transition: transform 0.2s;">▶</span>
+        Bugs ({{ completed_bugs|length }})
+    </h3>
+    <div id="bugs-section" style="display: none;">
+        {% if completed_bugs %}
+            {% for feedback in completed_bugs %}
+            <div class="card" style="margin-bottom: 1rem; opacity: 0.8; border-left: 4px solid #e74c3c;">
                 <div style="display: flex; justify-content: space-between; align-items: start;">
                     <div style="flex: 1;">
-                        <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem;">
-                            <span style="background: {% if feedback.feedback_type == 'bug' %}#e74c3c{% elif feedback.feedback_type == 'feature' %}#3498db{% else %}#27ae60{% endif %}; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem;">{{ feedback.get_feedback_type_display }}</span>
-                            {{ feedback.title }}
-                        </h3>
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem;">{{ feedback.title }}</h4>
                         <p style="color: #7f8c8d; margin: 0.25rem 0; font-size: 0.85rem;">
                             By {{ feedback.user.username }} - {{ feedback.created_at|date:"M d, Y" }}
                             {% if feedback.reviewed_by %} | Completed by {{ feedback.reviewed_by.username }} on {{ feedback.reviewed_at|date:"M d, Y" }}{% endif %}
                         </p>
-                        <button type="button" class="btn btn-secondary" onclick="toggleDetails({{ feedback.id }})" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; margin-top: 0.5rem;">Details</button>
-
-                        <!-- Details (hidden by default) -->
-                        <div id="details-{{ feedback.id }}" style="display: none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; font-size: 0.9rem;">
-                            <p><strong>Description:</strong> {{ feedback.description }}</p>
-                            {% if feedback.developer_notes %}
-                                <p><strong>Developer Notes:</strong> {{ feedback.developer_notes }}</p>
-                            {% endif %}
-                            {% if feedback.replication_steps %}
-                                <p><strong>Replication:</strong> {{ feedback.replication_steps }}</p>
-                            {% endif %}
-                            {% if feedback.console_logs %}
-                                <p><strong>Console Logs:</strong></p>
-                                <pre style="background: #2c3e50; color: #ecf0f1; padding: 0.5rem; border-radius: 4px; overflow-x: auto; font-size: 0.8rem;">{{ feedback.console_logs }}</pre>
-                            {% endif %}
-                            <p><strong>Device:</strong> {{ feedback.device_info.browser }} on {{ feedback.device_info.os }} ({{ feedback.device_info.device }})</p>
-                        </div>
+                        <p style="margin: 0.5rem 0; font-size: 0.9rem;">{{ feedback.description }}</p>
+                        {% if feedback.developer_notes %}
+                            <p style="margin: 0.5rem 0; font-size: 0.9rem;"><strong>Notes:</strong> {{ feedback.developer_notes }}</p>
+                        {% endif %}
                     </div>
+                    <form method="post" action="{% url 'delete_feedback' feedback.id %}" style="margin-left: 1rem;" onsubmit="return confirm('Delete this feedback?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn" style="background-color: #e74c3c; color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem;">Delete</button>
+                    </form>
                 </div>
             </div>
             {% endfor %}
         {% else %}
-            <p style="color: #7f8c8d; padding: 1rem; background: #f8f9fa; border-radius: 4px;">No completed tasks</p>
+            <p style="color: #7f8c8d; padding: 1rem; background: #f8f9fa; border-radius: 4px;">No completed bugs</p>
+        {% endif %}
+    </div>
+
+    <!-- Feature Requests (Collapsible) -->
+    <h3 style="margin-top: 1rem; margin-bottom: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;" onclick="toggleSection('features')">
+        <span id="features-arrow" style="transition: transform 0.2s;">▶</span>
+        Feature Requests ({{ completed_features|length }})
+    </h3>
+    <div id="features-section" style="display: none;">
+        {% if completed_features %}
+            {% for feedback in completed_features %}
+            <div class="card" style="margin-bottom: 1rem; opacity: 0.8; border-left: 4px solid #3498db;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem;">{{ feedback.title }}</h4>
+                        <p style="color: #7f8c8d; margin: 0.25rem 0; font-size: 0.85rem;">
+                            By {{ feedback.user.username }} - {{ feedback.created_at|date:"M d, Y" }}
+                            {% if feedback.reviewed_by %} | Completed by {{ feedback.reviewed_by.username }} on {{ feedback.reviewed_at|date:"M d, Y" }}{% endif %}
+                        </p>
+                        <p style="margin: 0.5rem 0; font-size: 0.9rem;">{{ feedback.description }}</p>
+                        {% if feedback.developer_notes %}
+                            <p style="margin: 0.5rem 0; font-size: 0.9rem;"><strong>Notes:</strong> {{ feedback.developer_notes }}</p>
+                        {% endif %}
+                    </div>
+                    <form method="post" action="{% url 'delete_feedback' feedback.id %}" style="margin-left: 1rem;" onsubmit="return confirm('Delete this feedback?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn" style="background-color: #e74c3c; color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem;">Delete</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: #7f8c8d; padding: 1rem; background: #f8f9fa; border-radius: 4px;">No completed feature requests</p>
+        {% endif %}
+    </div>
+
+    <!-- Opinions (Collapsible) -->
+    <h3 style="margin-top: 1rem; margin-bottom: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;" onclick="toggleSection('opinions')">
+        <span id="opinions-arrow" style="transition: transform 0.2s;">▶</span>
+        Opinions ({{ completed_opinions|length }})
+    </h3>
+    <div id="opinions-section" style="display: none;">
+        {% if completed_opinions %}
+            {% for feedback in completed_opinions %}
+            <div class="card" style="margin-bottom: 1rem; opacity: 0.8; border-left: 4px solid #27ae60;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem;">{{ feedback.title }}</h4>
+                        <p style="color: #7f8c8d; margin: 0.25rem 0; font-size: 0.85rem;">
+                            By {{ feedback.user.username }} - {{ feedback.created_at|date:"M d, Y" }}
+                            {% if feedback.reviewed_by %} | Completed by {{ feedback.reviewed_by.username }} on {{ feedback.reviewed_at|date:"M d, Y" }}{% endif %}
+                        </p>
+                        <p style="margin: 0.5rem 0; font-size: 0.9rem;">{{ feedback.description }}</p>
+                        {% if feedback.developer_notes %}
+                            <p style="margin: 0.5rem 0; font-size: 0.9rem;"><strong>Notes:</strong> {{ feedback.developer_notes }}</p>
+                        {% endif %}
+                    </div>
+                    <form method="post" action="{% url 'delete_feedback' feedback.id %}" style="margin-left: 1rem;" onsubmit="return confirm('Delete this feedback?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn" style="background-color: #e74c3c; color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem;">Delete</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: #7f8c8d; padding: 1rem; background: #f8f9fa; border-radius: 4px;">No completed opinions</p>
         {% endif %}
     </div>
 </div>

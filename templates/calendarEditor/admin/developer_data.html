@@ -196,6 +196,76 @@
         </div>
     </div>
 
+    <!-- Turso Database Usage -->
+    <div style="margin-bottom: 1.5rem;">
+        <div class="card" style="border-left: 4px solid #1abc9c;">
+            <h3 style="color: #1abc9c;">Turso Database Usage (Current Billing Cycle)</h3>
+            {% if turso_usage %}
+                <p style="color: #7f8c8d; margin-bottom: 1.5rem; font-size: 0.9rem;">
+                    Real-time usage data from Turso API.
+                    <a href="https://turso.tech/app/{{ turso_org_slug }}/usage" target="_blank" style="color: #3498db;">View full dashboard →</a>
+                </p>
+
+                <!-- Rows Read -->
+                <div style="margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <strong>Rows Read (Monthly)</strong>
+                        <span>{{ turso_usage.rows_read|floatformat:0 }} / {{ turso_limits.rows_read_monthly|floatformat:0 }}</span>
+                    </div>
+                    <div style="background: #ecf0f1; border-radius: 10px; height: 20px; overflow: hidden;">
+                        <div style="background: {% if turso_usage.rows_read_percent >= 90 %}#e74c3c{% elif turso_usage.rows_read_percent >= 75 %}#f39c12{% else %}#3498db{% endif %};
+                                    height: 100%; width: {{ turso_usage.rows_read_percent|floatformat:1 }}%;"></div>
+                    </div>
+                    <small style="color: #7f8c8d;">{{ turso_usage.rows_read_percent|floatformat:1 }}% used</small>
+                </div>
+
+                <!-- Rows Written -->
+                <div style="margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <strong>Rows Written (Monthly)</strong>
+                        <span>{{ turso_usage.rows_written|floatformat:0 }} / {{ turso_limits.rows_written_monthly|floatformat:0 }}</span>
+                    </div>
+                    <div style="background: #ecf0f1; border-radius: 10px; height: 20px; overflow: hidden;">
+                        <div style="background: {% if turso_usage.rows_written_percent >= 90 %}#e74c3c{% elif turso_usage.rows_written_percent >= 75 %}#f39c12{% else %}#9b59b6{% endif %};
+                                    height: 100%; width: {{ turso_usage.rows_written_percent|floatformat:1 }}%;"></div>
+                    </div>
+                    <small style="color: #7f8c8d;">{{ turso_usage.rows_written_percent|floatformat:1 }}% used</small>
+                </div>
+
+                <!-- Storage -->
+                <div style="margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <strong>Storage</strong>
+                        <span>{{ turso_usage.storage_mb|floatformat:2 }} MB / {{ turso_limits.storage_mb|floatformat:0 }} MB</span>
+                    </div>
+                    <div style="background: #ecf0f1; border-radius: 10px; height: 20px; overflow: hidden;">
+                        <div style="background: {% if turso_usage.storage_percent >= 90 %}#e74c3c{% elif turso_usage.storage_percent >= 75 %}#f39c12{% else %}#1abc9c{% endif %};
+                                    height: 100%; width: {{ turso_usage.storage_percent|floatformat:1 }}%;"></div>
+                    </div>
+                    <small style="color: #7f8c8d;">{{ turso_usage.storage_percent|floatformat:1 }}% used</small>
+                </div>
+
+                <!-- Databases -->
+                <div>
+                    <strong>Total Databases:</strong> {{ turso_usage.databases }}
+                </div>
+            {% else %}
+                <p style="color: #e74c3c;">Unable to fetch Turso usage metrics. Please verify TURSO_ORG_SLUG and TURSO_API_TOKEN environment variables.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- API Endpoint Hits -->
+    <div style="margin-bottom: 1.5rem;">
+        <div class="card">
+            <h3>API Endpoint Hits {% if days_filter == 0 %}(All Time){% elif days_filter == 7 %}(Last 7 Days){% else %}(Last 30 Days){% endif %}</h3>
+            <p style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 1rem;">Frequently-polled endpoints excluded from Top Pages chart</p>
+            {% for endpoint, count in api_hits.items %}
+                <p><strong>{{ endpoint }}:</strong> {{ count|floatformat:0 }} hits</p>
+            {% endfor %}
+        </div>
+    </div>
+
     <!-- Detailed Stats Row -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
         <div class="card">

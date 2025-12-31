@@ -2810,7 +2810,23 @@ def parse_user_agent(request):
 def submit_feedback(request):
     """Submit feedback (bugs, feature requests, opinions)."""
     from .forms import FeedbackForm
+    from .models import Feedback
     from . import notifications
+
+    # Check feedback limits (completed feedbacks don't count)
+    active_feedback_count = Feedback.objects.filter(
+        user=request.user
+    ).exclude(status='completed').count()
+
+    # Set limit based on user role
+    if hasattr(request.user, 'profile') and request.user.profile.is_developer:
+        feedback_limit = 300
+    else:
+        feedback_limit = 30
+
+    if active_feedback_count >= feedback_limit:
+        messages.error(request, f'You have reached your feedback limit of {feedback_limit} active submissions. Please wait for existing feedback to be completed before submitting more.')
+        return redirect('home')
 
     if request.method == 'POST':
         form = FeedbackForm(request.POST)
