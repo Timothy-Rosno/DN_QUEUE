@@ -403,6 +403,10 @@ class QueuePreset(models.Model):
     # Queue parameters (copied from QueueEntry, excluding is_rush_job and special_requirements)
     title = models.CharField(max_length=75, blank=True, default='', help_text="Experiment title/name")
     description = models.TextField(blank=True, default='', help_text="Experiment description", validators=[MaxLengthValidator(500)])
+    requested_measurement_days = models.IntegerField(
+        default=2,
+        help_text="Requested time on machine for measurements (1-7 days)"
+    )
 
     # Temperature requirements
     required_min_temp = models.FloatField(null=True, blank=True, help_text="Required minimum temperature (Kelvin)")

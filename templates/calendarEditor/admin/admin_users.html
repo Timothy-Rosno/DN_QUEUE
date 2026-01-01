@@ -243,7 +243,8 @@
     </div>
 </div>
 
-<!-- CURRENTLY ONLINE USERS -->
+<!-- CURRENTLY ONLINE USERS (Developer/Superuser Only) -->
+{% if user.is_superuser or user.profile.is_developer %}
 <div class="card" style="margin-top: 2rem;">
     <h2 style="margin-bottom: 1rem;">Currently Online Users ({{ online_count }})</h2>
     {% if online_users_data %}
@@ -294,6 +295,7 @@
     <p style="color: #7f8c8d; padding: 1rem; text-align: center;">No users currently online</p>
     {% endif %}
 </div>
+{% endif %}
 
 <!-- PER-USER ANALYTICS -->
 <div class="card" style="margin-top: 2rem;">

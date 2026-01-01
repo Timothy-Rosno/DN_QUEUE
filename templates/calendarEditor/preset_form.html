@@ -84,6 +84,18 @@
             <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.description.help_text }}</small>
         </div>
 
+        <!-- Requested Measurement Time -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.requested_measurement_days.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Requested Measurement Time on Machine (days)
+            </label>
+            {{ form.requested_measurement_days }}
+            {% if form.requested_measurement_days.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.requested_measurement_days.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.requested_measurement_days.help_text }}</small>
+        </div>
+
         <!-- Temperature Fields -->
         <div style="margin-bottom: 1.5rem;">
             <label for="{{ form.required_min_temp.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">

@@ -272,7 +272,7 @@ class QueuePresetForm(forms.ModelForm):
             required=False,
             validators=[MinValueValidator(min_temp_min), MaxValueValidator(max_temp_max)],
             widget=forms.NumberInput(attrs={'min': str(min_temp_min), 'max': str(max_temp_max), 'step': str(temp_step)}),
-            label='Minimum Temperature (K) (ex. 10 mK = 0.01 K) (optional)',
+            label='Minimum Temperature (K) (optional)',
             help_text=f'Lowest temperature you need to reach (range: {min_temp_min}-{max_temp_max} K) (optional)'
         )
 
@@ -328,7 +328,7 @@ class QueuePresetForm(forms.ModelForm):
 
     class Meta:
         model = QueuePreset
-        fields = ('name', 'is_public', 'title', 'description',
+        fields = ('name', 'is_public', 'title', 'description', 'requested_measurement_days',
                   'required_min_temp', 'required_max_temp',
                   'required_b_field_x', 'required_b_field_y', 'required_b_field_z',
                   'required_b_field_direction',

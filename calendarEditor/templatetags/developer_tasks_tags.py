@@ -60,4 +60,8 @@ def get_rush_jobs_count():
 @register.simple_tag
 def get_admin_actions_count():
     """Get total count of pending admin actions (users + queue appeals)"""
-    return get_pending_users_count() + get_rush_jobs_count()
+    pending_users = get_pending_users_count()
+    rush_jobs = get_rush_jobs_count()
+    total = pending_users + rush_jobs
+    print(f"[ADMIN_ACTIONS] Pending users: {pending_users}, Rush jobs: {rush_jobs}, Total: {total}")
+    return total
