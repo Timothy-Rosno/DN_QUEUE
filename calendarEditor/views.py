@@ -242,8 +242,8 @@ def submit_queue_entry(request):
             best_machine, details = find_best_machine(queue_entry, return_details=True)
 
             if best_machine:
-                # Auto-calculate estimated duration as (cooldown * 2) + requested measurement time
-                queue_entry.estimated_duration_hours = (best_machine.cooldown_hours * 2) + (queue_entry.requested_measurement_days * 24)
+                # Auto-calculate estimated duration as cooldown + warmup + requested measurement time
+                queue_entry.estimated_duration_hours = best_machine.cooldown_hours + best_machine.warmup_hours + (queue_entry.requested_measurement_days * 24)
                 # Assign to queue
                 if assign_to_queue(queue_entry):
                     # Broadcast queue update to all connected users (gracefully fails if Redis unavailable)
@@ -285,7 +285,7 @@ def submit_queue_entry(request):
                         f'Queue entry submitted successfully! '
                         f'You have been assigned to <strong>{queue_entry.assigned_machine.name}</strong> '
                         f'at position <strong>#{queue_entry.queue_position}</strong>.<br>'
-                        f'<strong>Estimated Duration:</strong> {queue_entry.estimated_duration_hours} hours (calculated as cooldown × 2). '
+                        f'<strong>Estimated Duration:</strong> {queue_entry.estimated_duration_hours} hours (includes machine cooldown and warmup sequences). '
                     )
 
                     if hours == 0:

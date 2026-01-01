@@ -3338,6 +3338,10 @@ def update_feedback_status(request, feedback_id):
         # Show different message based on what was updated
         if new_status == 'completed':
             messages.success(request, f'Task Completed. Message sent to user {feedback.user.username}.')
+        elif new_status == 'reviewed':
+            messages.success(request, 'Marked feedback as reviewed!')
+        elif new_status == 'new':
+            messages.success(request, 'Marked feedback as new.')
         else:
             messages.success(request, f'Feedback #{feedback.id} updated.')
 

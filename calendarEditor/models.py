@@ -77,6 +77,7 @@ class Machine(models.Model):
 
     # Operational characteristics
     cooldown_hours = models.IntegerField(help_text="Cooldown time in hours")
+    warmup_hours = models.IntegerField(default=0, help_text="Warmup/heatup time in hours")
 
     # Current status
     current_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='idle')
