@@ -242,8 +242,8 @@ def submit_queue_entry(request):
             best_machine, details = find_best_machine(queue_entry, return_details=True)
 
             if best_machine:
-                # Auto-calculate estimated duration as cooldown * 2
-                queue_entry.estimated_duration_hours = best_machine.cooldown_hours * 2
+                # Auto-calculate estimated duration as (cooldown * 2) + requested measurement time
+                queue_entry.estimated_duration_hours = (best_machine.cooldown_hours * 2) + (queue_entry.requested_measurement_days * 24)
                 # Assign to queue
                 if assign_to_queue(queue_entry):
                     # Broadcast queue update to all connected users (gracefully fails if Redis unavailable)
@@ -2887,23 +2887,17 @@ def notify_developers_new_feedback(feedback):
     else:  # opinion
         details = f"Topic: {feedback.title}\n\nOpinion: {feedback.description[:200]}..."
 
-    # Create notification for each recipient
+    # Create notification for each recipient (includes Slack DM automatically)
     for recipient in all_recipients:
-        notification = notifications.create_notification(
+        # Use detailed message for both in-app and Slack
+        full_message = f"{feedback.user.username} submitted a {feedback.get_feedback_type_display()}\n\n{details}"
+
+        notifications.create_notification(
             recipient=recipient,
             notification_type='developer_new_feedback',
-            title=f'New {feedback.get_feedback_type_display()}',
-            message=f'{feedback.user.username} submitted: {feedback.title}',
-            triggering_user=feedback.user,
-        )
-
-        # Send Slack DM with detailed information
-        slack_message = f"*{feedback.user.username}* submitted a {feedback.get_feedback_type_display()}\n\n{details}"
-        notifications.send_slack_dm(
-            user=recipient,
             title=f'New {feedback.get_feedback_type_display()}: {feedback.title}',
-            message=slack_message,
-            notification=notification
+            message=full_message,
+            triggering_user=feedback.user,
         )
 
 

@@ -20,7 +20,8 @@
         {% with entry=item.entry matching_machines=item.matching_machines live_temp=item.live_temp display_status=item.display_status %}
         <div data-machine-id="{{ entry.assigned_machine.id }}" style="border: 1px solid #e67e22; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #fff3cd; overflow: hidden;">
             <div style="margin-bottom: 1rem;">
-                <h3 style="margin-top: 0; color: #856404; word-wrap: break-word; overflow-wrap: break-word;">Device: {{ entry.title|truncatechars:50 }} {{ entry.description|truncatewords:15 }}</h3>
+                <h3 style="margin-top: 0; color: #856404; word-wrap: break-word; overflow-wrap: break-word;">Device: {{ entry.title|truncatechars:50 }}</h3>
+                <p style="color: #856404; margin: 0.5rem 0;"><strong>Description:</strong> {{ entry.description|truncatewords:15 }}</p>
                 <p style="color: #856404; margin: 0.5rem 0;"><strong>User:</strong> {{ entry.user.username }} | <strong>Submitted:</strong> {{ entry.submitted_at|date:"M d, Y g:i A" }}</p>
                 <p style="color: #856404; margin: 0.5rem 0;">
                     <strong>Machine:</strong> {{ entry.assigned_machine.name }} |
@@ -30,24 +31,6 @@
                     {% endif %}
                     <strong>Temp:</strong> <span class="machine-temp">{% if live_temp %}{{ live_temp|floatformat:2 }} K{% else %}<span style="color: #999;">N/A</span>{% endif %}</span>
                 </p>
-            </div>
-
-            <!-- Machine Reassignment -->
-            <div style="background-color: white; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
-                <strong style="display: block; margin-bottom: 0.5rem;">Reassign Machine ({{ matching_machines|length }} matching machines):</strong>
-                <form method="post" action="{% url 'reassign_machine' entry.id %}" style="display: flex; gap: 0.5rem; align-items: center;">
-                    {% csrf_token %}
-                    <select name="machine_id" style="flex: 1; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
-                        {% for machine in matching_machines %}
-                            <option value="{{ machine.id }}" {% if machine.id == entry.assigned_machine.id %}selected{% endif %}>
-                                {% with wait_time=machine.get_estimated_wait_time %}
-                                    {{ machine.name }} - Queue: {{ machine.get_queue_count }} - Wait: {{ wait_time.days }}d {% widthratio wait_time.seconds 3600 1 %}h
-                                {% endwith %}
-                            </option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="btn">Reassign</button>
-                </form>
             </div>
 
             <div style="background-color: white; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; overflow: hidden;">
@@ -60,6 +43,9 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem;">
                     <div><strong>Min Temp:</strong> {{ entry.required_min_temp }} K</div>
                     {% comment %}<div><strong>Max Temp:</strong> {{ entry.required_max_temp|default:"—" }} K</div>{% endcomment %}
+                    <div><strong>B-field X:</strong> {{ entry.required_b_field_x }} T</div>
+                    <div><strong>B-field Y:</strong> {{ entry.required_b_field_y }} T</div>
+                    <div><strong>B-field Z:</strong> {{ entry.required_b_field_z }} T</div>
                     <div><strong>DC Lines:</strong> {{ entry.required_dc_lines }}</div>
                     <div><strong>RF Lines:</strong> {{ entry.required_rf_lines }}</div>
                     <div><strong>Duration:</strong> {{ entry.estimated_duration_hours }} hours</div>

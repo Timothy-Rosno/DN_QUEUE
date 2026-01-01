@@ -1016,7 +1016,7 @@ def notify_admins_rush_job_approved(queue_entry, approving_admin):
     admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
 
     title = 'Queue Appeal Approved'
-    message = f'✓ {approving_admin.username} approved queue appeal "{queue_entry.title}" by {queue_entry.user.username} on {queue_entry.assigned_machine.name}. Moved to position {queue_entry.queue_position}.'
+    message = f'{approving_admin.username} approved queue appeal "{queue_entry.title}" by {queue_entry.user.username} on {queue_entry.assigned_machine.name}. Moved to position {queue_entry.queue_position}.'
 
     for admin in admin_users:
         prefs = NotificationPreference.get_or_create_for_user(admin)
@@ -1039,7 +1039,7 @@ def notify_admins_rush_job_rejected(queue_entry, rejecting_admin, rejection_reas
     admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
 
     title = 'Queue Appeal Rejected'
-    message = f'✗ {rejecting_admin.username} rejected queue appeal "{queue_entry.title}" by {queue_entry.user.username}.\nReason: {rejection_reason}'
+    message = f'{rejecting_admin.username} rejected queue appeal "{queue_entry.title}" by {queue_entry.user.username}.\nReason: {rejection_reason}'
 
     for admin in admin_users:
         prefs = NotificationPreference.get_or_create_for_user(admin)

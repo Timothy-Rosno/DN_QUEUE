@@ -189,8 +189,12 @@ class Machine(models.Model):
         """
         Get cached temperature reading.
         Returns temperature in Kelvin, or None if unavailable.
-        Health check: Returns None if data is stale (older than 60 seconds).
+        Health check: Returns None if machine is offline or if data is stale (older than 60 seconds).
         """
+        # Check if machine is offline
+        if not self.cached_online:
+            return None  # Machine is offline
+
         # Check if data is stale
         if self.last_temp_update:
             time_since_update = timezone.now() - self.last_temp_update
@@ -281,6 +285,10 @@ class QueueEntry(models.Model):
 
     # Scheduling info
     estimated_duration_hours = models.FloatField(help_text="Estimated duration in hours")
+    requested_measurement_days = models.IntegerField(
+        default=2,
+        help_text="Requested time on machine for measurements (1-7 days)"
+    )
     priority = models.IntegerField(default=0, help_text="Higher number = higher priority")
 
     # Assignment

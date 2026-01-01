@@ -224,8 +224,21 @@
             {{ form.special_requirements }}
         </div>
 
+        <!-- Requested Measurement Time -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="id_requested_measurement_days" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+                Requested Measurement Time on Machine (days)
+            </label>
+            <input type="number" name="requested_measurement_days" id="id_requested_measurement_days"
+                   min="1" max="7" value="2" required
+                   style="width: 100px; padding: 0.5rem; border: 1px solid #bdc3c7; border-radius: 4px;">
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">
+                How many days do you need the machine for measurements? (1-7 days, default: 2)
+            </small>
+        </div>
+
         <div id="durationNote" style="margin-bottom: 1.5rem; padding: 1rem; background-color: #e8f4f8; border-radius: 4px; border-left: 4px solid #3498db;">
-            <strong>Note:</strong> Estimated measurement duration will be automatically calculated as (Machine Cooldown × 2) and displayed after submission.
+            <strong>Note:</strong> Total machine time will be automatically calculated as (Machine Cooldown × 2) + (Requested Measurement Time in hours) and displayed after submission.
         </div>
 
         <!-- Rush Job -->
