@@ -77,12 +77,20 @@ class CustomLoginView(LoginView):
             elif 'ipad' in user_agent or 'tablet' in user_agent:
                 device = 'Tablet'
 
-            # Update profile
-            profile.last_login_ip = ip_address
-            profile.last_login_browser = browser
-            profile.last_login_os = os_name
-            profile.last_login_device = device
-            profile.save(update_fields=['last_login_ip', 'last_login_browser', 'last_login_os', 'last_login_device'])
+            # Only update if values changed (avoid unnecessary DB writes)
+            needs_update = (
+                profile.last_login_ip != ip_address or
+                profile.last_login_browser != browser or
+                profile.last_login_os != os_name or
+                profile.last_login_device != device
+            )
+
+            if needs_update:
+                profile.last_login_ip = ip_address
+                profile.last_login_browser = browser
+                profile.last_login_os = os_name
+                profile.last_login_device = device
+                profile.save(update_fields=['last_login_ip', 'last_login_browser', 'last_login_os', 'last_login_device'])
         except Exception as e:
             # Don't break login if tracking fails
             print(f"[LoginTracking] Error: {e}")

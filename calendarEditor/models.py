@@ -25,8 +25,10 @@ class Machine(models.Model):
     OPTICAL_CHOICES = [
         ('none', 'None'),
         ('available', 'Available'),
-        ('with_work', 'With Some Work'),
+        ('optical_setup_not_working', 'Optical Setup (Not Working)'),
+        ('optical_ICE_motherboard_Qboard_1', 'Optical ICE Motherboard Qboard 1'),
         ('under_construction', 'Under Construction'),
+        ('with_work', 'With Some Work')
     ]
 
     API_TYPE_CHOICES = [
