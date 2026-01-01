@@ -108,16 +108,15 @@ def admin_users(request):
     unapproved_users.sort(key=lambda u: u.username.lower())
     approved_users.sort(key=lambda u: u.username.lower())
 
-    # === ONLINE USERS FROM REDIS CACHE (ZERO DB IMPACT) ===
-    online_users_data = []
+    # === FETCH LAST SEEN & DEVICE INFO FROM REDIS (ZERO DB IMPACT) ===
+    # Build a map of user_id -> activity data from Redis cache
+    user_activity_map = {}
     try:
         from django.core.cache import cache
-        from django.utils import timezone
-        from datetime import timedelta
         import json
+        from dateutil import parser
 
-        # Get all online user keys from Redis
-        # Note: This uses Redis KEYS command - efficient for small datasets
+        # Get all user activity keys from Redis
         cache_keys = cache.keys('online_user:*')
 
         for key in cache_keys:
@@ -125,48 +124,40 @@ def admin_users(request):
                 data_json = cache.get(key)
                 if data_json:
                     user_data = json.loads(data_json)
+                    user_id = user_data.get('user_id')
 
                     # Parse last_seen timestamp
-                    from dateutil import parser
                     last_seen = parser.parse(user_data['last_seen'])
 
-                    # Build roles list
-                    user_obj = User.objects.get(id=user_data['user_id'])
-                    roles = []
-                    if user_obj.is_superuser:
-                        roles.append('Admin')
-                        roles.append('Developer')
-                        roles.append('Staff')
-                    elif hasattr(user_obj, 'profile') and user_obj.profile.is_developer:
-                        roles.append('Developer')
-                        roles.append('Staff')
-                    elif user_obj.is_staff:
-                        roles.append('Staff')
-
-                    if not roles:
-                        roles.append('User')
-
-                    online_users_data.append({
-                        'username': user_data['username'],
-                        'email': user_data['email'],
+                    user_activity_map[user_id] = {
+                        'last_seen': last_seen,
                         'browser': user_data.get('browser', 'Unknown'),
                         'os': user_data.get('os', 'Unknown'),
                         'device': user_data.get('device', 'Unknown'),
                         'ip_address': user_data.get('ip_address', 'Unknown'),
-                        'last_seen': last_seen,
-                        'roles': roles,
-                    })
+                    }
             except Exception as e:
-                # Skip invalid entries
-                print(f"[OnlineUsers] Error parsing user data: {e}")
+                print(f"[UserActivity] Error parsing user data: {e}")
                 continue
 
-        # Sort by last seen (most recent first)
-        online_users_data.sort(key=lambda x: x['last_seen'], reverse=True)
-
     except Exception as e:
-        print(f"[OnlineUsers] Error fetching online users: {e}")
-        online_users_data = []
+        print(f"[UserActivity] Error fetching user activity: {e}")
+
+    # Attach activity data to user objects
+    for user_item in unapproved_users + approved_users:
+        activity = user_activity_map.get(user_item.id)
+        if activity:
+            user_item.last_seen = activity['last_seen']
+            user_item.browser = activity['browser']
+            user_item.os = activity['os']
+            user_item.device = activity['device']
+            user_item.ip_address = activity['ip_address']
+        else:
+            user_item.last_seen = None
+            user_item.browser = None
+            user_item.os = None
+            user_item.device = None
+            user_item.ip_address = None
 
     context = {
         'users': users,
@@ -174,8 +165,6 @@ def admin_users(request):
         'approved_users': approved_users,
         'status_filter': status_filter,
         'search_query': search_query,
-        'online_users_data': online_users_data,
-        'online_count': len(online_users_data),
     }
 
     return render(request, 'calendarEditor/admin/admin_users.html', context)
