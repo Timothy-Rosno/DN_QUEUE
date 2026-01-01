@@ -165,6 +165,7 @@ def admin_users(request):
         'approved_users': approved_users,
         'status_filter': status_filter,
         'search_query': search_query,
+        'tracked_users_count': len(user_activity_map),  # How many users have Redis data
     }
 
     return render(request, 'calendarEditor/admin/admin_users.html', context)

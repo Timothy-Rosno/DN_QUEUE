@@ -246,7 +246,12 @@
 <!-- USER ACTIVITY (from Redis cache - zero DB impact) -->
 {% if user.is_staff %}
 <div class="card" style="margin-top: 2rem;">
-    <h2 style="margin-bottom: 1rem;">User Activity</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="margin: 0;">User Activity</h2>
+        <button onclick="location.reload()" class="btn" style="padding: 0.5rem 1rem;">
+            ↻ Refresh
+        </button>
+    </div>
     <div style="overflow-x: auto;">
         <table style="width: 100%; min-width: {% if user.is_superuser or user.profile.is_developer %}1000px{% else %}600px{% endif %}; border-collapse: collapse;">
             <thead style="background: #f8f9fa;">
@@ -314,7 +319,8 @@
     <!-- Legend -->
     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ddd;">
         <p style="color: #7f8c8d; margin: 0; font-size: 0.85rem;">
-            <strong>Data Source:</strong> Redis cache (zero database impact) · Auto-expires after 15 minutes of inactivity
+            <strong>Tracking Status:</strong> {{ tracked_users_count }} user{{ tracked_users_count|pluralize }} tracked in Redis cache |
+            <strong>Data Source:</strong> Zero database impact · Auto-expires after 15 min of inactivity
         </p>
         <p style="color: #7f8c8d; margin: 0.5rem 0 0 0; font-size: 0.85rem;">
             <strong>Role Key:</strong>
@@ -327,6 +333,9 @@
             <strong>Note:</strong> Device details (IP, browser, OS, device) visible to developers and admins only.
         </p>
         {% endif %}
+        <p style="color: #7f8c8d; margin: 0.5rem 0 0 0; font-size: 0.85rem;">
+            <strong>Tip:</strong> If "Never" is shown, that user hasn't visited any page since the tracking was enabled. Click Refresh after they log in.
+        </p>
     </div>
 </div>
 {% endif %}
