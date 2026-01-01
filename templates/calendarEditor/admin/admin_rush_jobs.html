@@ -1,26 +1,26 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Rush Job Appeals - Admin{% endblock %}
+{% block title %}Queue Appeals - Admin{% endblock %}
 
 {% block content %}
 <div class="card">
-    <h1>Rush Job Appeals</h1>
-    <p style="color: #7f8c8d; margin-top: 0.5rem;">Review rush job requests from users.</p>
+    <h1>Queue Appeals</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">Review queue appeal requests from users.</p>
     <div style="margin-top: 1rem;">
         <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
     </div>
 </div>
 
 <div class="card">
-    <h2>Pending Rush Jobs ({{ rush_jobs_with_machines|length }})</h2>
+    <h2>Pending Queue Appeals ({{ rush_jobs_with_machines|length }})</h2>
 
     {% if rush_jobs_with_machines %}
         {% for item in rush_jobs_with_machines %}
         {% with entry=item.entry matching_machines=item.matching_machines live_temp=item.live_temp display_status=item.display_status %}
         <div data-machine-id="{{ entry.assigned_machine.id }}" style="border: 1px solid #e67e22; padding: 1.5rem; border-radius: 4px; margin-bottom: 1rem; background-color: #fff3cd; overflow: hidden;">
             <div style="margin-bottom: 1rem;">
-                <h3 style="margin-top: 0; color: #856404; word-wrap: break-word; overflow-wrap: break-word;">Device: {{ entry.title|truncatechars:50 }} -- {{ entry.description|truncatewords:15 }}</h3>
+                <h3 style="margin-top: 0; color: #856404; word-wrap: break-word; overflow-wrap: break-word;">Device: {{ entry.title|truncatechars:50 }} {{ entry.description|truncatewords:15 }}</h3>
                 <p style="color: #856404; margin: 0.5rem 0;"><strong>User:</strong> {{ entry.user.username }} | <strong>Submitted:</strong> {{ entry.submitted_at|date:"M d, Y g:i A" }}</p>
                 <p style="color: #856404; margin: 0.5rem 0;">
                     <strong>Machine:</strong> {{ entry.assigned_machine.name }} |
@@ -40,7 +40,9 @@
                     <select name="machine_id" style="flex: 1; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                         {% for machine in matching_machines %}
                             <option value="{{ machine.id }}" {% if machine.id == entry.assigned_machine.id %}selected{% endif %}>
-                                {{ machine.name }} - Queue: {{ machine.get_queue_count }} - Wait: {{ machine.get_estimated_wait_time.days }}d {{ machine.get_estimated_wait_time.seconds|floatformat:0 }}s
+                                {% with wait_time=machine.get_estimated_wait_time %}
+                                    {{ machine.name }} - Queue: {{ machine.get_queue_count }} - Wait: {{ wait_time.days }}d {% widthratio wait_time.seconds 3600 1 %}h
+                                {% endwith %}
                             </option>
                         {% endfor %}
                     </select>
@@ -49,7 +51,7 @@
             </div>
 
             <div style="background-color: white; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; overflow: hidden;">
-                <strong style="display: block; margin-bottom: 0.5rem;">Explanation for Hugh:</strong>
+                <strong style="display: block; margin-bottom: 0.5rem;">Appeal Justification:</strong>
                 <p style="margin: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; word-wrap: break-word;" data-tooltip="{{ entry.special_requirements|default:'No explanation provided.' }}">{{ entry.special_requirements|default:"No explanation provided." }}</p>
             </div>
 
@@ -64,26 +66,75 @@
                 </div>
             </div>
 
-            <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
-                <form method="post" action="{% url 'approve_rush_job' entry.id %}" style="display: inline;">
+            <!-- Approval Form with Machine & Position Selection -->
+            <div style="background-color: #e8f8f5; border-left: 4px solid #27ae60; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
+                <form method="post" action="{% url 'approve_rush_job' entry.id %}" id="approve-form-{{ entry.id }}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-success">Approve & Queue Next</button>
-                </form>
-                <button type="button" class="btn btn-danger reject-rush-btn"
-                    data-entry-id="{{ entry.id }}"
-                    data-entry-title="{{ entry.title }}">
-                    Reject Appeal
-                </button>
-                <a href="{% url 'admin_edit_entry' entry.id %}?return_to=admin_rush_jobs" class="btn btn-secondary">Edit Entry</a>
-                <form method="get" action="mailto:{{ entry.user.email }}?subject=Rush Job Request - {{ entry.title }}" style="display: inline;">
-                    <button type="submit" class="btn btn-info" onclick="window.location.href='mailto:{{ entry.user.email }}?subject=Rush Job Request - {{ entry.title }}'; return false;">Email User</button>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #27ae60;">
+                            Approve to Machine:
+                        </label>
+                        <select name="machine_id" id="machine-select-{{ entry.id }}" style="width: 100%; padding: 0.5rem; border: 1px solid #27ae60; border-radius: 4px;">
+                            {% for machine in matching_machines %}
+                                <option value="{{ machine.id }}"
+                                        data-queue-count="{{ machine.get_queue_count }}"
+                                        {% if machine.id == entry.assigned_machine.id %}selected{% endif %}>
+                                    {% with wait_time=machine.get_estimated_wait_time %}
+                                        {{ machine.name }} - {{ machine.get_queue_count }} in queue - Wait: {{ wait_time.days }}d {% widthratio wait_time.seconds 3600 1 %}h
+                                    {% endwith %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <small style="color: #27ae60; display: block; margin-top: 0.25rem;">
+                            Showing {{ matching_machines|length }} compatible machine{{ matching_machines|length|pluralize }}.
+                        </small>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #27ae60;">
+                            Queue Position: #<span id="position-display-{{ entry.id }}">1</span> of <span id="max-position-{{ entry.id }}">{{ entry.assigned_machine.get_queue_count|add:"1" }}</span>
+                        </label>
+                        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                            <label style="display: flex; align-items: center; cursor: pointer;">
+                                <input type="radio" name="queue_position_action" value="first" checked style="margin-right: 0.25rem;">
+                                Queue First
+                            </label>
+                            <label style="display: flex; align-items: center; cursor: pointer;">
+                                <input type="radio" name="queue_position_action" value="last" style="margin-right: 0.25rem;">
+                                Queue Last
+                            </label>
+                            <label style="display: flex; align-items: center; cursor: pointer;">
+                                <input type="radio" name="queue_position_action" value="custom" id="custom-radio-{{ entry.id }}" style="margin-right: 0.25rem;">
+                                Custom:
+                            </label>
+                            <input type="number" name="queue_position" id="manual-position-{{ entry.id }}"
+                                   min="1" max="{{ entry.assigned_machine.get_queue_count|add:"1" }}" placeholder="#" value="1"
+                                   style="width: 60px; padding: 0.25rem; border: 1px solid #27ae60; border-radius: 4px;"
+                                   onfocus="document.getElementById('custom-radio-{{ entry.id }}').checked = true;">
+                        </div>
+                        <small style="color: #27ae60; display: block; margin-top: 0.25rem;">
+                            Position 1 is next to run. Appeal will be approved and queued.
+                        </small>
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button type="submit" class="btn btn-success">Confirm Appeal</button>
+                        <button type="button" class="btn btn-danger reject-rush-btn"
+                            data-entry-id="{{ entry.id }}"
+                            data-entry-title="{{ entry.title }}">
+                            Reject Appeal
+                        </button>
+                        <a href="{% url 'admin_edit_entry' entry.id %}?return_to=admin_rush_jobs" class="btn btn-secondary">Edit Entry</a>
+                        <button type="button" class="btn btn-info" onclick="window.location.href='mailto:{{ entry.user.email }}?subject=Rush Job Request - {{ entry.title }}'; return false;">Email User</button>
+                    </div>
                 </form>
             </div>
         </div>
         {% endwith %}
         {% endfor %}
     {% else %}
-        <p style="color: #7f8c8d; margin-top: 1rem;">No pending rush job appeals.</p>
+        <p style="color: #7f8c8d; margin-top: 1rem;">No pending queue appeals.</p>
     {% endif %}
 </div>
 
@@ -91,7 +142,7 @@
     <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
 </div>
 
-<!-- Rush Job Rejection Modal -->
+<!-- Queue Appeal Rejection Modal -->
 <div id="thanosModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
     <div style="background:white; padding:2rem; border-radius:10px; max-width:500px; width:90%; text-align:center; position:relative;">
         <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto; margin-bottom: 1rem;">
@@ -116,7 +167,89 @@
 </div>
 
 <script>
+// Generate URL pattern using Django's url tag (will be used in JavaScript)
+const rejectUrlPattern = "{% url 'reject_rush_job' 999999 %}".replace('999999', 'ENTRY_ID');
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle dynamic queue position updates for each rush job form
+    document.querySelectorAll('[id^="approve-form-"]').forEach(function(form) {
+        const entryId = form.id.replace('approve-form-', '');
+        const machineSelect = document.getElementById('machine-select-' + entryId);
+        const maxPositionSpan = document.getElementById('max-position-' + entryId);
+        const positionDisplaySpan = document.getElementById('position-display-' + entryId);
+        const manualPositionInput = document.getElementById('manual-position-' + entryId);
+        const firstRadio = form.querySelector('input[value="first"]');
+        const lastRadio = form.querySelector('input[value="last"]');
+        const customRadio = document.getElementById('custom-radio-' + entryId);
+
+        if (machineSelect) {
+            machineSelect.addEventListener('change', function() {
+                const selectedOption = machineSelect.options[machineSelect.selectedIndex];
+                const queueCount = parseInt(selectedOption.getAttribute('data-queue-count') || '0');
+                const maxPosition = queueCount + 1; // +1 because appeal will be inserted
+
+                // Update displays
+                if (maxPositionSpan) maxPositionSpan.textContent = maxPosition;
+                if (manualPositionInput) {
+                    manualPositionInput.max = maxPosition;
+                    // Reset to 1 if current value exceeds new max
+                    if (parseInt(manualPositionInput.value || '1') > maxPosition) {
+                        manualPositionInput.value = maxPosition;
+                    }
+                }
+
+                // Update position display based on selected radio
+                updatePositionDisplay();
+            });
+        }
+
+        // Update position display when radio buttons change
+        form.querySelectorAll('input[name="queue_position_action"]').forEach(function(radio) {
+            radio.addEventListener('change', updatePositionDisplay);
+        });
+
+        if (manualPositionInput) {
+            manualPositionInput.addEventListener('input', updatePositionDisplay);
+        }
+
+        function updatePositionDisplay() {
+            const selectedAction = form.querySelector('input[name="queue_position_action"]:checked');
+            if (!selectedAction || !positionDisplaySpan || !maxPositionSpan) return;
+
+            const maxPosition = parseInt(maxPositionSpan.textContent || '1');
+
+            if (selectedAction.value === 'first') {
+                positionDisplaySpan.textContent = '1';
+                if (manualPositionInput) manualPositionInput.value = '1';
+            } else if (selectedAction.value === 'last') {
+                positionDisplaySpan.textContent = maxPosition;
+                if (manualPositionInput) manualPositionInput.value = maxPosition;
+            } else if (selectedAction.value === 'custom') {
+                const customValue = parseInt(manualPositionInput.value || '1');
+                positionDisplaySpan.textContent = Math.min(Math.max(customValue, 1), maxPosition);
+            }
+        }
+
+        // Handle form submission to set correct queue_position value
+        form.addEventListener('submit', function(e) {
+            const selectedAction = form.querySelector('input[name="queue_position_action"]:checked');
+            if (!selectedAction) return;
+
+            const maxPosition = parseInt(maxPositionSpan.textContent || '1');
+
+            if (selectedAction.value === 'first') {
+                if (manualPositionInput) manualPositionInput.value = '1';
+            } else if (selectedAction.value === 'last') {
+                if (manualPositionInput) manualPositionInput.value = maxPosition;
+            }
+            // For custom, the value is already in the input field
+        });
+
+        // Initialize position display on page load
+        updatePositionDisplay();
+    });
+
+    // Modal handling for queue appeal rejection
     const modal = document.getElementById('thanosModal');
     const message = document.getElementById('thanosMessage');
     const btnYes = document.getElementById('thanosYes');
@@ -135,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function() {
             currentEntryId = this.getAttribute('data-entry-id');
             currentEntryTitle = this.getAttribute('data-entry-title');
-            message.textContent = `Reject rush job appeal for "${currentEntryTitle}"?`;
+            message.textContent = `Reject queue appeal for "${currentEntryTitle}"?`;
 
             // Reset to empty (placeholder will show)
             usingCustomMessage = false;
@@ -154,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentEntryId) {
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = `/schedule/admin-rush-jobs/reject/${currentEntryId}/`;
+            form.action = rejectUrlPattern.replace('ENTRY_ID', currentEntryId);
 
             // Add CSRF token
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
@@ -197,7 +330,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = `/schedule/admin-rush-jobs/reject/${currentEntryId}/`;
+            form.action = rejectUrlPattern.replace('ENTRY_ID', currentEntryId);
 
             // Add CSRF token
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');

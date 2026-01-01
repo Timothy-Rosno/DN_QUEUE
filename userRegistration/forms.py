@@ -212,7 +212,7 @@ class NotificationPreferenceForm(forms.ModelForm):
             'notify_public_preset_created': 'Public preset created',
             'notify_public_preset_edited': 'Public preset edited',
             'notify_public_preset_deleted': 'Public preset deleted',
-            'notify_private_preset_edited': 'Your private preset edited by others',
+            'notify_private_preset_edited': 'Your private preset edited by admins',
             'notify_followed_preset_edited': 'Presets you follow are edited',
             'notify_followed_preset_deleted': 'Presets you follow are deleted',
             'notify_queue_added': 'Queue entry successfully added',

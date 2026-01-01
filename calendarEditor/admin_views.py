@@ -984,71 +984,103 @@ def admin_rush_jobs(request):
 
 @staff_member_required
 def approve_rush_job(request, entry_id):
-    """Approve a rush job and queue it next."""
+    """Approve a queue appeal and queue it at specified position."""
     from . import notifications
 
     entry = get_object_or_404(QueueEntry, id=entry_id)
 
-    if entry.is_rush_job and entry.status == 'queued' and entry.assigned_machine:
-        # Move to position 1 (queue next)
-        machine = entry.assigned_machine
-        old_position = entry.queue_position if entry.queue_position is not None else "unknown"
+    if request.method == 'POST':
+        # Get machine and position from POST
+        machine_id = request.POST.get('machine_id')
+        queue_position = request.POST.get('queue_position', '1')
 
-        # Find who is currently at position #1 (they will be bumped)
-        current_on_deck = QueueEntry.objects.filter(
-            assigned_machine=machine,
-            status='queued',
-            queue_position=1
-        ).exclude(id=entry.id).first()
+        try:
+            queue_position = int(queue_position)
+            # Validate position is at least 1
+            queue_position = max(1, queue_position)
+        except (ValueError, TypeError):
+            queue_position = 1
 
+        # Get the target machine
+        if machine_id:
+            try:
+                machine = Machine.objects.get(id=machine_id)
+            except Machine.DoesNotExist:
+                messages.error(request, 'Selected machine not found.')
+                return redirect('admin_rush_jobs')
+        else:
+            machine = entry.assigned_machine
+
+        if not machine:
+            messages.error(request, 'No machine assigned.')
+            return redirect('admin_rush_jobs')
+
+        old_machine = entry.assigned_machine
+        old_position = entry.queue_position if entry.queue_position is not None else 0
+
+        # If changing machines, use reassignment logic
+        if old_machine and machine != old_machine:
+            # Remove from old machine queue
+            old_queued = QueueEntry.objects.filter(
+                assigned_machine=old_machine,
+                status='queued'
+            ).exclude(id=entry.id).order_by('queue_position')
+
+            for idx, other_entry in enumerate(old_queued, start=1):
+                other_entry.queue_position = idx
+                other_entry.save()
+
+        # Insert into new machine queue at specified position
+        # Get all queued entries for the target machine
         queued_entries = QueueEntry.objects.filter(
             assigned_machine=machine,
             status='queued'
         ).exclude(id=entry.id).order_by('queue_position')
 
         # Step 1: Set target entry to NULL to avoid conflicts
+        entry.assigned_machine = machine
         entry.queue_position = None
         entry.save()
 
-        # Step 2: Reassign positions to all other entries in REVERSE order
-        queued_entries_list = list(queued_entries)
-        for idx in range(len(queued_entries_list) - 1, -1, -1):
-            other_entry = queued_entries_list[idx]
-            other_entry.queue_position = idx + 2  # Positions start at 2
-            other_entry.save()
+        # Step 2: Shift existing entries to make room
+        queued_list = list(queued_entries)
+        for idx in range(len(queued_list) - 1, -1, -1):
+            other_entry = queued_list[idx]
+            # Skip entries with NULL positions (corrupted data)
+            if other_entry.queue_position is None:
+                continue
+            if other_entry.queue_position >= queue_position:
+                other_entry.queue_position += 1
+                other_entry.save()
 
-        # Step 3: Set this entry to position 1 and remove rush job flag
-        entry.queue_position = 1
-        entry.is_rush_job = False  # Remove from pending rush jobs list
+        # Step 3: Set entry to specified position and mark as approved
+        entry.queue_position = queue_position
+        entry.status = 'queued'  # Ensure entry is in queued status
+        entry.is_rush_job = False  # Clear rush job flag (appeal approved)
         entry.save()
 
-        # Auto-clear rush job notifications for this entry
+        # Auto-clear queue appeal notifications
         auto_clear_notifications(
             notification_type='admin_rush_job',
             related_queue_entry=entry
         )
 
-        # Notify the person who was bumped from position #1
-        if current_on_deck:
-            current_on_deck.refresh_from_db()
-            notifications.notify_bumped_from_on_deck(current_on_deck, reason='rush job')
+        # Notify user of approval
+        notifications.notify_admin_moved_entry(entry, request.user, old_position, queue_position)
 
-        # Notify the rush job user they've been moved to position 1
-        notifications.notify_admin_moved_entry(entry, request.user, old_position, 1)
-
-        # Notify all admins on Slack that rush job has been approved (task complete)
+        # Notify all admins on Slack
         notifications.notify_admins_rush_job_approved(entry, request.user)
 
-        messages.success(request, f'Rush job "{entry.title}" approved and moved to position 1 on {machine.name}.')
+        messages.success(request, f'Appeal approved for "{entry.title}" - moved to position {queue_position} on {machine.name}.')
     else:
-        messages.error(request, 'Cannot approve this entry.')
+        messages.error(request, 'Invalid request method.')
 
     return redirect('admin_rush_jobs')
 
 
 @staff_member_required
 def reject_rush_job(request, entry_id):
-    """Reject a rush job with optional custom rejection message."""
+    """Reject a queue appeal with optional custom rejection message."""
     entry = get_object_or_404(QueueEntry, id=entry_id)
 
     if entry.is_rush_job:
@@ -1060,7 +1092,7 @@ def reject_rush_job(request, entry_id):
         entry.is_rush_job = False
         entry.save()
 
-        # Auto-clear rush job notifications for this entry
+        # Auto-clear queue appeal notifications for this entry
         auto_clear_notifications(
             notification_type='admin_rush_job',
             related_queue_entry=entry
@@ -1069,20 +1101,20 @@ def reject_rush_job(request, entry_id):
         # Send notification to user with rejection message
         notifications.create_notification(
             recipient=entry.user,
-            notification_type='queue_cancelled',
-            title=f'Rush Job/Special Request Appeal Rejected: {entry.title}',
-            message=f'Your rush job appeal for "{entry.title}" has been rejected by {request.user.username}.\n\nReason: {rejection_message}\n\nYour job remains in the queue at its current position.',
+            notification_type='admin_action',  # Changed from 'queue_cancelled' since entry is not cancelled
+            title=f'Queue Appeal Rejected: {entry.title}',
+            message=f'Your queue appeal for "{entry.title}" has been rejected by {request.user.username}.\n\nReason: {rejection_message}\n\nYour job remains in the queue at its current position.',
             related_queue_entry=entry,
             related_machine=entry.assigned_machine,
             triggering_user=request.user,
         )
 
-        # Notify all admins on Slack that rush job has been rejected (task complete)
+        # Notify all admins on Slack that queue appeal has been rejected (task complete)
         notifications.notify_admins_rush_job_rejected(entry, request.user, rejection_message)
 
-        messages.success(request, f'Rush job appeal for "{entry.title}" has been rejected. User notified.')
+        messages.success(request, f'Queue appeal for "{entry.title}" has been rejected. User notified.')
     else:
-        messages.info(request, 'This entry is not marked as a rush job.')
+        messages.info(request, 'This entry is not marked as a queue appeal.')
 
     return redirect('admin_rush_jobs')
 
@@ -3249,7 +3281,11 @@ def update_feedback_status(request, feedback_id):
                 notification=notification
             )
 
-        messages.success(request, f'Feedback #{feedback.id} updated.')
+        # Show different message based on what was updated
+        if new_status == 'completed':
+            messages.success(request, f'Task Completed. Message sent to user {feedback.user.username}.')
+        else:
+            messages.success(request, f'Feedback #{feedback.id} updated.')
 
     return redirect('developer_tasks')
 
@@ -3272,8 +3308,17 @@ def delete_feedback(request, feedback_id):
 
     if request.method == 'POST':
         feedback_title = feedback.title
+
+        # Get expanded state and scroll position from POST data
+        expanded_ids = request.POST.get('expanded_ids', '')
+        scroll_pos = request.POST.get('scroll_pos', '0')
+
         feedback.delete()
         messages.success(request, f'Completed feedback "{feedback_title}" has been deleted.')
+
+        # Redirect with expanded state and scroll position
+        redirect_url = f'/schedule/developer/tasks/?expanded={expanded_ids}&scroll={scroll_pos}'
+        return redirect(redirect_url)
 
     return redirect('developer_tasks')
 

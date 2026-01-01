@@ -451,7 +451,16 @@
                         </a>
                     </li>
                     {% if user.is_staff %}
-                        <li><a href="{% url 'admin_dashboard' %}" style="color: #f39c12; font-weight: bold;">Admin</a></li>
+                        <li style="position: relative;">
+                            <a href="{% url 'admin_dashboard' %}" style="color: #f39c12; font-weight: bold; position: relative; display: inline-block; padding: 0.5rem 1rem;">
+                                Admin
+                                {% load developer_tasks_tags %}
+                                {% get_admin_actions_count as admin_actions_count %}
+                                {% if admin_actions_count > 0 %}
+                                    <span class="notification-badge">{{ admin_actions_count }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
                     {% endif %}
                     {% if user.profile.is_developer or user.is_superuser %}
                         <li style="position: relative;">

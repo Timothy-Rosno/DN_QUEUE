@@ -298,9 +298,9 @@ def submit_queue_entry(request):
                         other_machines = [m for m in details['field_compatible'] if m != best_machine.name]
                         success_msg += f' (Selected as next available machine)'
 
-                    # Add rush job notification
+                    # Add queue appeal notification
                     if queue_entry.is_rush_job:
-                        success_msg += '<br><strong>Rush Job/Special Request Appeal:</strong> Admins have been notified and will review your request.'
+                        success_msg += '<br><strong>Queue Appeal:</strong> Admins have been notified and will review your request.'
                         # Send email notification to admins
                         send_rush_job_notification(queue_entry, request)
 
@@ -1190,11 +1190,11 @@ def delete_schedule(request, pk):
     })
 
 
-# ===== Rush Job/Special Request Management =====
+# ===== Queue Appeal Management =====
 
 def send_rush_job_notification(queue_entry, request):
     """
-    Send email and in-app notification to all admin users about a rush job submission.
+    Send email and in-app notification to all admin users about a queue appeal submission.
 
     Args:
         queue_entry: QueueEntry instance with is_rush_job=True
@@ -1211,12 +1211,12 @@ def send_rush_job_notification(queue_entry, request):
         return  # No admin emails to send to
 
     # Build email content
-    subject = f'Rush Job/Special Request Appeal: {queue_entry.title} by {queue_entry.user.username}'
+    subject = f'Queue Appeal: {queue_entry.title} by {queue_entry.user.username}'
 
     rush_job_url = request.build_absolute_uri(reverse('admin_rush_jobs'))
 
     message = f"""
-A rush job appeal has been submitted and requires your review.
+A queue appeal has been submitted and requires your review.
 
 User: {queue_entry.user.username} ({queue_entry.user.email})
 Device Name: {queue_entry.title}
@@ -1235,9 +1235,9 @@ Assigned Machine: {queue_entry.assigned_machine.name if queue_entry.assigned_mac
 Queue Position: {queue_entry.queue_position}
 Estimated Start: {queue_entry.estimated_start_time.strftime('%Y-%m-%d %H:%M') if queue_entry.estimated_start_time else 'N/A'}
 
-Special Requirements: {queue_entry.special_requirements or 'None'}
+Appeal Justification: {queue_entry.special_requirements or 'None'}
 
-To review and manage rush job requests, visit:
+To review and manage queue appeals, visit:
 {rush_job_url}
 
 Submitted: {queue_entry.rush_job_submitted_at.strftime('%Y-%m-%d %H:%M')}
@@ -2877,14 +2877,33 @@ def notify_developers_new_feedback(feedback):
     developer_users = [profile.user for profile in developers]
     all_recipients = list(set(list(developer_users) + list(superusers)))
 
+    # Build detailed message based on feedback type
+    if feedback.feedback_type == 'bug':
+        details = f"What happened: {feedback.description[:200]}..."
+        if feedback.replication_steps:
+            details += f"\n\nReplication steps: {feedback.replication_steps[:200]}..."
+    elif feedback.feedback_type == 'feature':
+        details = f"Feature name: {feedback.title}\n\nDescription: {feedback.description[:200]}..."
+    else:  # opinion
+        details = f"Topic: {feedback.title}\n\nOpinion: {feedback.description[:200]}..."
+
     # Create notification for each recipient
     for recipient in all_recipients:
-        notifications.create_notification(
+        notification = notifications.create_notification(
             recipient=recipient,
             notification_type='developer_new_feedback',
             title=f'New {feedback.get_feedback_type_display()}',
             message=f'{feedback.user.username} submitted: {feedback.title}',
             triggering_user=feedback.user,
+        )
+
+        # Send Slack DM with detailed information
+        slack_message = f"*{feedback.user.username}* submitted a {feedback.get_feedback_type_display()}\n\n{details}"
+        notifications.send_slack_dm(
+            user=recipient,
+            title=f'New {feedback.get_feedback_type_display()}: {feedback.title}',
+            message=slack_message,
+            notification=notification
         )
 
 

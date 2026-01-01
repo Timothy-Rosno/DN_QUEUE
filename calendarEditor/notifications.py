@@ -957,10 +957,10 @@ def notify_admins_new_user(new_user):
 
 def notify_admins_rush_job(queue_entry):
     """
-    Notify all admin/staff users when a rush job is submitted.
+    Notify all admin/staff users when a queue appeal is submitted.
 
     Args:
-        queue_entry: The QueueEntry that was marked as rush job
+        queue_entry: The QueueEntry that was marked as queue appeal
     """
     # Get all staff/admin users
     admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
@@ -971,8 +971,8 @@ def notify_admins_rush_job(queue_entry):
             create_notification(
                 recipient=admin,
                 notification_type='admin_rush_job',
-                title='Rush Job/Special Request Submitted',
-                message=f'{queue_entry.user.username} submitted a rush job request for "{queue_entry.title}" on {queue_entry.assigned_machine.name}. Review needed.',
+                title='Queue Appeal Submitted',
+                message=f'{queue_entry.user.username} submitted a queue appeal request for "{queue_entry.title}" on {queue_entry.assigned_machine.name}. Review needed.',
                 related_queue_entry=queue_entry,
                 related_machine=queue_entry.assigned_machine,
                 triggering_user=queue_entry.user,
@@ -981,12 +981,12 @@ def notify_admins_rush_job(queue_entry):
 
 def notify_admins_rush_job_deleted(queue_entry_title, machine_name, deleting_user):
     """
-    Notify all admin/staff users when a rush job is deleted/cancelled by a user.
+    Notify all admin/staff users when a queue appeal is deleted/cancelled by a user.
 
     Args:
-        queue_entry_title: Title of the deleted rush job
+        queue_entry_title: Title of the deleted queue appeal
         machine_name: Name of the machine the job was for
-        deleting_user: User who deleted the rush job
+        deleting_user: User who deleted the queue appeal
     """
     # Get all staff/admin users
     admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
@@ -997,15 +997,15 @@ def notify_admins_rush_job_deleted(queue_entry_title, machine_name, deleting_use
             create_notification(
                 recipient=admin,
                 notification_type='admin_rush_job',
-                title='Rush Job/Special Request Cancelled',
-                message=f'{deleting_user.username} cancelled their rush job request: "{queue_entry_title}" for {machine_name}.',
+                title='Queue Appeal Cancelled',
+                message=f'{deleting_user.username} cancelled their queue appeal request: "{queue_entry_title}" for {machine_name}.',
                 triggering_user=deleting_user,
             )
 
 
 def notify_admins_rush_job_approved(queue_entry, approving_admin):
     """
-    Notify all admin/staff users on Slack when a rush job is approved.
+    Notify all admin/staff users on Slack when a queue appeal is approved.
     This sends a Slack-only notification (no web notification) to inform admins the task is complete.
 
     Args:
@@ -1015,8 +1015,8 @@ def notify_admins_rush_job_approved(queue_entry, approving_admin):
     # Get all staff/admin users
     admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
 
-    title = 'Rush Job/Special Request Approved'
-    message = f'✓ {approving_admin.username} approved rush job "{queue_entry.title}" by {queue_entry.user.username} on {queue_entry.assigned_machine.name}. Moved to position 1.'
+    title = 'Queue Appeal Approved'
+    message = f'✓ {approving_admin.username} approved queue appeal "{queue_entry.title}" by {queue_entry.user.username} on {queue_entry.assigned_machine.name}. Moved to position {queue_entry.queue_position}.'
 
     for admin in admin_users:
         prefs = NotificationPreference.get_or_create_for_user(admin)
@@ -1027,7 +1027,7 @@ def notify_admins_rush_job_approved(queue_entry, approving_admin):
 
 def notify_admins_rush_job_rejected(queue_entry, rejecting_admin, rejection_reason):
     """
-    Notify all admin/staff users on Slack when a rush job is rejected.
+    Notify all admin/staff users on Slack when a queue appeal is rejected.
     This sends a Slack-only notification (no web notification) to inform admins the task is complete.
 
     Args:
@@ -1038,8 +1038,8 @@ def notify_admins_rush_job_rejected(queue_entry, rejecting_admin, rejection_reas
     # Get all staff/admin users
     admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
 
-    title = 'Rush Job/Special Request Rejected'
-    message = f'✗ {rejecting_admin.username} rejected rush job "{queue_entry.title}" by {queue_entry.user.username}.\nReason: {rejection_reason}'
+    title = 'Queue Appeal Rejected'
+    message = f'✗ {rejecting_admin.username} rejected queue appeal "{queue_entry.title}" by {queue_entry.user.username}.\nReason: {rejection_reason}'
 
     for admin in admin_users:
         prefs = NotificationPreference.get_or_create_for_user(admin)

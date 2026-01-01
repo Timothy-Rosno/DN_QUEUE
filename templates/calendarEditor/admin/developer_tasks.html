@@ -348,5 +348,71 @@ document.getElementById('completeModal').addEventListener('click', function(e) {
         closeCompleteModal();
     }
 });
+
+// ========================================
+// STATE PRESERVATION FOR DELETE OPERATIONS
+// ========================================
+
+// Track which feedback items are expanded
+function getExpandedIds() {
+    const expanded = [];
+    document.querySelectorAll('.feedback-item').forEach(item => {
+        const detailsDiv = item.querySelector('[id^="details-"]');
+        if (detailsDiv && detailsDiv.style.display !== 'none') {
+            const feedbackId = detailsDiv.id.replace('details-', '');
+            expanded.push(feedbackId);
+        }
+    });
+    return expanded.join(',');
+}
+
+// Get current scroll position
+function getScrollPosition() {
+    return window.pageYOffset || document.documentElement.scrollTop;
+}
+
+// Add hidden fields to delete forms before submission
+document.querySelectorAll('form[action*="delete"]').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        // Add expanded IDs
+        const expandedInput = document.createElement('input');
+        expandedInput.type = 'hidden';
+        expandedInput.name = 'expanded_ids';
+        expandedInput.value = getExpandedIds();
+        this.appendChild(expandedInput);
+
+        // Add scroll position
+        const scrollInput = document.createElement('input');
+        scrollInput.type = 'hidden';
+        scrollInput.name = 'scroll_pos';
+        scrollInput.value = getScrollPosition();
+        this.appendChild(scrollInput);
+    });
+});
+
+// Restore expanded state and scroll position on page load
+window.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const expandedIds = urlParams.get('expanded');
+    const scrollPos = urlParams.get('scroll');
+
+    // Restore expanded items
+    if (expandedIds) {
+        const ids = expandedIds.split(',').filter(id => id);
+        ids.forEach(id => {
+            const detailsDiv = document.getElementById('details-' + id);
+            if (detailsDiv) {
+                detailsDiv.style.display = 'block';
+            }
+        });
+    }
+
+    // Restore scroll position
+    if (scrollPos) {
+        setTimeout(() => {
+            window.scrollTo(0, parseInt(scrollPos));
+        }, 100);
+    }
+});
 </script>
 {% endblock %}

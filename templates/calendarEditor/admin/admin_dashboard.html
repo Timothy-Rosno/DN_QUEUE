@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load developer_tasks_tags %}
 
 {% block title %}Admin Dashboard - Lab Equipment Queue{% endblock %}
 
@@ -20,7 +21,13 @@
     <div class="card" style="border-left: 4px solid #3498db; text-align: center;">
         <h3 style="margin-top: 0; color: #3498db;">Total Users</h3>
         <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ total_users }}</p>
-        <a href="{% url 'admin_users' %}" class="btn" style="margin-top: 0.5rem;">Manage Users</a>
+        {% get_pending_users_count as pending_users_count %}
+        <a href="{% url 'admin_users' %}" class="btn" style="margin-top: 0.5rem; position: relative; display: inline-block;">
+            Manage Users
+            {% if pending_users_count > 0 %}
+                <span class="notification-badge">{{ pending_users_count }}</span>
+            {% endif %}
+        </a>
     </div>
 
     <!-- Machines -->
@@ -47,11 +54,17 @@
         <a href="{% url 'admin_queue' %}?status=running" class="btn" style="margin-top: 0.5rem;">Review Running</a>
     </div> -->
 
-    <!-- Rush Jobs -->
+    <!-- Queue Appeals -->
     <div class="card" style="border-left: 4px solid #e67e22; text-align: center;">
         <h3 style="margin-top: 0; color: #e67e22;">Queue Appeals</h3>
         <p style="font-size: 2.5rem; font-weight: bold; margin: 1rem 0;">{{ rush_jobs }}</p>
-        <a href="{% url 'admin_rush_jobs' %}" class="btn" style="margin-top: 0.5rem;">Review Rush Jobs</a>
+        {% get_rush_jobs_count as rush_jobs_count %}
+        <a href="{% url 'admin_rush_jobs' %}" class="btn" style="margin-top: 0.5rem; position: relative; display: inline-block;">
+            Review Appeals
+            {% if rush_jobs_count > 0 %}
+                <span class="notification-badge">{{ rush_jobs_count }}</span>
+            {% endif %}
+        </a>
     </div>
 
     <!-- Presets -->
