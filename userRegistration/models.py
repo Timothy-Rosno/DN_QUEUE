@@ -84,6 +84,14 @@ class UserProfile(models.Model):
         """Check if the provided answer matches the stored hash (case-insensitive)."""
         return check_password(answer.lower().strip(), self.security_answer_hash)
 
+    def save(self, *args, **kwargs):
+        """Override save to ensure superusers are always approved."""
+        # Superusers should always be approved
+        if self.user.is_superuser:
+            self.status = 'approved'
+            self.is_approved = True
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.user.username}'s Profile"
 
