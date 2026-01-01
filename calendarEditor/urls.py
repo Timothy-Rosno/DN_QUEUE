@@ -11,6 +11,7 @@ urlpatterns = [
     path('submit/', views.submit_queue_entry, name='submit_queue'),
     path('my-queue/', views.my_queue, name='my_queue'),
     path('cancel/<int:pk>/', views.cancel_queue_entry, name='cancel_queue'),
+    path('appeal/<int:pk>/', views.appeal_queue_entry, name='appeal_queue'),
 
     # Check-in/Check-out paths (user self-service)
     path('check-in/<int:entry_id>/', views.check_in_job, name='check_in_job'),

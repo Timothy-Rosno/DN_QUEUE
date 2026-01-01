@@ -1094,6 +1094,9 @@ def approve_rush_job(request, entry_id):
         # Step 1: Set target entry to NULL to avoid conflicts
         entry.assigned_machine = machine
         entry.queue_position = None
+        # Recalculate estimated duration if machine changed
+        if old_machine != machine:
+            entry.estimated_duration_hours = machine.cooldown_hours + machine.warmup_hours + (entry.requested_measurement_days * 24)
         entry.save()
 
         # Step 2: Shift existing entries to make room
@@ -1189,8 +1192,10 @@ def reassign_machine(request, entry_id):
             if old_machine:
                 reorder_queue(old_machine)
 
-            # Assign to new machine
+            # Assign to new machine and recalculate duration
             entry.assigned_machine = new_machine
+            # Recalculate estimated duration based on new machine's cooldown and warmup
+            entry.estimated_duration_hours = new_machine.cooldown_hours + new_machine.warmup_hours + (entry.requested_measurement_days * 24)
             entry.save()
 
             # Reorder new machine's queue
@@ -2046,6 +2051,9 @@ def admin_edit_entry(request, entry_id):
 
             # Save the machine assignment
             edited_entry.assigned_machine = target_machine
+            # Recalculate estimated duration if machine changed
+            if old_machine != target_machine:
+                edited_entry.estimated_duration_hours = target_machine.cooldown_hours + target_machine.warmup_hours + (edited_entry.requested_measurement_days * 24)
 
             # Handle queue position changes
             queue_position_action = request.POST.get('queue_position_action')

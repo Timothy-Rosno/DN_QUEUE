@@ -265,7 +265,12 @@
                                 {% endif %}
                             </div>
                         </div>
-                        <div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button type="button" class="btn" onclick="openAppealModal({{ entry.pk }}, '{{ entry.title|escapejs }}')"
+                                    style="padding: 0.5rem 1rem; font-size: 0.9rem; background-color: #f39c12;"
+                                    title="Notifies admins of a requested change">
+                                Appeal
+                            </button>
                             <a href="{% url 'cancel_queue' entry.pk %}" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Cancel</a>
                         </div>
                     </div>
@@ -324,6 +329,38 @@
     </div>
 </div>
 
+<!-- Appeal Modal (Rush Job/Special Request) -->
+<div id="appealModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div style="background-color: #fefefe; margin: 10% auto; padding: 2rem; border: 1px solid #888; border-radius: 8px; width: 80%; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h2 style="margin-top: 0; color: #e74c3c;">Rush Job/Special Request Appeal</h2>
+        <p style="color: #7f8c8d; margin-bottom: 0.5rem;">
+            Requesting change for: <strong id="appealEntryTitle"></strong>
+        </p>
+        <p style="color: #7f8c8d; margin-bottom: 1.5rem;">Please explain the situation to Hugh:</p>
+
+        <form method="POST" action="" id="appealForm">
+            {% csrf_token %}
+            <textarea
+                id="appealExplanationInput"
+                name="appeal_explanation"
+                rows="5"
+                maxlength="150"
+                style="width: 100%; padding: 0.75rem; font-size: 1rem; border: 1px solid #bdc3c7; border-radius: 4px; font-family: inherit; resize: vertical;"
+                placeholder="Minimum 15 characters required..."
+            ></textarea>
+            <div id="appealExplanationError" style="color: #e74c3c; margin-top: 0.5rem; display: none; font-weight: bold;"></div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
+                <small style="color: #7f8c8d;"><span id="appealCharCount"></span></small>
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" id="cancelAppealBtn" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" id="saveAppealBtn" class="btn">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 
     // Collapsible section toggle
@@ -339,6 +376,103 @@
             icon.classList.add('open');
         }
     }
+
+    // ===============================
+    // Appeal Modal Logic
+    // ===============================
+
+    let currentAppealEntryId = null;
+
+    function openAppealModal(entryId, entryTitle) {
+        currentAppealEntryId = entryId;
+        const modal = document.getElementById('appealModal');
+        const form = document.getElementById('appealForm');
+        const titleDisplay = document.getElementById('appealEntryTitle');
+        const textarea = document.getElementById('appealExplanationInput');
+        const errorDiv = document.getElementById('appealExplanationError');
+
+        // Set entry title
+        titleDisplay.textContent = entryTitle;
+
+        // Set form action
+        form.action = `/schedule/appeal/${entryId}/`;
+
+        // Clear previous input
+        textarea.value = '';
+        errorDiv.style.display = 'none';
+
+        // Update counter
+        updateAppealCounter();
+
+        // Show modal
+        modal.style.display = 'block';
+        textarea.focus();
+    }
+
+    function closeAppealModal() {
+        const modal = document.getElementById('appealModal');
+        modal.style.display = 'none';
+        currentAppealEntryId = null;
+    }
+
+    function updateAppealCounter() {
+        const textarea = document.getElementById('appealExplanationInput');
+        const charCount = document.getElementById('appealCharCount');
+        const saveBtn = document.getElementById('saveAppealBtn');
+        const MIN = 15;
+        const MAX = 150;
+
+        let length = textarea.value.length;
+
+        // Enforce max length
+        if (length > MAX) {
+            textarea.value = textarea.value.slice(0, MAX);
+            length = MAX;
+        }
+
+        const remaining = MAX - length;
+
+        // Display counter only when near the limit
+        if (remaining <= 25) {
+            charCount.textContent = remaining + " characters remaining";
+            if (remaining <= 10) {
+                charCount.style.color = "#e74c3c"; // danger
+            } else {
+                charCount.style.color = "#f39c12"; // warning
+            }
+        } else {
+            charCount.textContent = "";
+            charCount.style.color = "#7f8c8d"; // normal
+        }
+
+        // Enable Save only if minimum length is met
+        if (length < MIN) {
+            saveBtn.disabled = true;
+        } else {
+            saveBtn.disabled = false;
+        }
+    }
+
+    // Initialize appeal modal handlers
+    document.addEventListener('DOMContentLoaded', function() {
+        const textarea = document.getElementById('appealExplanationInput');
+        const cancelBtn = document.getElementById('cancelAppealBtn');
+        const modal = document.getElementById('appealModal');
+
+        // Update counter on input
+        textarea.addEventListener('input', updateAppealCounter);
+        textarea.addEventListener('keyup', updateAppealCounter);
+
+        // Cancel button
+        cancelBtn.addEventListener('click', closeAppealModal);
+
+        // Close modal on outside click
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeAppealModal();
+            }
+        });
+    });
 
     // ===============================
     // Auto-Reload on Queue Updates

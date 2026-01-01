@@ -565,6 +565,49 @@ def cancel_queue_entry(request, pk):
 
 
 @login_required
+def appeal_queue_entry(request, pk):
+    """Submit an appeal for a queued entry (marks as rush job)."""
+    # Check if entry exists and belongs to current user
+    try:
+        queue_entry = QueueEntry.objects.get(pk=pk)
+        if queue_entry.user != request.user:
+            messages.warning(request, 'This queue entry is not for your account.')
+            return redirect('home')
+    except QueueEntry.DoesNotExist:
+        raise Http404("Queue entry not found")
+
+    # Only allow appeals for queued entries
+    if queue_entry.status != 'queued':
+        messages.error(request, 'Can only appeal queued entries.')
+        return redirect('my_queue')
+
+    if request.method == 'POST':
+        appeal_explanation = request.POST.get('appeal_explanation', '').strip()
+
+        # Validate explanation (minimum 15 characters)
+        if len(appeal_explanation) < 15:
+            messages.error(request, 'Appeal explanation must be at least 15 characters.')
+            return redirect('my_queue')
+
+        # Mark entry as rush job and save explanation
+        queue_entry.is_rush_job = True
+        queue_entry.special_requirements = appeal_explanation
+        queue_entry.save()
+
+        # Notify admins about the appeal
+        try:
+            notifications.notify_admins_rush_job(queue_entry)
+        except Exception as e:
+            print(f"Rush job appeal notification failed: {e}")
+
+        messages.success(request, f'Appeal submitted successfully for "{queue_entry.title}". Admins have been notified.')
+        return redirect('my_queue')
+
+    # If not POST, redirect to my_queue
+    return redirect('my_queue')
+
+
+@login_required
 def check_in_job(request, entry_id):
     """
     User checks in to start their measurement (ON DECK → RUNNING).
