@@ -447,3 +447,85 @@ class ErrorLoggingMiddleware:
         except Exception:
             # Don't break if logging fails
             pass
+
+
+class OnlineUserTrackingMiddleware:
+    """
+    Lightweight middleware to track online users in Redis cache.
+    
+    No database writes - only cache operations (microsecond-level fast).
+    Stores user activity with 15-minute TTL that auto-expires.
+    """
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+    
+    def __call__(self, request):
+        response = self.get_response(request)
+        
+        # Only track authenticated users
+        if request.user.is_authenticated:
+            try:
+                from django.core.cache import cache
+                from django.utils import timezone
+                import json
+                
+                # Get client info
+                user_agent = request.META.get('HTTP_USER_AGENT', '')
+                ip_address = self._get_client_ip(request)
+                
+                # Parse user agent for browser/OS/device
+                device_info = self._parse_user_agent(user_agent, ip_address)
+                
+                # Build user activity data
+                activity_data = {
+                    'user_id': request.user.id,
+                    'username': request.user.username,
+                    'email': request.user.email,
+                    'last_seen': timezone.now().isoformat(),
+                    'ip_address': device_info.get('ip_address', 'Unknown'),
+                    'browser': device_info.get('browser', 'Unknown'),
+                    'os': device_info.get('os', 'Unknown'),
+                    'device': device_info.get('device', 'Unknown'),
+                }
+                
+                # Store in cache with 15-minute TTL (900 seconds)
+                cache_key = f'online_user:{request.user.id}'
+                cache.set(cache_key, json.dumps(activity_data), 900)
+                
+            except Exception as e:
+                # Don't break the request if tracking fails
+                print(f"[OnlineUserTracking] Error: {e}")
+                pass
+        
+        return response
+    
+    def _get_client_ip(self, request):
+        """Extract client IP from request headers."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR', 'Unknown')
+        return ip
+    
+    def _parse_user_agent(self, user_agent_string, ip_address):
+        """Parse user agent string to extract browser, OS, device info."""
+        try:
+            from user_agents import parse
+            ua = parse(user_agent_string)
+            
+            return {
+                'browser': f"{ua.browser.family} {ua.browser.version_string}".strip(),
+                'os': f"{ua.os.family} {ua.os.version_string}".strip(),
+                'device': 'Mobile' if ua.is_mobile else ('Tablet' if ua.is_tablet else 'Desktop'),
+                'ip_address': ip_address,
+            }
+        except Exception:
+            # Fallback to basic parsing
+            return {
+                'browser': 'Unknown',
+                'os': 'Unknown',
+                'device': 'Unknown',
+                'ip_address': ip_address,
+            }

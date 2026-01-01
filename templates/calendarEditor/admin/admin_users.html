@@ -243,7 +243,82 @@
     </div>
 </div>
 
-<!-- Analytics sections removed to reduce database reads - now using Google Analytics -->
+<!-- CURRENTLY ONLINE USERS (from Redis cache - zero DB impact) -->
+{% if user.is_staff %}
+<div class="card" style="margin-top: 2rem;">
+    <h2 style="margin-bottom: 1rem;">Currently Online Users ({{ online_count }})</h2>
+    {% if online_users_data %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; min-width: {% if user.is_superuser or user.profile.is_developer %}1000px{% else %}600px{% endif %}; border-collapse: collapse;">
+            <thead style="background: #f8f9fa;">
+                <tr style="border-bottom: 2px solid #ddd;">
+                    <th style="padding: 0.75rem; text-align: left;">Username</th>
+                    <th style="padding: 0.75rem; text-align: left;">Email</th>
+                    {% if user.is_superuser or user.profile.is_developer %}
+                        <th style="padding: 0.75rem; text-align: left;">Browser</th>
+                        <th style="padding: 0.75rem; text-align: left;">OS</th>
+                        <th style="padding: 0.75rem; text-align: left;">Device</th>
+                        <th style="padding: 0.75rem; text-align: left;">IP Address</th>
+                    {% endif %}
+                    <th style="padding: 0.75rem; text-align: left;">Last Seen</th>
+                    <th style="padding: 0.75rem; text-align: left;">Roles</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for online_user in online_users_data %}
+                <tr style="border-bottom: 1px solid #eee; background-color: #e8f8f5;">
+                    <td style="padding: 0.75rem;">
+                        <strong>{{ online_user.username }}</strong>
+                    </td>
+                    <td style="padding: 0.75rem; font-size: 0.9rem;">{{ online_user.email }}</td>
+                    {% if user.is_superuser or user.profile.is_developer %}
+                        <td style="padding: 0.75rem;">{{ online_user.browser }}</td>
+                        <td style="padding: 0.75rem;">{{ online_user.os }}</td>
+                        <td style="padding: 0.75rem;">{{ online_user.device }}</td>
+                        <td style="padding: 0.75rem; font-family: monospace; font-size: 0.85rem;">{{ online_user.ip_address }}</td>
+                    {% endif %}
+                    <td style="padding: 0.75rem;">{{ online_user.last_seen|date:"M d, Y H:i" }}</td>
+                    <td style="padding: 0.75rem;">
+                        {% for role in online_user.roles %}
+                            {% if role == 'Admin' %}
+                                <span style="background-color: #e74c3c; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.15rem;">A</span>
+                            {% elif role == 'Developer' %}
+                                <span style="background-color: #9b59b6; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.15rem;">D</span>
+                            {% elif role == 'Staff' %}
+                                <span style="background-color: #f39c12; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-right: 0.15rem;">S</span>
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Legend -->
+    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ddd;">
+        <p style="color: #7f8c8d; margin: 0; font-size: 0.85rem;">
+            <strong>Online Status:</strong>
+            <span style="background-color: #e8f8f5; padding: 0.2rem 0.4rem; border-radius: 3px;">Green background</span> = Currently online (active in last 15 min) |
+            <strong>Data Source:</strong> Redis cache (zero database impact)
+        </p>
+        <p style="color: #7f8c8d; margin: 0.5rem 0 0 0; font-size: 0.85rem;">
+            <strong>Role Key:</strong>
+            <span style="background-color: #e74c3c; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem;">A</span> = Admin |
+            <span style="background-color: #9b59b6; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem;">D</span> = Developer |
+            <span style="background-color: #f39c12; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem;">S</span> = Staff
+        </p>
+        {% if user.is_superuser or user.profile.is_developer %}
+        <p style="color: #7f8c8d; margin: 0.5rem 0 0 0; font-size: 0.85rem;">
+            <strong>Note:</strong> Full details (IP, browser, OS, device) visible to developers and admins only.
+        </p>
+        {% endif %}
+    </div>
+    {% else %}
+    <p style="color: #7f8c8d; padding: 1rem; text-align: center;">No users currently online</p>
+    {% endif %}
+</div>
+{% endif %}
 
 <script>
 function clearFilters() {
