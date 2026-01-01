@@ -55,7 +55,7 @@ class QueueEntryForm(forms.ModelForm):
         self.fields['required_min_temp'] = forms.FloatField(
             validators=[MinValueValidator(min_temp_min), MaxValueValidator(max_temp_max)],
             widget=forms.NumberInput(attrs={'min': str(min_temp_min), 'max': str(max_temp_max), 'step': str(temp_step)}),
-            label='Minimum Temperature (K) (ex. 10 mK = 0.01 K)',
+            label='Minimum Temperature (K)',
             help_text=f'Lowest temperature you need to reach (range: {min_temp_min}-{max_temp_max} K)'
         )
 
