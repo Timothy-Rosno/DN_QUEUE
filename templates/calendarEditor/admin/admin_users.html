@@ -335,22 +335,13 @@
     <!-- Legend -->
     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ddd;">
         <p style="color: #7f8c8d; margin: 0; font-size: 0.85rem;">
-            <strong>Tracking Status:</strong> {{ tracked_users_count }} user{{ tracked_users_count|pluralize }} tracked in Redis cache |
-            <strong>Data Source:</strong> Zero database impact · Auto-expires after 15 min of inactivity
+            <strong>Tracking:</strong> Last login time and device info captured at login only (zero ongoing overhead)
         </p>
         <p style="color: #7f8c8d; margin: 0.5rem 0 0 0; font-size: 0.85rem;">
             <strong>Role Key:</strong>
             <span style="background-color: #e74c3c; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem;">A</span> = Admin |
             <span style="background-color: #9b59b6; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem;">D</span> = Developer |
             <span style="background-color: #f39c12; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem;">S</span> = Staff
-        </p>
-        {% if user.is_superuser or user.profile.is_developer %}
-        <p style="color: #7f8c8d; margin: 0.5rem 0 0 0; font-size: 0.85rem;">
-            <strong>Note:</strong> Device details (IP, browser, OS, device) visible to developers and admins only.
-        </p>
-        {% endif %}
-        <p style="color: #7f8c8d; margin: 0.5rem 0 0 0; font-size: 0.85rem;">
-            <strong>Tip:</strong> If "Never" is shown, that user hasn't visited any page since the tracking was enabled. Click Refresh after they log in.
         </p>
     </div>
 </div>

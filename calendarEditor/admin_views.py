@@ -108,52 +108,22 @@ def admin_users(request):
     unapproved_users.sort(key=lambda u: u.username.lower())
     approved_users.sort(key=lambda u: u.username.lower())
 
-    # === FETCH LAST SEEN & DEVICE INFO FROM REDIS (ZERO DB IMPACT) ===
-    # Build a map of user_id -> activity data from Redis cache
-    user_activity_map = {}
-    try:
-        from django.core.cache import cache
-        import json
-        from dateutil import parser
-
-        # Get all user activity keys from Redis
-        cache_keys = cache.keys('online_user:*')
-
-        for key in cache_keys:
-            try:
-                data_json = cache.get(key)
-                if data_json:
-                    user_data = json.loads(data_json)
-                    user_id = user_data.get('user_id')
-
-                    # Parse last_seen timestamp
-                    last_seen = parser.parse(user_data['last_seen'])
-
-                    user_activity_map[user_id] = {
-                        'last_seen': last_seen,
-                        'browser': user_data.get('browser', 'Unknown'),
-                        'os': user_data.get('os', 'Unknown'),
-                        'device': user_data.get('device', 'Unknown'),
-                        'ip_address': user_data.get('ip_address', 'Unknown'),
-                    }
-            except Exception as e:
-                print(f"[UserActivity] Error parsing user data: {e}")
-                continue
-
-    except Exception as e:
-        print(f"[UserActivity] Error fetching user activity: {e}")
-
-    # Attach activity data to user objects
+    # === ATTACH LOGIN INFO FROM USER PROFILE ===
+    # Attach last login data from UserProfile (stored at login time)
     for user_item in unapproved_users + approved_users:
-        activity = user_activity_map.get(user_item.id)
-        if activity:
-            user_item.last_seen = activity['last_seen']
-            user_item.browser = activity['browser']
-            user_item.os = activity['os']
-            user_item.device = activity['device']
-            user_item.ip_address = activity['ip_address']
-        else:
-            user_item.last_seen = None
+        try:
+            # Django's User model has last_login field (auto-updated)
+            user_item.last_seen = user_item.last_login
+
+            # Get device info from profile
+            profile = user_item.profile
+            user_item.browser = profile.last_login_browser or None
+            user_item.os = profile.last_login_os or None
+            user_item.device = profile.last_login_device or None
+            user_item.ip_address = profile.last_login_ip or None
+        except Exception as e:
+            # If no profile or error, set to None
+            user_item.last_seen = user_item.last_login
             user_item.browser = None
             user_item.os = None
             user_item.device = None
@@ -165,7 +135,7 @@ def admin_users(request):
         'approved_users': approved_users,
         'status_filter': status_filter,
         'search_query': search_query,
-        'tracked_users_count': len(user_activity_map),  # How many users have Redis data
+        'tracked_users_count': 0,  # Not using Redis anymore
     }
 
     return render(request, 'calendarEditor/admin/admin_users.html', context)

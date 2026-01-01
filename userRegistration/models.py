@@ -67,6 +67,12 @@ class UserProfile(models.Model):
     developer_promoted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='promoted_developers')
     developer_promoted_at = models.DateTimeField(null=True, blank=True)
 
+    # Last login tracking (device info captured at login)
+    last_login_ip = models.CharField(max_length=45, blank=True, help_text="IP address from last login")
+    last_login_browser = models.CharField(max_length=50, blank=True, help_text="Browser from last login")
+    last_login_os = models.CharField(max_length=50, blank=True, help_text="Operating system from last login")
+    last_login_device = models.CharField(max_length=20, blank=True, help_text="Device type from last login")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

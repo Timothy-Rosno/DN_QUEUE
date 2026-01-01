@@ -31,8 +31,64 @@ class CustomLoginView(LoginView):
         # Call parent form_valid to log the user in
         response = super().form_valid(form)
 
-        # Check if user is approved (skip for staff/superusers)
+        # Capture device info at login
         user = self.request.user
+        try:
+            profile = user.profile
+
+            # Extract IP address
+            x_forwarded_for = self.request.META.get('HTTP_X_FORWARDED_FOR')
+            if x_forwarded_for:
+                ip_address = x_forwarded_for.split(',')[0].strip()
+            else:
+                ip_address = self.request.META.get('REMOTE_ADDR', '')
+
+            # Parse user agent
+            user_agent = self.request.META.get('HTTP_USER_AGENT', '').lower()
+
+            # Detect browser
+            browser = 'Unknown'
+            if 'chrome' in user_agent and 'edg' not in user_agent:
+                browser = 'Chrome'
+            elif 'firefox' in user_agent:
+                browser = 'Firefox'
+            elif 'safari' in user_agent and 'chrome' not in user_agent:
+                browser = 'Safari'
+            elif 'edg' in user_agent:
+                browser = 'Edge'
+
+            # Detect OS
+            os_name = 'Unknown'
+            if 'windows' in user_agent:
+                os_name = 'Windows'
+            elif 'mac' in user_agent:
+                os_name = 'macOS'
+            elif 'linux' in user_agent:
+                os_name = 'Linux'
+            elif 'android' in user_agent:
+                os_name = 'Android'
+            elif 'iphone' in user_agent or 'ipad' in user_agent:
+                os_name = 'iOS'
+
+            # Detect device type
+            device = 'Desktop'
+            if 'mobile' in user_agent or 'android' in user_agent or 'iphone' in user_agent:
+                device = 'Mobile'
+            elif 'ipad' in user_agent or 'tablet' in user_agent:
+                device = 'Tablet'
+
+            # Update profile
+            profile.last_login_ip = ip_address
+            profile.last_login_browser = browser
+            profile.last_login_os = os_name
+            profile.last_login_device = device
+            profile.save(update_fields=['last_login_ip', 'last_login_browser', 'last_login_os', 'last_login_device'])
+        except Exception as e:
+            # Don't break login if tracking fails
+            print(f"[LoginTracking] Error: {e}")
+            pass
+
+        # Check if user is approved (skip for staff/superusers)
         if not (user.is_staff or user.is_superuser):
             try:
                 profile = user.profile
