@@ -462,7 +462,7 @@ class OnlineUserTrackingMiddleware:
     
     def __call__(self, request):
         response = self.get_response(request)
-        
+
         # Only track authenticated users
         if request.user.is_authenticated:
             try:
