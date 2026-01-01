@@ -1012,16 +1012,19 @@ def notify_admins_rush_job_approved(queue_entry, approving_admin):
         queue_entry: The QueueEntry that was approved
         approving_admin: The admin who approved it
     """
-    # Get all staff/admin users
-    admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
+    # Get all staff/admin users (distinct to avoid duplicates)
+    admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True)).distinct()
 
     title = 'Queue Appeal Approved'
     message = f'{approving_admin.username} approved queue appeal "{queue_entry.title}" by {queue_entry.user.username} on {queue_entry.assigned_machine.name}. Moved to position {queue_entry.queue_position}.'
+
+    print(f"[RUSH_JOB_APPROVED] Notifying {admin_users.count()} admins")
 
     for admin in admin_users:
         prefs = NotificationPreference.get_or_create_for_user(admin)
         if prefs.notify_admin_rush_job:
             # Send Slack-only notification (no web notification needed)
+            print(f"[RUSH_JOB_APPROVED] Sending Slack to {admin.username}")
             send_slack_dm(admin, title, message)
 
 
@@ -1035,16 +1038,19 @@ def notify_admins_rush_job_rejected(queue_entry, rejecting_admin, rejection_reas
         rejecting_admin: The admin who rejected it
         rejection_reason: The reason for rejection
     """
-    # Get all staff/admin users
-    admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
+    # Get all staff/admin users (distinct to avoid duplicates)
+    admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True)).distinct()
 
     title = 'Queue Appeal Rejected'
     message = f'{rejecting_admin.username} rejected queue appeal "{queue_entry.title}" by {queue_entry.user.username}.\nReason: {rejection_reason}'
+
+    print(f"[RUSH_JOB_REJECTED] Notifying {admin_users.count()} admins")
 
     for admin in admin_users:
         prefs = NotificationPreference.get_or_create_for_user(admin)
         if prefs.notify_admin_rush_job:
             # Send Slack-only notification (no web notification needed)
+            print(f"[RUSH_JOB_REJECTED] Sending Slack to {admin.username}")
             send_slack_dm(admin, title, message)
 
 
