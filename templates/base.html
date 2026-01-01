@@ -423,6 +423,16 @@
 
     <!-- Global Tooltip System -->
     <link rel="stylesheet" href="{% static 'css/tooltips.css' %}">
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YVVBXKRFN6"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-YVVBXKRFN6');
+    </script>
 </head>
 <body>
     <nav>
@@ -473,7 +483,6 @@
                                 {% endif %}
                             </a>
                         </li>
-                        <li><a href="{% url 'developer_data' %}" style="color: #9b59b6; font-weight: bold;">Data</a></li>
                     {% endif %}
                     <li><a href="{% url 'logout' %}">Logout ({{ user.username }})</a></li>
                 {% else %}

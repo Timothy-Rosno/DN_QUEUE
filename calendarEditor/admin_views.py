@@ -108,122 +108,7 @@ def admin_users(request):
     unapproved_users.sort(key=lambda u: u.username.lower())
     approved_users.sort(key=lambda u: u.username.lower())
 
-    # === ONLINE USERS & PER-USER ANALYTICS (OPTIMIZED) ===
-    from .models import PageView, QueueEntry, Feedback
-    from django.db.models import Max, Count, Q
-    from django.utils import timezone
-    from datetime import timedelta
-
-    now = timezone.now()
-    online_threshold = now - timedelta(minutes=15)
-
-    # Get currently online users (active in last 15 minutes)
-    online_sessions = PageView.objects.filter(
-        created_at__gte=online_threshold
-    ).values('session_key').distinct()
-
-    online_page_views = PageView.objects.filter(
-        created_at__gte=online_threshold
-    ).select_related('user').order_by('-created_at')
-
-    # Build online users data
-    online_users_data = []
-    seen_sessions = set()
-
-    for pv in online_page_views:
-        if pv.session_key and pv.session_key not in seen_sessions:
-            seen_sessions.add(pv.session_key)
-
-            # Build roles list
-            roles = []
-            if pv.user:
-                if pv.user.is_superuser:
-                    roles.append('Admin')
-                    roles.append('Developer')
-                    roles.append('Staff')
-                elif hasattr(pv.user, 'profile') and pv.user.profile.is_developer:
-                    roles.append('Developer')
-                    roles.append('Staff')
-                elif pv.user.is_staff:
-                    roles.append('Staff')
-
-                if not roles:
-                    roles.append('User')
-
-            # Parse device info
-            device_info = pv.device_info or {}
-            browser = device_info.get('browser', 'Unknown')
-            os_name = device_info.get('os', 'Unknown')
-            device_type = 'Mobile' if device_info.get('is_mobile') else ('Tablet' if device_info.get('is_tablet') else 'Desktop')
-
-            # Get page count in last 15 minutes
-            page_count = PageView.objects.filter(
-                session_key=pv.session_key,
-                created_at__gte=online_threshold
-            ).count()
-
-            online_users_data.append({
-                'username': pv.user.username if pv.user else 'Anonymous',
-                'email': pv.user.email if pv.user else '—',
-                'browser': browser,
-                'os': os_name,
-                'device': device_type,
-                'ip_address': device_info.get('ip_address', 'Unknown'),
-                'last_seen': pv.created_at,
-                'page_count': page_count,
-                'roles': roles,
-            })
-
-    # OPTIMIZED: Single aggregated query for all users
-    all_users = User.objects.select_related('profile').annotate(
-        page_views_all_time=Count('pageview__id', distinct=True),
-        last_seen=Max('pageview__created_at'),
-        queue_entries_all_time=Count('queue_entries__id', distinct=True),
-        feedback_submitted_all_time=Count('feedback_submissions__id', distinct=True),
-    )
-
-    # Build per-user stats from annotated query
-    per_user_stats = []
-    for user in all_users:
-        # Build roles list
-        roles = []
-        if user.is_superuser:
-            roles.append('Admin')
-            roles.append('Developer')
-            roles.append('Staff')
-        elif hasattr(user, 'profile') and user.profile.is_developer:
-            roles.append('Developer')
-            roles.append('Staff')
-        elif user.is_staff:
-            roles.append('Staff')
-
-        if not roles:
-            roles.append('User')
-
-        # Determine if user is online
-        is_online = False
-        if user.last_seen and user.last_seen >= online_threshold:
-            is_online = True
-
-        # Get profile status
-        status = 'Unknown'
-        if hasattr(user, 'profile'):
-            status = user.profile.status.title()
-
-        per_user_stats.append({
-            'user': user,
-            'email': user.email,
-            'status': status,
-            'page_views_all_time': user.page_views_all_time,
-            'queue_entries_all_time': user.queue_entries_all_time,
-            'feedback_all_time': user.feedback_submitted_all_time,
-            'last_activity': user.last_seen,
-            'roles': roles,
-            'is_online': is_online,
-        })
-
-    # Sort by online status first, then by page views (most active first)
-    per_user_stats.sort(key=lambda x: (not x['is_online'], -x['page_views_all_time']))
+    # Analytics removed to reduce database reads - now using Google Analytics
 
     context = {
         'users': users,
@@ -231,9 +116,6 @@ def admin_users(request):
         'approved_users': approved_users,
         'status_filter': status_filter,
         'search_query': search_query,
-        'per_user_stats': per_user_stats,
-        'online_users_data': online_users_data,
-        'online_count': len(online_users_data),
     }
 
     return render(request, 'calendarEditor/admin/admin_users.html', context)

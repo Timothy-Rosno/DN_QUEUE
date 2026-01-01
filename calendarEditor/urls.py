@@ -137,8 +137,9 @@ urlpatterns = [
     path('developer/tasks/update/<int:feedback_id>/', admin_views.update_feedback_status, name='update_feedback_status'),
     path('developer/tasks/delete/<int:feedback_id>/', admin_views.delete_feedback, name='delete_feedback'),
     path('developer/tasks/clear-all-completed/', admin_views.clear_all_completed_feedback, name='clear_all_completed_feedback'),
-    path('developer/data/', admin_views.developer_data, name='developer_data'),
-    path('developer/data/recalculate/', admin_views.recalculate_analytics, name='recalculate_analytics'),
+    # Removed developer_data analytics page to reduce database reads - now using Google Analytics
+    # path('developer/data/', admin_views.developer_data, name='developer_data'),
+    # path('developer/data/recalculate/', admin_views.recalculate_analytics, name='recalculate_analytics'),
 
     # Developer role promotions (superuser only)
     path('admin-users/promote-developer/<int:user_id>/', admin_views.promote_to_developer, name='promote_to_developer'),

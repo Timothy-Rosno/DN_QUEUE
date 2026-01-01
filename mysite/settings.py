@@ -78,8 +78,7 @@ MIDDLEWARE = [
     "userRegistration.middleware.UserApprovalMiddleware",  # Custom middleware for user approval
     "calendarEditor.middleware.CheckReminderMiddleware",  # Check for pending checkout reminders
     "calendarEditor.middleware.RenderUsageMiddleware",  # Track Render usage
-    "calendarEditor.middleware.AnalyticsMiddleware",  # Track page views for developer analytics
-    "calendarEditor.middleware.ErrorLoggingMiddleware",  # Log errors for analytics
+    # Removed AnalyticsMiddleware and ErrorLoggingMiddleware to reduce database reads
 ]
 
 ROOT_URLCONF = "mysite.urls"
