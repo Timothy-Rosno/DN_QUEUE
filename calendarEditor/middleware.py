@@ -511,21 +511,44 @@ class OnlineUserTrackingMiddleware:
     
     def _parse_user_agent(self, user_agent_string, ip_address):
         """Parse user agent string to extract browser, OS, device info."""
-        try:
-            from user_agents import parse
-            ua = parse(user_agent_string)
-            
-            return {
-                'browser': f"{ua.browser.family} {ua.browser.version_string}".strip(),
-                'os': f"{ua.os.family} {ua.os.version_string}".strip(),
-                'device': 'Mobile' if ua.is_mobile else ('Tablet' if ua.is_tablet else 'Desktop'),
-                'ip_address': ip_address,
-            }
-        except Exception:
-            # Fallback to basic parsing
-            return {
-                'browser': 'Unknown',
-                'os': 'Unknown',
-                'device': 'Unknown',
-                'ip_address': ip_address,
-            }
+        # Simple parsing without external library
+        browser = 'Unknown'
+        os = 'Unknown'
+        device = 'Desktop'
+
+        ua_lower = user_agent_string.lower()
+
+        # Detect browser
+        if 'chrome' in ua_lower and 'edg' not in ua_lower:
+            browser = 'Chrome'
+        elif 'firefox' in ua_lower:
+            browser = 'Firefox'
+        elif 'safari' in ua_lower and 'chrome' not in ua_lower:
+            browser = 'Safari'
+        elif 'edg' in ua_lower:
+            browser = 'Edge'
+
+        # Detect OS
+        if 'windows' in ua_lower:
+            os = 'Windows'
+        elif 'mac' in ua_lower:
+            os = 'macOS'
+        elif 'linux' in ua_lower:
+            os = 'Linux'
+        elif 'android' in ua_lower:
+            os = 'Android'
+        elif 'iphone' in ua_lower or 'ipad' in ua_lower:
+            os = 'iOS'
+
+        # Detect device type
+        if 'mobile' in ua_lower or 'android' in ua_lower or 'iphone' in ua_lower:
+            device = 'Mobile'
+        elif 'ipad' in ua_lower or 'tablet' in ua_lower:
+            device = 'Tablet'
+
+        return {
+            'browser': browser,
+            'os': os,
+            'device': device,
+            'ip_address': ip_address,
+        }

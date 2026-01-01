@@ -106,7 +106,12 @@
                 <thead style="position: sticky; top: 0; background: white; z-index: 9;">
                     <tr style="border-bottom: 2px solid #ddd; text-align: left;">
                         <th style="padding: 0.75rem;">Username</th>
-                        <th style="padding: 0.75rem;">Status</th>
+                        <th style="padding: 0.75rem;">Last Seen</th>
+                        {% if user.is_superuser or user.profile.is_developer %}
+                        <th style="padding: 0.75rem;">IP</th>
+                        <th style="padding: 0.75rem;">OS</th>
+                        <th style="padding: 0.75rem;">Device</th>
+                        {% endif %}
                         <th style="padding: 0.75rem;">Actions</th>
                     </tr>
                 </thead>
@@ -160,12 +165,23 @@
                         </div>
                     </td>
                     <td style="padding: 0.75rem;">
-                        {% if user_item.is_staff or user_item.is_superuser %}
-                            <span style="background-color: #f39c12; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; font-weight: bold;">STAFF</span>
+                        {% if user_item.last_seen %}
+                            {{ user_item.last_seen|date:"M d, g:i A" }}
                         {% else %}
-                            <span style="background-color: #2ecc71; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; font-weight: bold;">APPROVED</span>
+                            <span style="color: #7f8c8d;">Never</span>
                         {% endif %}
                     </td>
+                    {% if user.is_superuser or user.profile.is_developer %}
+                    <td style="padding: 0.75rem; font-family: monospace; font-size: 0.85rem;">
+                        {% if user_item.ip_address %}{{ user_item.ip_address }}{% else %}<span style="color: #7f8c8d;">—</span>{% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        {% if user_item.os %}{{ user_item.os }}{% else %}<span style="color: #7f8c8d;">—</span>{% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        {% if user_item.device %}{{ user_item.device }}{% else %}<span style="color: #7f8c8d;">—</span>{% endif %}
+                    </td>
+                    {% endif %}
                     <td style="padding: 0.75rem;">
                         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
                             {% if user_item.is_superuser %}
