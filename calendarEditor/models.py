@@ -25,8 +25,8 @@ class Machine(models.Model):
     OPTICAL_CHOICES = [
         ('none', 'None'),
         ('available', 'Available'),
-        ('optical_setup_not_working', 'Optical Setup (Not Working)'),
-        ('optical_ICE_motherboard_Qboard_1', 'Optical ICE Motherboard Qboard 1'),
+        ('optical_not_working', 'Optical Setup (Not Working)'),
+        ('ice_mb_qb1', 'Optical ICE Motherboard Qboard 1'),
         ('under_construction', 'Under Construction'),
         ('with_work', 'With Some Work')
     ]
