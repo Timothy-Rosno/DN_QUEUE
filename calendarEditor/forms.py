@@ -578,7 +578,7 @@ class FeedbackForm(forms.ModelForm):
                 'rows': 4,
                 'class': 'char-counter-input',
                 'maxlength': '2000',
-                'placeholder': 'e.g. Error 403, 500, ...'
+                'placeholder': 'e.g. Error 403, Error 500, Error 502, ...'
             }),
         }
         labels = {

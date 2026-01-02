@@ -109,9 +109,9 @@
                         <th style="padding: 0.75rem;">Last Seen</th>
                         {% if user.is_superuser or user.profile.is_developer %}
                         <th style="padding: 0.75rem;">Browser</th>
-                        <th style="padding: 0.75rem;">IP</th>
-                        <th style="padding: 0.75rem;">OS</th>
                         <th style="padding: 0.75rem;">Device</th>
+                        <th style="padding: 0.75rem;">OS</th>
+                        <th style="padding: 0.75rem;">IP</th>
                         {% endif %}
                         <th style="padding: 0.75rem;">Actions</th>
                     </tr>
@@ -174,17 +174,17 @@
                         {% endif %}
                     </td>
                     {% if user.is_superuser or user.profile.is_developer %}
-                    <td style="padding: 0.75rem; font-family: monospace; font-size: 0.85rem;">
-                        {% if user_item.ip_address %}{{ user_item.ip_address }}{% else %}<span style="color: #7f8c8d;">—</span>{% endif %}
-                    </td>
                     <td style="padding: 0.75rem;">
-                        {% if user_item.os %}{{ user_item.os }}{% else %}<span style="color: #7f8c8d;">—</span>{% endif %}
+                        {% if user_item.browser %}{{ user_item.browser }}{% else %}<span style="color: #7f8c8d;">—</span>{% endif %}
                     </td>
                     <td style="padding: 0.75rem;">
                         {% if user_item.device %}{{ user_item.device }}{% else %}<span style="color: #7f8c8d;">—</span>{% endif %}
                     </td>
                     <td style="padding: 0.75rem;">
-                        {% if user_item.browser %}{{ user_item.browser }}{% else %}<span style="color: #7f8c8d;">—</span>{% endif %}
+                        {% if user_item.os %}{{ user_item.os }}{% else %}<span style="color: #7f8c8d;">—</span>{% endif %}
+                    </td>
+                    <td style="padding: 0.75rem; font-family: monospace; font-size: 0.85rem;">
+                        {% if user_item.ip_address %}{{ user_item.ip_address }}{% else %}<span style="color: #7f8c8d;">—</span>{% endif %}
                     </td>
                     {% endif %}
                     <td style="padding: 0.75rem;">
