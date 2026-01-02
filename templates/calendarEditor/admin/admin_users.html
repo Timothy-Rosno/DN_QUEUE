@@ -108,6 +108,7 @@
                         <th style="padding: 0.75rem;">Username</th>
                         <th style="padding: 0.75rem;">Last Seen</th>
                         {% if user.is_superuser or user.profile.is_developer %}
+                        <th style="padding: 0.75rem;">Browser</th>
                         <th style="padding: 0.75rem;">IP</th>
                         <th style="padding: 0.75rem;">OS</th>
                         <th style="padding: 0.75rem;">Device</th>
@@ -181,6 +182,9 @@
                     </td>
                     <td style="padding: 0.75rem;">
                         {% if user_item.device %}{{ user_item.device }}{% else %}<span style="color: #7f8c8d;">—</span>{% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        {% if user_item.browser %}{{ user_item.browser }}{% else %}<span style="color: #7f8c8d;">—</span>{% endif %}
                     </td>
                     {% endif %}
                     <td style="padding: 0.75rem;">
@@ -261,7 +265,7 @@
 </div>
 
 <!-- USER ACTIVITY (from Redis cache - zero DB impact) -->
-{% if user.is_staff %}
+<!-- {% if user.is_staff %}
 <div class="card" style="margin-top: 2rem;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h2 style="margin: 0;">User Activity</h2>
@@ -332,10 +336,10 @@
                 {% endfor %}
             </tbody>
         </table>
-    </div>
+    </div> -->
 
     <!-- Legend -->
-    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ddd;">
+    <!-- <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ddd;">
         <p style="color: #7f8c8d; margin: 0; font-size: 0.85rem;">
             <strong>Tracking:</strong> Last login time and device info captured at login only (zero ongoing overhead)
         </p>
@@ -346,7 +350,7 @@
             <span style="background-color: #f39c12; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem;">S</span> = Staff
         </p>
     </div>
-</div>
+</div> -->
 {% endif %}
 
 <script>

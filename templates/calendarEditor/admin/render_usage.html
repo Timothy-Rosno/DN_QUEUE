@@ -6,6 +6,9 @@
 <div class="card">
     <h1>Render Free Tier Usage</h1>
     <p style="color: #7f8c8d; margin-top: 0.5rem;">Monitor usage against Render's free tier limits.</p>
+    <a href="{% url 'admin_dashboard' %}" class="btn" style="background: #95a5a6;">
+        ← Back to Dashboard
+    </a>
 </div>
 
 <!-- Uptime Usage -->
@@ -115,5 +118,10 @@
         <a href="https://render.com/docs/free" target="_blank" class="btn" style="background: #95a5a6;">Free Tier Docs</a>
         <a href="{% url 'admin_dashboard' %}" class="btn" style="background: #34495e;">Back to Dashboard</a>
     </div>
+</div>
+<div class="card">
+    <a href="{% url 'admin_dashboard' %}" class="btn" style="background: #95a5a6;">
+        ← Back to Dashboard
+    </a>
 </div>
 {% endblock %}

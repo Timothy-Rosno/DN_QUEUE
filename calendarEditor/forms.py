@@ -444,9 +444,9 @@ class NotificationPreferenceForm(forms.ModelForm):
             'notify_followed_preset_edited': 'Get notified when presets you follow are edited',
             'notify_followed_preset_deleted': 'Get notified when presets you follow are deleted',
             'notify_queue_position_change': 'Get notified when your queue position moves up or down',
-            'notify_on_deck': '⚠️ REQUIRED: You will always be notified when you\'re #1 in line',
-            'notify_ready_for_check_in': '⚠️ REQUIRED: You will be notified when the machine becomes available and you can check in',
-            'notify_checkout_reminder': '⚠️ REQUIRED: You will be notified when your estimated measurement time has elapsed and you should check out',
+            'notify_on_deck': 'REQUIRED: You will always be notified when you\'re #1 in line',
+            'notify_ready_for_check_in': 'REQUIRED: You will be notified when the machine becomes available and you can check in',
+            'notify_checkout_reminder': 'REQUIRED: You will be notified when your estimated measurement time has elapsed and you should check out',
             'notify_machine_queue_changes': 'Get notified when others add jobs to machines where you have queued entries (can be noisy)',
             'email_notifications': 'Receive notifications via email (not yet implemented)',
             'in_app_notifications': 'Show notifications in the web interface',
@@ -578,7 +578,7 @@ class FeedbackForm(forms.ModelForm):
                 'rows': 4,
                 'class': 'char-counter-input',
                 'maxlength': '2000',
-                'placeholder': 'eg '
+                'placeholder': 'e.g. Error 403, 500, ...'
             }),
         }
         labels = {
