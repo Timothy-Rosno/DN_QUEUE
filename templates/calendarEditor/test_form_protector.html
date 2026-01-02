@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}FormProtector Test{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>FormProtector Test Page</h1>
+    <p>This page tests the FormProtector utility. Open your browser's console (F12) to see debug messages.</p>
+
+    <div style="margin: 2rem 0; padding: 1rem; background: #f0f0f0; border-radius: 4px;">
+        <h2>Test 1: Simple Form Protection</h2>
+        <form method="post" action="#" data-protect data-loading-text="Submitting Test 1..." id="test-form-1">
+            {% csrf_token %}
+            <input type="text" name="test_field" placeholder="Type something..." style="padding: 0.5rem; margin-right: 0.5rem;">
+            <button type="submit" class="btn">Submit Test 1</button>
+        </form>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+            Expected: Button should disable and show "Submitting Test 1..." when clicked
+        </p>
+    </div>
+
+    <div style="margin: 2rem 0; padding: 1rem; background: #f0f0f0; border-radius: 4px;">
+        <h2>Test 2: Form with Scroll Position Save</h2>
+        <form method="post" action="#" data-protect data-loading-text="Processing..." data-save-scroll="true" id="test-form-2">
+            {% csrf_token %}
+            <input type="text" name="test_field" placeholder="Type something..." style="padding: 0.5rem; margin-right: 0.5rem;">
+            <button type="submit" class="btn">Submit Test 2</button>
+        </form>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+            Expected: Button disables, shows "Processing...", and saves scroll position
+        </p>
+    </div>
+
+    <div style="margin: 2rem 0; padding: 1rem; background: #f0f0f0; border-radius: 4px;">
+        <h2>Test 3: Multiple Submit Buttons</h2>
+        <form method="post" action="#" data-protect data-loading-text="Saving..." id="test-form-3">
+            {% csrf_token %}
+            <input type="text" name="test_field" placeholder="Type something..." style="padding: 0.5rem; margin-right: 0.5rem;">
+            <button type="submit" class="btn" id="submit-top">Submit Top</button>
+            <button type="submit" class="btn" id="submit-bottom">Submit Bottom</button>
+        </form>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+            Expected: BOTH buttons should disable when either is clicked
+        </p>
+    </div>
+
+    <div style="margin: 2rem 0; padding: 1rem; background: #f0f0f0; border-radius: 4px;">
+        <h2>Test 4: Confirmation Modal</h2>
+        <button type="button" class="btn btn-danger" onclick="testConfirmModal()">
+            Test Confirmation Modal
+        </button>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+            Expected: Should show a modal with Thanos image asking for confirmation
+        </p>
+    </div>
+
+    <div style="margin: 2rem 0; padding: 1rem; background: #e8f5e9; border-radius: 4px;">
+        <h2>Debug Information</h2>
+        <p><strong>FormProtector loaded:</strong> <span id="fp-loaded">Checking...</span></p>
+        <p><strong>confirmModal loaded:</strong> <span id="cm-loaded">Checking...</span></p>
+        <p><strong>Forms with data-protect:</strong> <span id="protected-count">Counting...</span></p>
+        <p style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
+            <strong>Instructions:</strong> Open browser console (F12 → Console tab) to see detailed debug logs
+        </p>
+    </div>
+</div>
+
+<script>
+// Test confirmation modal
+function testConfirmModal() {
+    if (window.confirmModal) {
+        window.confirmModal.show({
+            title: 'Test Confirmation',
+            message: 'This is a test of the confirmation modal. Does it look good?',
+            image: '{% static "images/thanos.jpg" %}',
+            confirmText: 'Yes, it works!',
+            cancelText: 'Cancel',
+            onConfirm: () => {
+                alert('✅ Confirmation modal works!');
+            }
+        });
+    } else {
+        alert('❌ confirmModal not found on window object');
+    }
+}
+
+// Check if utilities are loaded
+window.addEventListener('DOMContentLoaded', function() {
+    // Check FormProtector
+    const fpLoaded = document.getElementById('fp-loaded');
+    if (window.FormProtector) {
+        fpLoaded.textContent = '✅ Yes';
+        fpLoaded.style.color = 'green';
+    } else {
+        fpLoaded.textContent = '❌ No';
+        fpLoaded.style.color = 'red';
+    }
+
+    // Check confirmModal
+    const cmLoaded = document.getElementById('cm-loaded');
+    if (window.confirmModal) {
+        cmLoaded.textContent = '✅ Yes';
+        cmLoaded.style.color = 'green';
+    } else {
+        cmLoaded.textContent = '❌ No';
+        cmLoaded.style.color = 'red';
+    }
+
+    // Count protected forms
+    const protectedCount = document.getElementById('protected-count');
+    const count = document.querySelectorAll('[data-protect]').length;
+    protectedCount.textContent = count;
+    protectedCount.style.color = count > 0 ? 'green' : 'red';
+
+    console.log('=== FormProtector Test Page ===');
+    console.log('FormProtector available:', !!window.FormProtector);
+    console.log('confirmModal available:', !!window.confirmModal);
+    console.log('Forms with [data-protect]:', count);
+});
+</script>
+{% endblock %}

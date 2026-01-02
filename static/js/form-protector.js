@@ -58,21 +58,27 @@ class FormProtector {
         element.dataset.protected = 'true';
 
         if (element.tagName === 'FORM') {
+            console.log(`[FormProtector] Adding submit listener to FORM`);
             element.addEventListener('submit', (e) => {
+                console.log(`[FormProtector] Form submit event triggered`);
+
                 // Check if form is already being submitted
                 if (element.dataset.submitting === 'true') {
+                    console.log(`[FormProtector] Form already submitting, preventing`);
                     e.preventDefault();
                     return;
                 }
 
                 // Show confirmation if needed
                 if (confirmMessage && !confirm(confirmMessage)) {
+                    console.log(`[FormProtector] User cancelled confirmation`);
                     e.preventDefault();
                     return;
                 }
 
                 // Execute beforeDisable callback
                 if (beforeDisable && beforeDisable(e) === false) {
+                    console.log(`[FormProtector] beforeDisable returned false, preventing`);
                     e.preventDefault();
                     return;
                 }
@@ -84,6 +90,7 @@ class FormProtector {
 
                 // Mark as submitting
                 element.dataset.submitting = 'true';
+                console.log(`[FormProtector] Disabling form buttons with text: ${loadingText}`);
 
                 // Disable all submit buttons in the form
                 this._disableFormButtons(element, loadingText);
@@ -257,8 +264,13 @@ class FormProtector {
  * Auto-initialize FormProtector for elements with data-protect attribute
  */
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('[FormProtector] Initializing...');
+
     // Protect all elements with data-protect attribute
-    document.querySelectorAll('[data-protect]').forEach(element => {
+    const protectedElements = document.querySelectorAll('[data-protect]');
+    console.log(`[FormProtector] Found ${protectedElements.length} elements with data-protect attribute`);
+
+    protectedElements.forEach(element => {
         const options = {
             loadingText: element.dataset.loadingText || 'Processing...',
             disableRelated: element.dataset.disableRelated === 'true',
@@ -266,11 +278,14 @@ document.addEventListener('DOMContentLoaded', () => {
             saveScrollPosition: element.dataset.saveScroll === 'true'
         };
 
+        console.log(`[FormProtector] Protecting ${element.tagName}#${element.id || 'no-id'}`, options);
         FormProtector.protect(element, options);
     });
 
     // Restore scroll position if saved
     FormProtector.restoreScrollPosition();
+
+    console.log('[FormProtector] Initialization complete');
 });
 
 // Make FormProtector globally available

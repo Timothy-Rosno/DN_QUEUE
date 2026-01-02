@@ -144,4 +144,7 @@ urlpatterns = [
     # Developer role promotions (superuser only)
     path('admin-users/promote-developer/<int:user_id>/', admin_views.promote_to_developer, name='promote_to_developer'),
     path('admin-users/demote-developer/<int:user_id>/', admin_views.demote_from_developer, name='demote_from_developer'),
+
+    # Test page for FormProtector (remove in production)
+    path('test-form-protector/', views.test_form_protector, name='test_form_protector'),
 ]

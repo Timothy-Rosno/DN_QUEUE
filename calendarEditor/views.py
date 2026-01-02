@@ -2023,7 +2023,7 @@ def reset_notification_preferences(request):
         prefs.notify_admin_new_user = False
         prefs.notify_admin_rush_job = False
         prefs.notify_database_restored = False    
-    if request.user.is_staff:
+    elif request.user.is_staff:
         # Admin defaults (minimal notifications)
         prefs.notify_public_preset_created = False
         prefs.notify_public_preset_edited = False
@@ -2914,4 +2914,10 @@ def notify_developers_new_feedback(feedback):
             triggering_user=feedback.user,
         )
 
+
+
+@login_required
+def test_form_protector(request):
+    """Test page for FormProtector utility"""
+    return render(request, 'calendarEditor/test_form_protector.html')
 
