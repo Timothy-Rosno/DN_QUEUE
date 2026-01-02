@@ -477,10 +477,19 @@
                 timer.textContent = 'Completed';
                 timer.style.color = '#27ae60';
             } else {
-                const hours = Math.floor(remaining / (1000 * 60 * 60));
+                const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                 const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-                timer.textContent = `${hours}h ${minutes}m ${seconds}s remaining`;
+
+                let displayText = '';
+                if (days > 0) {
+                    displayText = `${days}d ${hours}h ${minutes}m remaining`;
+                } else if (hours > 0) {
+                    displayText = `${hours}h ${minutes}m remaining`;
+                } else {
+                    displayText = `${minutes}m remaining`;
+                }
+                timer.textContent = displayText;
             }
         });
 
@@ -611,10 +620,19 @@
                 timer.textContent = 'Completed';
                 timer.style.color = '#27ae60';
             } else {
-                const hours = Math.floor(remaining / (1000 * 60 * 60));
+                const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                 const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-                timer.textContent = `${hours}h ${minutes}m ${seconds}s remaining`;
+
+                let displayText = '';
+                if (days > 0) {
+                    displayText = `${days}d ${hours}h ${minutes}m remaining`;
+                } else if (hours > 0) {
+                    displayText = `${hours}h ${minutes}m remaining`;
+                } else {
+                    displayText = `${minutes}m remaining`;
+                }
+                timer.textContent = displayText;
             }
         });
     }

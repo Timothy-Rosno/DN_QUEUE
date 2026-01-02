@@ -26,24 +26,31 @@
             btn.style.cursor = 'not-allowed';
         });
 
-        // Disable all inputs EXCEPT hidden ones (including CSRF tokens)
+        // Make inputs readonly EXCEPT hidden ones (IMPORTANT: readonly still submits values)
         document.querySelectorAll('input').forEach(input => {
-            if (input.type !== 'hidden') {
-                input.disabled = true;
+            if (input.type !== 'hidden' && input.type !== 'checkbox' && input.type !== 'radio') {
+                input.readOnly = true;
+                input.style.opacity = '0.5';
+                input.style.cursor = 'not-allowed';
+            } else if (input.type === 'checkbox' || input.type === 'radio') {
+                // For checkboxes and radios, disable pointer events but don't disable them
+                input.style.pointerEvents = 'none';
                 input.style.opacity = '0.5';
             }
         });
 
-        // Disable all textareas
+        // Make textareas readonly (IMPORTANT: readonly still submits values)
         document.querySelectorAll('textarea').forEach(textarea => {
-            textarea.disabled = true;
+            textarea.readOnly = true;
             textarea.style.opacity = '0.5';
+            textarea.style.cursor = 'not-allowed';
         });
 
-        // Disable all selects
+        // Disable pointer events on selects (can't make selects readonly)
         document.querySelectorAll('select').forEach(select => {
-            select.disabled = true;
+            select.style.pointerEvents = 'none';
             select.style.opacity = '0.5';
+            select.style.cursor = 'not-allowed';
         });
 
         // Disable all links EXCEPT navigation links
