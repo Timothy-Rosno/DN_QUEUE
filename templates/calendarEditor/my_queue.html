@@ -266,11 +266,19 @@
                             </div>
                         </div>
                         <div style="display: flex; gap: 0.5rem;">
-                            <button type="button" class="btn" onclick="openAppealModal({{ entry.pk }}, '{{ entry.title|escapejs }}')"
-                                    style="padding: 0.5rem 1rem; font-size: 0.9rem; background-color: #f39c12;"
-                                    title="Notifies admins of a requested change">
-                                Appeal
-                            </button>
+                            {% if entry.is_rush_job %}
+                                <button type="button" class="btn" disabled
+                                        style="padding: 0.5rem 1rem; font-size: 0.9rem; background-color: #95a5a6; color: #ecf0f1; cursor: not-allowed; opacity: 0.6;"
+                                        title="Appeal already submitted - waiting for admin review">
+                                    Appeal Pending
+                                </button>
+                            {% else %}
+                                <button type="button" class="btn" onclick="openAppealModal({{ entry.pk }}, '{{ entry.title|escapejs }}')"
+                                        style="padding: 0.5rem 1rem; font-size: 0.9rem; background-color: #f39c12;"
+                                        title="Notifies admins of a requested change">
+                                    Appeal
+                                </button>
+                            {% endif %}
                             <a href="{% url 'cancel_queue' entry.pk %}" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Cancel</a>
                         </div>
                     </div>
