@@ -25,10 +25,12 @@
             btn.style.cursor = 'not-allowed';
         });
 
-        // Disable all inputs
+        // Disable all inputs EXCEPT hidden ones (including CSRF tokens)
         document.querySelectorAll('input').forEach(input => {
-            input.disabled = true;
-            input.style.opacity = '0.5';
+            if (input.type !== 'hidden') {
+                input.disabled = true;
+                input.style.opacity = '0.5';
+            }
         });
 
         // Disable all textareas
@@ -43,10 +45,13 @@
             select.style.opacity = '0.5';
         });
 
-        // Disable all links (optional - prevents navigation during processing)
+        // Disable all links EXCEPT navigation links
         document.querySelectorAll('a').forEach(link => {
-            link.style.pointerEvents = 'none';
-            link.style.opacity = '0.6';
+            // Keep navigation links active (links inside <nav> tags)
+            if (!link.closest('nav')) {
+                link.style.pointerEvents = 'none';
+                link.style.opacity = '0.6';
+            }
         });
     }
 
