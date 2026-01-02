@@ -199,6 +199,8 @@
                 <select id="optical_capabilities" name="optical_capabilities">
                     <option value="none" {% if machine.optical_capabilities == 'none' %}selected{% endif %}>None</option>
                     <option value="available" {% if machine.optical_capabilities == 'available' %}selected{% endif %}>Available</option>
+                    <option value="optical_not_working" {% if machine.optical_capabilities == 'optical_not_working' %}selected{% endif %}>Optical Setup (Not Working)</option>
+                    <option value="ice_mb_qb1" {% if machine.optical_capabilities == 'ice_mb_qb1' %}selected{% endif %}>Optical ICE Motherboard Qboard 1</option>
                     <option value="with_work" {% if machine.optical_capabilities == 'with_work' %}selected{% endif %}>With Some Work</option>
                     <option value="under_construction" {% if machine.optical_capabilities == 'under_construction' %}selected{% endif %}>Under Construction</option>
                 </select>

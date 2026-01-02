@@ -285,19 +285,26 @@
                         {% if user.is_authenticated %}
                         <td style="padding: 0.5rem;">
                             {% if entry.user == user %}
-                                {% if entry.is_rush_job %}
-                                    <button type="button" class="btn" disabled
-                                            style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background-color: #95a5a6; color: #ecf0f1; cursor: not-allowed; white-space: nowrap; opacity: 0.6;"
-                                            title="Appeal already submitted - waiting for admin review">
-                                        Pending
-                                    </button>
-                                {% else %}
-                                    <button type="button" class="btn" onclick="openAppealModal({{ entry.pk }}, '{{ entry.title|escapejs }}')"
-                                            style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background-color: #f39c12; white-space: nowrap;"
-                                            title="Request change to queue position">
-                                        Appeal
-                                    </button>
-                                {% endif %}
+                                <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                                    {% if entry.is_rush_job %}
+                                        <button type="button" class="btn" disabled
+                                                style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background-color: #95a5a6; color: #ecf0f1; cursor: not-allowed; white-space: nowrap; opacity: 0.6;"
+                                                title="Appeal already submitted - waiting for admin review">
+                                            Pending
+                                        </button>
+                                    {% else %}
+                                        <button type="button" class="btn" onclick="openAppealModal({{ entry.pk }}, '{{ entry.title|escapejs }}')"
+                                                style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background-color: #f39c12; white-space: nowrap;"
+                                                title="Request change to queue position">
+                                            Appeal
+                                        </button>
+                                    {% endif %}
+                                    <a href="{% url 'cancel_queue' entry.pk %}" class="btn btn-danger"
+                                       style="padding: 0.4rem 0.8rem; font-size: 0.85rem; white-space: nowrap;"
+                                       onclick="return confirm('Are you sure you want to cancel this queue entry?');">
+                                        Cancel
+                                    </a>
+                                </div>
                             {% endif %}
                         </td>
                         {% endif %}

@@ -32,9 +32,9 @@
                                 data-queue-count="{{ machine.get_queue_count }}"
                                 data-adjusted-queue-count="{{ machine.adjusted_queue_count }}"
                                 {% if machine.id == queue_entry.assigned_machine.id %}selected{% endif %}>
-                            {{ machine.name }}{% if machine.id == queue_entry.assigned_machine.id %} (Current){% endif %}
-                            - Available in {{ machine.get_estimated_wait_time.total_seconds|floatformat:0|add:"0"|floatformat:0 }}s
-                            ({{ machine.get_queue_count }} in queue)
+                            {% with wait_time=machine.get_estimated_wait_time %}
+                                {{ machine.name }}{% if machine.id == queue_entry.assigned_machine.id %} (Current){% endif %} - {{ machine.get_queue_count }} in queue - Wait: {{ wait_time.days }}d {% widthratio wait_time.seconds 3600 1 %}h
+                            {% endwith %}
                         </option>
                     {% endfor %}
                 </select>
