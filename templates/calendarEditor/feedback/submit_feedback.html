@@ -144,6 +144,10 @@
         input[type="radio"] {
             cursor: pointer !important;
         }
+        /* Only show tooltip when hovering AND button is disabled */
+        .submit-btn-wrapper:hover .btn:disabled + .validation-tooltip {
+            display: block;
+        }
     </style>
 
     <script>
