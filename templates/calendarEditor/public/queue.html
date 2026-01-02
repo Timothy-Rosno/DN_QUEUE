@@ -523,7 +523,7 @@
     function updateAppealCounter() {
         const textarea = document.getElementById('appealExplanationInput');
         const charCount = document.getElementById('appealCharCount');
-        const sendBtn = document.getElementById('sendAppealBtn');
+        const saveBtn = document.getElementById('saveAppealBtn');
         const MIN = 15;
         const MAX = 150;
 
@@ -535,21 +535,26 @@
             length = MAX;
         }
 
-        // Update counter display
         const remaining = MAX - length;
-        if (length < MIN) {
-            charCount.textContent = `${length} / ${MIN} minimum (${remaining} remaining)`;
-            charCount.style.color = '#e74c3c';
+
+        // Display counter only when near the limit
+        if (remaining <= 25) {
+            charCount.textContent = remaining + " characters remaining";
+            if (remaining <= 10) {
+                charCount.style.color = "#e74c3c"; // danger
+            } else {
+                charCount.style.color = "#f39c12"; // warning
+            }
         } else {
-            charCount.textContent = `${length} / ${MAX} maximum (${remaining} remaining)`;
-            charCount.style.color = '#27ae60';
+            charCount.textContent = "";
+            charCount.style.color = "#7f8c8d"; // normal
         }
 
-        // Enable/disable send button
+        // Enable Save only if minimum length is met
         if (length < MIN) {
-            sendBtn.disabled = true;
+            saveBtn.disabled = true;
         } else {
-            sendBtn.disabled = false;
+            saveBtn.disabled = false;
         }
     }
 
@@ -559,21 +564,19 @@
         const cancelBtn = document.getElementById('cancelAppealBtn');
         const modal = document.getElementById('appealModal');
 
-        if (textarea && cancelBtn && modal) {
-            // Update counter on input
-            textarea.addEventListener('input', updateAppealCounter);
-            textarea.addEventListener('keyup', updateAppealCounter);
+        // Update counter on input
+        textarea.addEventListener('input', updateAppealCounter);
+        textarea.addEventListener('keyup', updateAppealCounter);
 
-            // Cancel button
-            cancelBtn.addEventListener('click', closeAppealModal);
+        // Cancel button
+        cancelBtn.addEventListener('click', closeAppealModal);
 
-            // Close modal on outside click
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    closeAppealModal();
-                }
-            });
-        }
+        // Close modal on outside click
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeAppealModal();
+            }
+        });
     });
 </script>
 
@@ -602,7 +605,7 @@
                 <small style="color: #7f8c8d;"><span id="appealCharCount"></span></small>
                 <div style="display: flex; gap: 1rem;">
                     <button type="button" id="cancelAppealBtn" class="btn btn-secondary">Cancel</button>
-                    <button type="submit" id="sendAppealBtn" class="btn">Send</button>
+                    <button type="submit" id="saveAppealBtn" class="btn">Send</button>
                 </div>
             </div>
         </form>
