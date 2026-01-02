@@ -1005,57 +1005,77 @@ def notify_admins_rush_job_deleted(queue_entry_title, machine_name, deleting_use
 
 def notify_admins_rush_job_approved(queue_entry, approving_admin):
     """
-    Notify all admin/staff users on Slack when a queue appeal is approved.
-    This sends a Slack-only notification (no web notification) to inform admins the task is complete.
+    Notify all admin/staff users when a queue appeal is approved.
+    This sends both web notification and Slack DM with clickable link.
 
     Args:
         queue_entry: The QueueEntry that was approved
         approving_admin: The admin who approved it
     """
-    # Get all staff/admin users EXCEPT the entry owner (they get separate notification)
+    # Get all staff/admin users EXCEPT:
+    # - The entry owner (they get separate notification)
+    # - The approving admin (they know what they did)
     admin_users = User.objects.filter(
         Q(is_staff=True) | Q(is_superuser=True)
-    ).exclude(id=queue_entry.user.id).distinct()
+    ).exclude(id=queue_entry.user.id).exclude(id=approving_admin.id).distinct()
 
     title = 'Queue Appeal Approved'
     message = f'{approving_admin.username} approved queue appeal "{queue_entry.title}" by {queue_entry.user.username} on {queue_entry.assigned_machine.name}. Moved to position {queue_entry.queue_position}.'
 
-    print(f"[RUSH_JOB_APPROVED] Notifying {admin_users.count()} admins (excluding entry owner)")
+    print(f"[RUSH_JOB_APPROVED] Notifying {admin_users.count()} other admins (excluding entry owner and approving admin)")
 
     for admin in admin_users:
         prefs = NotificationPreference.get_or_create_for_user(admin)
         if prefs.notify_admin_rush_job:
-            # Send Slack-only notification (no web notification needed)
-            print(f"[RUSH_JOB_APPROVED] Sending Slack to {admin.username}")
-            send_slack_dm(admin, title, message)
+            # Create web notification with link to queue
+            print(f"[RUSH_JOB_APPROVED] Creating notification for {admin.username}")
+            notification = create_notification(
+                recipient=admin,
+                notification_type='admin_action',
+                title=title,
+                message=message,
+                related_queue_entry=queue_entry,
+                related_machine=queue_entry.assigned_machine,
+                triggering_user=approving_admin,
+            )
 
 
 def notify_admins_rush_job_rejected(queue_entry, rejecting_admin, rejection_reason):
     """
-    Notify all admin/staff users on Slack when a queue appeal is rejected.
-    This sends a Slack-only notification (no web notification) to inform admins the task is complete.
+    Notify all admin/staff users when a queue appeal is rejected.
+    This sends both web notification and Slack DM with clickable link.
 
     Args:
         queue_entry: The QueueEntry that was rejected
         rejecting_admin: The admin who rejected it
         rejection_reason: The reason for rejection
     """
-    # Get all staff/admin users EXCEPT the entry owner (they get separate notification)
+    # Get all staff/admin users EXCEPT:
+    # - The entry owner (they get separate notification)
+    # - The rejecting admin (they know what they did)
     admin_users = User.objects.filter(
         Q(is_staff=True) | Q(is_superuser=True)
-    ).exclude(id=queue_entry.user.id).distinct()
+    ).exclude(id=queue_entry.user.id).exclude(id=rejecting_admin.id).distinct()
 
     title = 'Queue Appeal Rejected'
     message = f'{rejecting_admin.username} rejected queue appeal "{queue_entry.title}" by {queue_entry.user.username}.\nReason: {rejection_reason}'
 
-    print(f"[RUSH_JOB_REJECTED] Notifying {admin_users.count()} admins (excluding entry owner)")
+    print(f"[RUSH_JOB_REJECTED] Notifying {admin_users.count()} other admins (excluding entry owner and rejecting admin)")
 
     for admin in admin_users:
         prefs = NotificationPreference.get_or_create_for_user(admin)
         if prefs.notify_admin_rush_job:
-            # Send Slack-only notification (no web notification needed)
-            print(f"[RUSH_JOB_REJECTED] Sending Slack to {admin.username}")
-            send_slack_dm(admin, title, message)
+            # Create web notification with link to queue
+            print(f"[RUSH_JOB_REJECTED] Creating notification for {admin.username}")
+            notification = create_notification(
+                recipient=admin,
+                notification_type='admin_action',
+                title=title,
+                message=message,
+                related_queue_entry=queue_entry,
+                related_machine=queue_entry.assigned_machine,
+                triggering_user=rejecting_admin,
+            )
 
 
 def auto_clear_notifications(notification_type=None, related_queue_entry=None,
