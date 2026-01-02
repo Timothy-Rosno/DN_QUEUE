@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load duration_filters %}
 
 {% block title %}Machine Management - Admin{% endblock %}
 
@@ -245,11 +246,11 @@
                         <h4>Operational</h4>
                         <div class="spec-item">
                             <span class="spec-label">Cooldown:</span>
-                            <span class="spec-value">{{ machine.cooldown_hours }} hours</span>
+                            <span class="spec-value">{{ machine.cooldown_hours|format_duration }}</span>
                         </div>
                         <div class="spec-item">
                             <span class="spec-label">Warmup:</span>
-                            <span class="spec-value">{{ machine.warmup_hours }} hours</span>
+                            <span class="spec-value">{{ machine.warmup_hours|format_duration }}</span>
                         </div>
                         <div class="spec-item">
                             <span class="spec-label">Optical:</span>

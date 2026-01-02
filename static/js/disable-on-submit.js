@@ -14,7 +14,8 @@
 
     let isSubmitting = false;
 
-    function disableAllInteractiveElements() {
+    // Expose globally so modal dialogs can call it when programmatically submitting forms
+    window.disableAllInteractiveElements = function disableAllInteractiveElements() {
         if (isSubmitting) return; // Already disabled
         isSubmitting = true;
 
@@ -53,11 +54,11 @@
                 link.style.opacity = '0.6';
             }
         });
-    }
+    };
 
     // Intercept all form submissions
     document.addEventListener('submit', function(e) {
-        disableAllInteractiveElements();
+        window.disableAllInteractiveElements();
         // Let the form submit normally
     }, true); // Use capture phase to catch before other handlers
 
@@ -71,7 +72,7 @@
         if (button && button.type !== 'button') {
             // Only disable for submit buttons or buttons without explicit type="button"
             // Give a tiny delay to let the click handler execute first
-            setTimeout(disableAllInteractiveElements, 10);
+            setTimeout(window.disableAllInteractiveElements, 10);
         }
     }, true);
 

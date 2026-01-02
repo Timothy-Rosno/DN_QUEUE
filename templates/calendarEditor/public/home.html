@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load duration_filters %}
 
 {% block title %}Lab Equipment Queue System{% endblock %}
 
@@ -361,7 +362,7 @@
             <div style="text-align: right;">
                 <div style="color: #856404; font-size: 0.85rem;">Estimated Duration</div>
                 <div style="font-size: 1.3rem; font-weight: bold; color: #e67e22;">
-                    {{ data.running_entry.estimated_duration_hours }} hours
+                    {{ data.running_entry.estimated_duration_hours|format_duration }}
                 </div>
             </div>
         </div>
@@ -399,7 +400,7 @@
                         </td>
                         <td style="padding: 0.5rem;">{{ entry.user.username }}</td>
                         <td style="padding: 0.5rem;">{{ entry.required_min_temp }}</td>
-                        <td style="padding: 0.5rem;">{{ entry.estimated_duration_hours }}</td>
+                        <td style="padding: 0.5rem;">{{ entry.estimated_duration_hours|format_duration }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

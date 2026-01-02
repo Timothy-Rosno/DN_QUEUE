@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load duration_filters %}
 
 {% block title %}Measurement Archive{% endblock %}
 
@@ -213,7 +214,7 @@
                 </td>
                 <td style="white-space: nowrap; font-size: 0.9rem; text-align: center;">
                     {% if archive.duration_hours is not None and archive.status != 'cancelled' %}
-                        {{ archive.duration_hours|floatformat:1 }} h
+                        {{ archive.duration_hours|format_duration }}
                     {% else %}
                         —
                     {% endif %}
@@ -531,24 +532,6 @@ window.thanosDeleteState = {
     count: 0
 };
 
-// Disable all delete buttons
-function disableAllDeleteButtons() {
-    // Disable individual delete buttons
-    document.querySelectorAll('.delete-archive-btn').forEach(btn => {
-        btn.disabled = true;
-        btn.style.opacity = '0.5';
-        btn.style.cursor = 'not-allowed';
-    });
-
-    // Disable bulk delete button
-    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-    if (deleteSelectedBtn) {
-        deleteSelectedBtn.disabled = true;
-        deleteSelectedBtn.style.opacity = '0.5';
-        deleteSelectedBtn.style.cursor = 'not-allowed';
-    }
-}
-
 // Thanos modal handlers
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('thanosModal');
@@ -601,8 +584,10 @@ document.addEventListener('DOMContentLoaded', function() {
     btnYes.addEventListener('click', function() {
         const state = window.thanosDeleteState;
 
-        // Disable all delete buttons immediately
-        disableAllDeleteButtons();
+        // Disable all interactive elements before submission
+        if (window.disableAllInteractiveElements) {
+            window.disableAllInteractiveElements();
+        }
 
         if (state.mode === 'bulk') {
             closeModal();

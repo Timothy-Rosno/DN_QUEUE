@@ -208,12 +208,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Save scroll position
                     sessionStorage.setItem('checkInCheckOutScrollPosition', window.scrollY);
 
-                    // Disable all undo buttons to prevent double-click
-                    document.querySelectorAll('.undo-check-in-btn').forEach(b => {
-                        b.disabled = true;
-                        b.style.opacity = '0.5';
-                        b.textContent = 'Processing...';
-                    });
+                    // Disable all interactive elements before submission
+                    if (window.disableAllInteractiveElements) {
+                        window.disableAllInteractiveElements();
+                    }
 
                     // Submit the form
                     const form = document.getElementById(`undo-form-${entryId}`);

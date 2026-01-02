@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load duration_filters %}
 
 {% block title %}Queue Appeals - Admin{% endblock %}
 
@@ -48,7 +49,7 @@
                     <div><strong>B-field Z:</strong> {{ entry.required_b_field_z }} T</div>
                     <div><strong>DC Lines:</strong> {{ entry.required_dc_lines }}</div>
                     <div><strong>RF Lines:</strong> {{ entry.required_rf_lines }}</div>
-                    <div><strong>Duration:</strong> {{ entry.estimated_duration_hours }} hours</div>
+                    <div><strong>Duration:</strong> {{ entry.estimated_duration_hours|format_duration }}</div>
                 </div>
             </div>
 
@@ -264,6 +265,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentEntryId) {
             // Use custom message or default to "Insufficient justification"
             const rejectionMessage = rejectionMessageInput.value.trim() || 'Insufficient justification';
+
+            // Disable all interactive elements before submission
+            if (window.disableAllInteractiveElements) {
+                window.disableAllInteractiveElements();
+            }
 
             const form = document.createElement('form');
             form.method = 'POST';
