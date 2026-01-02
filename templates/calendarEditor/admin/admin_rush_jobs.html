@@ -134,18 +134,16 @@
         <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto; margin-bottom: 1rem;">
         <p id="thanosMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-wrap: break-word;"></p>
 
-        <!-- Rejection Message Input (hidden by default) -->
-        <div id="rejectionMessageBox" style="display:none; margin-bottom:1rem; text-align:left;">
-            <label for="rejectionMessage" style="display:block; font-weight:bold; margin-bottom:0.5rem;">Enter rejection reason:</label>
-            <textarea id="rejectionMessage" style="width:100%; padding:0.5rem; border:1px solid #ddd; border-radius:4px; min-height:80px; font-family: inherit;" placeholder="Insufficient justification"></textarea>
-            <small style="color:#7f8c8d; display:block; margin-top:0.25rem;">This message will be sent to the user. Leave blank for "Insufficient justification".</small>
+        <!-- Rejection Message Input -->
+        <div id="rejectionMessageBox" style="margin-bottom:1rem; text-align:left;">
+            <label for="rejectionMessage" style="display:block; font-weight:bold; margin-bottom:0.5rem;">Rejection reason (optional):</label>
+            <textarea id="rejectionMessage" style="width:100%; padding:0.5rem; border:1px solid #ddd; border-radius:4px; min-height:80px; font-family: inherit;" placeholder="Leave blank for default: 'Insufficient justification'"></textarea>
+            <small style="color:#7f8c8d; display:block; margin-top:0.25rem;">Leave blank to use default message: "Insufficient justification"</small>
         </div>
 
         <!-- Action Buttons -->
         <div style="display:flex; justify-content:space-around; gap:1rem; flex-wrap:wrap;">
-            <button id="useDefaultMessage" class="btn btn-warning">Use Default Message</button>
-            <button id="useCustomMessage" class="btn btn-warning">Write Custom Message</button>
-            <button id="thanosYes" class="btn btn-danger" style="display:none;">Submit Rejection</button>
+            <button id="thanosYes" class="btn btn-danger">Reject Appeal</button>
             <button id="thanosNo" class="btn btn-secondary">Cancel</button>
         </div>
         <span id="thanosClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
@@ -241,13 +239,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnYes = document.getElementById('thanosYes');
     const btnNo = document.getElementById('thanosNo');
     const btnClose = document.getElementById('thanosClose');
-    const rejectionMessageBox = document.getElementById('rejectionMessageBox');
     const rejectionMessageInput = document.getElementById('rejectionMessage');
-    const useDefaultBtn = document.getElementById('useDefaultMessage');
-    const useCustomBtn = document.getElementById('useCustomMessage');
     let currentEntryId = null;
     let currentEntryTitle = null;
-    let usingCustomMessage = false;
 
     // Open modal when reject button clicked
     document.querySelectorAll('.reject-rush-btn').forEach(btn => {
@@ -256,63 +250,20 @@ document.addEventListener('DOMContentLoaded', function() {
             currentEntryTitle = this.getAttribute('data-entry-title');
             message.textContent = `Reject queue appeal for "${currentEntryTitle}"?`;
 
-            // Reset to empty (placeholder will show)
-            usingCustomMessage = false;
+            // Clear previous input
             rejectionMessageInput.value = '';
-            rejectionMessageBox.style.display = 'none';
-            useDefaultBtn.style.display = 'inline-block';
-            useCustomBtn.style.display = 'inline-block';
-            btnYes.style.display = 'none';
 
+            // Show modal and focus textarea
             modal.style.display = 'flex';
+            setTimeout(() => rejectionMessageInput.focus(), 100);
         });
     });
 
-    // Use default message button
-    useDefaultBtn.addEventListener('click', function() {
-        if (currentEntryId) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = rejectUrlPattern.replace('ENTRY_ID', currentEntryId);
-
-            // Add CSRF token
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-            if (csrfToken) {
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = 'csrfmiddlewaretoken';
-                csrfInput.value = csrfToken.value;
-                form.appendChild(csrfInput);
-            }
-
-            // Add default rejection message
-            const messageInput = document.createElement('input');
-            messageInput.type = 'hidden';
-            messageInput.name = 'rejection_message';
-            messageInput.value = 'Insufficient justification';
-            form.appendChild(messageInput);
-
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-
-    // Use custom message button - show textarea
-    useCustomBtn.addEventListener('click', function() {
-        usingCustomMessage = true;
-        rejectionMessageBox.style.display = 'block';
-        useDefaultBtn.style.display = 'none';
-        useCustomBtn.style.display = 'none';
-        btnYes.style.display = 'inline-block';
-        btnNo.textContent = 'Back';
-        rejectionMessageInput.focus();
-    });
-
-    // Yes button: submit reject form with custom message
+    // Reject button: submit rejection with message (or default if blank)
     btnYes.addEventListener('click', function() {
         if (currentEntryId) {
             // Use custom message or default to "Insufficient justification"
-            const customMessage = rejectionMessageInput.value.trim() || 'Insufficient justification';
+            const rejectionMessage = rejectionMessageInput.value.trim() || 'Insufficient justification';
 
             const form = document.createElement('form');
             form.method = 'POST';
@@ -332,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const messageInput = document.createElement('input');
             messageInput.type = 'hidden';
             messageInput.name = 'rejection_message';
-            messageInput.value = customMessage;
+            messageInput.value = rejectionMessage;
             form.appendChild(messageInput);
 
             document.body.appendChild(form);
@@ -340,23 +291,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // No button: back or close modal
+    // Cancel button: close modal
     btnNo.addEventListener('click', function() {
-        if (usingCustomMessage) {
-            // If in custom message mode, go back to initial state
-            usingCustomMessage = false;
-            rejectionMessageBox.style.display = 'none';
-            useDefaultBtn.style.display = 'inline-block';
-            useCustomBtn.style.display = 'inline-block';
-            btnYes.style.display = 'none';
-            btnNo.textContent = 'Cancel';
-            rejectionMessageInput.value = 'Insufficient justification';
-        } else {
-            // If at initial state, close modal
-            modal.style.display = 'none';
-            currentEntryId = null;
-            currentEntryTitle = null;
-        }
+        modal.style.display = 'none';
+        currentEntryId = null;
+        currentEntryTitle = null;
     });
 
     // Close button: close modal
@@ -364,7 +303,6 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.style.display = 'none';
         currentEntryId = null;
         currentEntryTitle = null;
-        usingCustomMessage = false;
     });
 
     // Click outside modal: close modal
@@ -373,7 +311,6 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.style.display = 'none';
             currentEntryId = null;
             currentEntryTitle = null;
-            usingCustomMessage = false;
         }
     });
 });

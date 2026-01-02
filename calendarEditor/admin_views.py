@@ -518,6 +518,7 @@ def edit_machine(request, machine_id):
             machine.daughterboard_type = request.POST.get('daughterboard_type', machine.daughterboard_type)
             machine.optical_capabilities = request.POST.get('optical_capabilities', machine.optical_capabilities)
             machine.cooldown_hours = int(request.POST.get('cooldown_hours', machine.cooldown_hours))
+            machine.warmup_hours = int(request.POST.get('warmup_hours', machine.warmup_hours))
             old_status = machine.current_status
             old_is_available = machine.is_available
             machine.current_status = request.POST.get('current_status', machine.current_status)
@@ -586,6 +587,7 @@ def add_machine(request):
                 daughterboard_type=request.POST.get('daughterboard_type', ''),
                 optical_capabilities=request.POST.get('optical_capabilities', 'none'),
                 cooldown_hours=int(request.POST.get('cooldown_hours')),
+                warmup_hours=int(request.POST.get('warmup_hours', 0)),
                 current_status=request.POST.get('current_status', 'idle'),
                 is_available=request.POST.get('is_available') == 'on',
                 description=request.POST.get('description', ''),
