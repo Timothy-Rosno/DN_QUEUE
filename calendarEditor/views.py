@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
+from .decorators import require_queue_status, require_machine_available, atomic_operation, require_own_entry
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings
@@ -607,58 +608,30 @@ def appeal_queue_entry(request, pk):
     return redirect('my_queue')
 
 
-@login_required
-def check_in_job(request, entry_id):
+@require_queue_status('queued', redirect_to='check_in_check_out')
+@require_machine_available(redirect_to='check_in_check_out')
+@atomic_operation
+def check_in_job(request, queue_entry):
     """
     User checks in to start their measurement (ON DECK → RUNNING).
 
-    Requirements:
-    - User must own the entry
+    Requirements (enforced by decorators):
+    - User must own the entry (@require_queue_status)
+    - Entry status must be 'queued' (@require_queue_status)
+    - Entry must have an assigned machine (@require_machine_available)
+    - Machine must be available and not in maintenance (@require_machine_available)
+    - Machine must not have another running job (@require_machine_available)
+
+    Additional business rule (checked here):
     - Entry must be at position #1 (ON DECK)
-    - Entry status must be 'queued'
     """
-    # Check if entry exists and belongs to current user
-    try:
-        queue_entry = QueueEntry.objects.get(id=entry_id)
-        if queue_entry.user != request.user:
-            messages.warning(request, 'This queue entry is not for your account. Returning to home page.')
-            return redirect('home')
-    except QueueEntry.DoesNotExist:
-        raise Http404("Queue entry not found")
-
-    # Validate entry can be checked in
-    if queue_entry.status != 'queued':
-        messages.error(request, f'Cannot check in - job status is "{queue_entry.get_status_display()}". Only queued jobs can be checked in.')
-        return redirect('check_in_check_out')
-
+    # Additional validation: Must be at position #1
     if queue_entry.queue_position != 1:
         messages.error(request, f'Cannot check in - you are position #{queue_entry.queue_position}. Only ON DECK (position #1) users can check in.')
         return redirect('check_in_check_out')
 
-    if not queue_entry.assigned_machine:
-        messages.error(request, 'Cannot check in - no machine assigned.')
-        return redirect('check_in_check_out')
-
-    # Check if machine is available and not in maintenance
+    # Get machine (already validated by decorator)
     machine = queue_entry.assigned_machine
-
-    if not machine.is_available:
-        messages.error(request, f'Cannot check in - {machine.name} is currently unavailable. Please contact an administrator.')
-        return redirect('check_in_check_out')
-
-    if machine.current_status == 'maintenance':
-        messages.error(request, f'Cannot check in - {machine.name} is under maintenance. Please contact an administrator.')
-        return redirect('check_in_check_out')
-
-    # Check if machine already has a running job
-    existing_running_job = QueueEntry.objects.filter(
-        assigned_machine=machine,
-        status='running'
-    ).exclude(id=queue_entry.id).first()
-
-    if existing_running_job:
-        messages.error(request, f'Cannot check in - {machine.name} is currently busy with another measurement. Please wait for it to complete.')
-        return redirect('check_in_check_out')
 
     # Start the job
     queue_entry.status = 'running'
@@ -719,29 +692,18 @@ def check_in_job(request, entry_id):
     return redirect('check_in_check_out')
 
 
-@login_required
-def check_out_job(request, entry_id):
+@require_queue_status('running', redirect_to='check_in_check_out')
+@atomic_operation
+def check_out_job(request, queue_entry):
     """
     User checks out to complete their measurement (RUNNING → COMPLETED).
 
-    Requirements:
-    - User must own the entry
-    - Entry status must be 'running'
+    Requirements (enforced by decorators):
+    - User must own the entry (@require_queue_status)
+    - Entry status must be 'running' (@require_queue_status)
+    - Entry exists (@require_queue_status)
     """
-    # Check if entry exists and belongs to current user
-    try:
-        queue_entry = QueueEntry.objects.get(id=entry_id)
-        if queue_entry.user != request.user:
-            messages.warning(request, 'This queue entry is not for your account. Returning to home page.')
-            return redirect('home')
-    except QueueEntry.DoesNotExist:
-        raise Http404("Queue entry not found")
-
-    # Validate entry can be checked out
-    if queue_entry.status != 'running':
-        messages.error(request, f'Cannot check out - job status is "{queue_entry.get_status_display()}". Only running jobs can be checked out.')
-        return redirect('check_in_check_out')
-
+    # Validate assigned machine (simple check since we don't need full machine_available validation)
     if not queue_entry.assigned_machine:
         messages.error(request, 'Cannot check out - no machine assigned.')
         return redirect('check_in_check_out')
@@ -962,138 +924,119 @@ def snooze_checkin_reminder(request, entry_id):
     return redirect('check_in_check_out')
 
 
-@login_required
-def undo_check_in(request, entry_id):
+@require_queue_status('running', redirect_to='check_in_check_out')
+@atomic_operation
+def undo_check_in(request, queue_entry):
     """
     Undo a check-in to move running entry back to on-deck position (RUNNING → QUEUED at position 1).
 
     This moves the running entry back to position 1 and bumps all other queued entries down by 1.
     Sets the machine back to idle status.
 
-    Requirements:
-    - User must own the entry
-    - Entry status must be 'running'
+    Requirements (enforced by decorators):
+    - User must own the entry (@require_queue_status)
+    - Entry status must be 'running' (@require_queue_status)
+    - Entry exists (@require_queue_status)
     """
+    # Validate assigned machine
+    if not queue_entry.assigned_machine:
+        messages.error(request, 'Cannot undo check-in - no machine assigned.')
+        return redirect('check_in_check_out')
+
+    machine = queue_entry.assigned_machine
+
+    # Refresh machine from database to get latest state
+    machine.refresh_from_db()
+
+    # Check if machine is in maintenance mode (business rule for undo specifically)
+    if machine.current_status == 'maintenance':
+        messages.error(request, f'Cannot undo check-in - {machine.name} is under maintenance. Please contact an administrator.')
+        return redirect('check_in_check_out')
+
+    # Find the entry that was at position 1 (will be bumped to position 2)
+    existing_queued = QueueEntry.objects.filter(
+        assigned_machine=machine,
+        status='queued'
+    ).order_by('queue_position')
+
+    was_on_deck = existing_queued.filter(queue_position=1).first()
+
+    # Bump all existing queued entries down by 1 position
+    # Update in REVERSE order to avoid UNIQUE constraint violations
+    existing_queued_list = list(existing_queued)
+    for entry in reversed(existing_queued_list):
+        entry.queue_position += 1
+        entry.save(update_fields=['queue_position'])
+
+    # Move this entry back to queued status at position 1
+    queue_entry.status = 'queued'
+    queue_entry.queue_position = 1
+    queue_entry.started_at = None
+    # Clear checkout reminder fields
+    queue_entry.reminder_due_at = None
+    queue_entry.last_reminder_sent_at = None
+    queue_entry.reminder_snoozed_until = None
+    queue_entry.save()
+
+    # Refresh machine again to ensure we're working with latest data
+    machine.refresh_from_db()
+
+    # Update machine status to idle
+    machine.current_status = 'idle'
+    machine.current_user = None
+    machine.estimated_available_time = None
+    machine.save()
+
+    # Final refresh to ensure all updates are committed
+    machine.refresh_from_db()
+    queue_entry.refresh_from_db()
+
+    # Auto-clear any running-related notifications
+    auto_clear_notifications(related_queue_entry=queue_entry)
+
+    # Clear check-in reminders for the entry that was bumped from position 1
+    from .notifications import notify_bumped_from_on_deck, notify_queue_position_change, check_and_notify_on_deck_status
+    if was_on_deck:
+        was_on_deck.refresh_from_db()  # Refresh to get updated queue_position
+        # Clear check-in reminders (no longer at position 1)
+        was_on_deck.checkin_reminder_due_at = None
+        was_on_deck.last_checkin_reminder_sent_at = None
+        was_on_deck.checkin_reminder_snoozed_until = None
+        was_on_deck.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
+        notify_bumped_from_on_deck(was_on_deck, reason='measurement undone')
+
+    # Initialize check-in reminders for the entry now at position 1
+    check_and_notify_on_deck_status(machine)
+
+    # Notify other users who were pushed back in the queue (if they have the preference enabled)
+    for entry in existing_queued:
+        if was_on_deck is None or entry.id != was_on_deck.id:  # Skip the one already notified above
+            entry.refresh_from_db()
+            old_position = entry.queue_position - 1  # They were at position-1 before the bump
+            notify_queue_position_change(entry, old_position, entry.queue_position)
+
+    # DO NOT notify the user who undid their own check-in (they already know)
+
+    # Broadcast WebSocket update
     try:
-        # Check if entry exists and belongs to current user
-        queue_entry = QueueEntry.objects.get(id=entry_id)
-        if queue_entry.user != request.user:
-            messages.warning(request, 'This queue entry is not for your account. Returning to home page.')
-            return redirect('home')
-
-        # Validate entry can be undone
-        if queue_entry.status != 'running':
-            messages.error(request, f'Cannot undo check-in - job status is "{queue_entry.get_status_display()}". Only running jobs can be undone.')
-            return redirect('check_in_check_out')
-
-        if not queue_entry.assigned_machine:
-            messages.error(request, 'Cannot undo check-in - no machine assigned.')
-            return redirect('check_in_check_out')
-
-        machine = queue_entry.assigned_machine
-
-        # Refresh machine from database to get latest state
-        machine.refresh_from_db()
-
-        # Check if machine is in maintenance mode
-        if machine.current_status == 'maintenance':
-            messages.error(request, f'Cannot undo check-in - {machine.name} is under maintenance. Please contact an administrator.')
-            return redirect('check_in_check_out')
-
-        # Find the entry that was at position 1 (will be bumped to position 2)
-        existing_queued = QueueEntry.objects.filter(
-            assigned_machine=machine,
-            status='queued'
-        ).order_by('queue_position')
-
-        was_on_deck = existing_queued.filter(queue_position=1).first()
-
-        # Bump all existing queued entries down by 1 position
-        # Update in REVERSE order to avoid UNIQUE constraint violations
-        existing_queued_list = list(existing_queued)
-        for entry in reversed(existing_queued_list):
-            entry.queue_position += 1
-            entry.save(update_fields=['queue_position'])
-
-        # Move this entry back to queued status at position 1
-        queue_entry.status = 'queued'
-        queue_entry.queue_position = 1
-        queue_entry.started_at = None
-        # Clear checkout reminder fields
-        queue_entry.reminder_due_at = None
-        queue_entry.last_reminder_sent_at = None
-        queue_entry.reminder_snoozed_until = None
-        queue_entry.save()
-
-        # Refresh machine again to ensure we're working with latest data
-        machine.refresh_from_db()
-
-        # Update machine status to idle
-        machine.current_status = 'idle'
-        machine.current_user = None
-        machine.estimated_available_time = None
-        machine.save()
-
-        # Final refresh to ensure all updates are committed
-        machine.refresh_from_db()
-        queue_entry.refresh_from_db()
-
-        # Auto-clear any running-related notifications
-        auto_clear_notifications(related_queue_entry=queue_entry)
-
-        # Clear check-in reminders for the entry that was bumped from position 1
-        from .notifications import notify_bumped_from_on_deck, notify_queue_position_change, check_and_notify_on_deck_status
-        if was_on_deck:
-            was_on_deck.refresh_from_db()  # Refresh to get updated queue_position
-            # Clear check-in reminders (no longer at position 1)
-            was_on_deck.checkin_reminder_due_at = None
-            was_on_deck.last_checkin_reminder_sent_at = None
-            was_on_deck.checkin_reminder_snoozed_until = None
-            was_on_deck.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
-            notify_bumped_from_on_deck(was_on_deck, reason='measurement undone')
-
-        # Initialize check-in reminders for the entry now at position 1
-        check_and_notify_on_deck_status(machine)
-
-        # Notify other users who were pushed back in the queue (if they have the preference enabled)
-        for entry in existing_queued:
-            if was_on_deck is None or entry.id != was_on_deck.id:  # Skip the one already notified above
-                entry.refresh_from_db()
-                old_position = entry.queue_position - 1  # They were at position-1 before the bump
-                notify_queue_position_change(entry, old_position, entry.queue_position)
-
-        # DO NOT notify the user who undid their own check-in (they already know)
-
-        # Broadcast WebSocket update
-        try:
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                'queue_updates',
-                {
-                    'type': 'queue_update',
-                    'update_type': 'undo_checkin',
-                    'entry_id': queue_entry.id,
-                    'user_id': queue_entry.user.id,
-                    'machine_id': machine.id,
-                    'machine_name': machine.name,
-                    'triggering_user_id': request.user.id,
-                }
-            )
-        except Exception as e:
-            print(f"WebSocket broadcast failed: {e}")
-
-        messages.success(request, f'Check-in undone! Your measurement on {machine.name} has been moved back to position #1 (on deck).')
-        return redirect('check_in_check_out')
-
-    except QueueEntry.DoesNotExist:
-        raise Http404("Queue entry not found")
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            'queue_updates',
+            {
+                'type': 'queue_update',
+                'update_type': 'undo_checkin',
+                'entry_id': queue_entry.id,
+                'user_id': queue_entry.user.id,
+                'machine_id': machine.id,
+                'machine_name': machine.name,
+                'triggering_user_id': request.user.id,
+            }
+        )
     except Exception as e:
-        # Log the error and show user-friendly message
-        print(f"Error in undo_check_in for entry {entry_id}: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        messages.error(request, f'An error occurred while undoing check-in. Please try again or contact an administrator.')
-        return redirect('check_in_check_out')
+        print(f"WebSocket broadcast failed: {e}")
+
+    messages.success(request, f'Check-in undone! Your measurement on {machine.name} has been moved back to position #1 (on deck).')
+    return redirect('check_in_check_out')
 
 
 @login_required
@@ -2052,7 +1995,35 @@ def reset_notification_preferences(request):
     prefs = NotificationPreference.get_or_create_for_user(request.user)
 
     # Reset to default values based on user type
-    if request.user.is_staff or request.user.is_superuser:
+    if request.user.is_superuser:
+        prefs.notify_public_preset_created = False
+        prefs.notify_public_preset_edited = False
+        prefs.notify_public_preset_deleted = False
+        prefs.notify_private_preset_edited = False
+        prefs.notify_followed_preset_edited = False
+        prefs.notify_followed_preset_deleted = False
+        prefs.notify_queue_added = False
+        prefs.notify_queue_position_change = False
+        prefs.notify_queue_cancelled = False
+        prefs.notify_on_deck = False
+        prefs.notify_ready_for_check_in = False
+        prefs.notify_checkin_reminder = False
+        prefs.notify_checkout_reminder = False
+        prefs.notify_machine_queue_changes = False
+        prefs.notify_admin_check_in = False
+        prefs.notify_admin_checkout = False
+        prefs.notify_admin_edit_entry = False
+        prefs.notify_admin_moved_entry = False
+        prefs.notify_machine_status_change = False
+        prefs.notify_account_approved = False
+        prefs.notify_account_unapproved = False
+        prefs.notify_account_promoted = False
+        prefs.notify_account_demoted = False
+        prefs.notify_account_info_changed = False
+        prefs.notify_admin_new_user = False
+        prefs.notify_admin_rush_job = False
+        prefs.notify_database_restored = False    
+    if request.user.is_staff:
         # Admin defaults (minimal notifications)
         prefs.notify_public_preset_created = False
         prefs.notify_public_preset_edited = False

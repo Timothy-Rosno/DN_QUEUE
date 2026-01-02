@@ -42,7 +42,7 @@
                 {% endif %}
             </div>
             <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
-                <form method="post" action="{% url 'check_out_job' entry.id %}">
+                <form method="post" action="{% url 'check_out_job' entry.id %}" data-protect data-loading-text="Checking out..." data-save-scroll="true">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-success btn-lg" style="width: 150px;">Check Out</button>
                 </form>
@@ -78,7 +78,7 @@
                 {% endif %}
             </div>
             <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
-                <form method="post" action="{% url 'check_out_job' entry.id %}">
+                <form method="post" action="{% url 'check_out_job' entry.id %}" data-protect data-loading-text="Checking out..." data-save-scroll="true">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-success btn-lg" style="width: 150px;">Check Out</button>
                 </form>
@@ -117,12 +117,12 @@
                 {% endif %}
             </div>
             <div>
-                <form method="post" action="{% url 'check_in_job' entry.id %}" onsubmit="disableCheckInButton(this);">
+                <form method="post" action="{% url 'check_in_job' entry.id %}" data-protect data-loading-text="Checking in..." data-save-scroll="true">
                     {% csrf_token %}
                     {% if not entry.assigned_machine.is_available %}
                     <button type="button" class="btn btn-secondary btn-lg" style="cursor: not-allowed;" disabled title="Machine is unavailable. Please contact an administrator.">Check In Now</button>
                     {% else %}
-                    <button type="submit" class="btn btn-success btn-lg check-in-btn">Check In Now</button>
+                    <button type="submit" class="btn btn-success btn-lg">Check In Now</button>
                     {% endif %}
                 </form>
             </div>
@@ -182,125 +182,46 @@
     <a href="{% url 'my_queue' %}" class="btn btn-secondary">My Queue</a>
 </div> -->
 
-<!-- Undo Check-In Confirmation Modal -->
+<!-- Undo Check-In uses global confirmation modal from base.html -->
+
 {% load static %}
-<div id="undoConfirmModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:2rem; border-radius:10px; max-width:500px; width:90%; text-align:center; position:relative;">
-        <!-- Thanos dialog for everyone -->
-        <img src="{% static 'images/thanos.jpg' %}" alt="Thanos" style="width:330px; height:auto; margin-bottom: 1rem;">
-        <p id="undoConfirmMessage" style="font-weight:bold; margin-bottom:1rem; font-size:1rem; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-wrap: break-word;"></p>
-        <p style="color: #7f8c8d; margin-bottom:1rem; font-size:0.95rem;">This will move your entry back to position #1 in the queue and set the machine back to idle.</p>
-        <div style="display:flex; justify-content:space-around; gap:1rem;">
-            <button id="undoConfirmYes" class="btn btn-danger">Yes, undo check-in</button>
-            <button id="undoConfirmNo" class="btn btn-secondary">No, keep running</button>
-        </div>
-        <span id="undoConfirmClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
-    </div>
-</div>
-
 <script>
-
-// Save scroll position before form submission
+// ========================================
+// Undo Check-In Confirmation using Global Modal
+// ========================================
 document.addEventListener('DOMContentLoaded', function() {
-    const forms = document.querySelectorAll('form[action*="check-in"], form[action*="check-out"], form[action*="undo-check-in"]');
-
-    forms.forEach(function(form) {
-        form.addEventListener('submit', function() {
-            sessionStorage.setItem('checkInCheckOutScrollPosition', window.scrollY);
-        });
-    });
-
-    // Restore scroll position after page load
-    const savedPosition = sessionStorage.getItem('checkInCheckOutScrollPosition');
-    if (savedPosition) {
-        window.scrollTo(0, parseInt(savedPosition));
-        sessionStorage.removeItem('checkInCheckOutScrollPosition');
-    }
-
-    // Undo check-in confirmation modal
-    const undoModal = document.getElementById('undoConfirmModal');
-    const undoMessage = document.getElementById('undoConfirmMessage');
-    const undoYesBtn = document.getElementById('undoConfirmYes');
-    const undoNoBtn = document.getElementById('undoConfirmNo');
-    const undoCloseBtn = document.getElementById('undoConfirmClose');
-    let currentUndoEntryId = null;
-    let currentUndoEntryTitle = null;
-
-    // Open modal when undo check-in button clicked
+    // Use global confirmModal for undo check-in confirmations
     document.querySelectorAll('.undo-check-in-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            currentUndoEntryId = this.getAttribute('data-entry-id');
-            currentUndoEntryTitle = this.getAttribute('data-entry-title');
-            undoMessage.textContent = `Undo check-in for "${currentUndoEntryTitle}"?`;
-            undoModal.style.display = 'flex';
+            const entryId = this.getAttribute('data-entry-id');
+            const entryTitle = this.getAttribute('data-entry-title');
+
+            window.confirmModal.show({
+                title: 'Undo Check-In',
+                message: `Undo check-in for "${entryTitle}"?\n\nThis will move your entry back to position #1 in the queue and set the machine back to idle.`,
+                image: '{% static "images/thanos.jpg" %}',
+                confirmText: 'Yes, undo check-in',
+                cancelText: 'No, keep running',
+                confirmClass: 'btn-danger',
+                onConfirm: () => {
+                    // Save scroll position
+                    sessionStorage.setItem('checkInCheckOutScrollPosition', window.scrollY);
+
+                    // Disable all undo buttons to prevent double-click
+                    document.querySelectorAll('.undo-check-in-btn').forEach(b => {
+                        b.disabled = true;
+                        b.style.opacity = '0.5';
+                        b.textContent = 'Processing...';
+                    });
+
+                    // Submit the form
+                    const form = document.getElementById(`undo-form-${entryId}`);
+                    if (form) {
+                        form.submit();
+                    }
+                }
+            });
         });
-    });
-
-    // Disable check-in button to prevent double-clicking
-    window.disableCheckInButton = function(form) {
-        const button = form.querySelector('.check-in-btn');
-        if (button) {
-            button.disabled = true;
-            button.style.opacity = '0.5';
-            button.style.cursor = 'not-allowed';
-            button.textContent = 'Processing...';
-        }
-    };
-
-    // Disable all undo check-in buttons
-    function disableAllUndoButtons() {
-        // Disable all undo check-in buttons
-        document.querySelectorAll('.undo-check-in-btn').forEach(btn => {
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-            btn.style.cursor = 'not-allowed';
-            btn.textContent = 'Processing...';
-        });
-
-        // Disable modal buttons
-        undoYesBtn.disabled = true;
-        undoYesBtn.style.opacity = '0.5';
-        undoYesBtn.style.cursor = 'not-allowed';
-        undoNoBtn.disabled = true;
-        undoNoBtn.style.opacity = '0.5';
-        undoNoBtn.style.cursor = 'not-allowed';
-    }
-
-    // Yes button: submit the form
-    undoYesBtn.addEventListener('click', function() {
-        if (currentUndoEntryId) {
-            // Disable all buttons immediately
-            disableAllUndoButtons();
-
-            const form = document.getElementById(`undo-form-${currentUndoEntryId}`);
-            if (form) {
-                undoModal.style.display = 'none';
-                form.submit();
-            }
-        }
-    });
-
-    // No button: close modal
-    undoNoBtn.addEventListener('click', function() {
-        undoModal.style.display = 'none';
-        currentUndoEntryId = null;
-        currentUndoEntryTitle = null;
-    });
-
-    // Close button: close modal
-    undoCloseBtn.addEventListener('click', function() {
-        undoModal.style.display = 'none';
-        currentUndoEntryId = null;
-        currentUndoEntryTitle = null;
-    });
-
-    // Click outside modal: close modal
-    undoModal.addEventListener('click', function(e) {
-        if (e.target === undoModal) {
-            undoModal.style.display = 'none';
-            currentUndoEntryId = null;
-            currentUndoEntryTitle = null;
-        }
     });
 });
 

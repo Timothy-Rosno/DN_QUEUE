@@ -15,7 +15,7 @@
         <span style="font-weight: bold;">*</span> Required fields
     </p>
 
-    <form method="post" id="queueForm" action="{% url 'submit_queue' %}">
+    <form method="post" id="queueForm" action="{% url 'submit_queue' %}" data-protect data-loading-text="Submitting...">
         {% csrf_token %}
         {% if next_url %}
             <input type="hidden" name="next" value="{{ next_url }}">
@@ -652,13 +652,7 @@
                 }
             }
 
-            // Prevent double submission by disabling submit buttons
-            const submitBtnTop = document.getElementById('submitBtnTop');
-            const submitBtnBottom = document.getElementById('submitBtnBottom');
-            submitBtnTop.disabled = true;
-            submitBtnBottom.disabled = true;
-            submitBtnTop.textContent = 'Submitting...';
-            submitBtnBottom.textContent = 'Submitting...';
+            // Note: Double submission prevention is now handled by FormProtector (data-protect attribute on form)
         });
 
         // Initialize form state based on existing values (for validation errors)

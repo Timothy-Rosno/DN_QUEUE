@@ -151,14 +151,15 @@
 
                             <div>
                                 <strong>{{ user_item.username }}</strong>
-                                {% if user_item.is_staff %}
-                                    <span style="background-color: #f39c12; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">STAFF</span>
+                                {% if user_item.is_superuser %}
+                                    <span style="background-color: #e74c3c; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">ADMIN</span>
+                                    <span style="background-color: #9b59b6; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">DEVELOPER</span>
                                 {% endif %}
                                 {% if user_item.profile.is_developer %}
                                     <span style="background-color: #9b59b6; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">DEVELOPER</span>
                                 {% endif %}
-                                {% if user_item.is_superuser %}
-                                    <span style="background-color: #e74c3c; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">ADMIN</span>
+                                {% if user_item.is_staff %}
+                                    <span style="background-color: #f39c12; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">STAFF</span>
                                 {% endif %}
                                 <div style="font-size: 0.85rem; color: #7f8c8d;">{{ user_item.email|default:"—" }}</div>
                             </div>
@@ -290,6 +291,7 @@
                         <strong>{{ user_item.username }}</strong>
                         {% if user_item.is_superuser %}
                             <span style="background-color: #e74c3c; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.25rem;">A</span>
+                            <span style="background-color: #9b59b6; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.25rem;">D</span>
                         {% endif %}
                         {% if user_item.profile.is_developer %}
                             <span style="background-color: #9b59b6; color: white; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.25rem;">D</span>
