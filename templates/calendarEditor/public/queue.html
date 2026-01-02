@@ -285,12 +285,12 @@
                         {% if user.is_authenticated %}
                         <td style="padding: 0.5rem;">
                             {% if entry.user == user %}
-                                <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     {% if entry.is_rush_job %}
                                         <button type="button" class="btn" disabled
                                                 style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background-color: #95a5a6; color: #ecf0f1; cursor: not-allowed; white-space: nowrap; opacity: 0.6;"
                                                 title="Appeal already submitted - waiting for admin review">
-                                            Pending
+                                            Appeal Pending
                                         </button>
                                     {% else %}
                                         <button type="button" class="btn" onclick="openAppealModal({{ entry.pk }}, '{{ entry.title|escapejs }}')"
