@@ -585,7 +585,7 @@ def appeal_queue_entry(request, pk):
     # Only allow appeals for queued entries
     if queue_entry.status != 'queued':
         messages.error(request, 'Can only appeal queued entries.')
-        return redirect('my_queue')
+        return redirect('queue')
 
     if request.method == 'POST':
         appeal_explanation = request.POST.get('appeal_explanation', '').strip()
@@ -593,7 +593,7 @@ def appeal_queue_entry(request, pk):
         # Validate explanation (minimum 15 characters)
         if len(appeal_explanation) < 15:
             messages.error(request, 'Appeal explanation must be at least 15 characters.')
-            return redirect('my_queue')
+            return redirect('queue')
 
         # Mark entry as rush job and save explanation
         queue_entry.is_rush_job = True
@@ -607,10 +607,10 @@ def appeal_queue_entry(request, pk):
             print(f"Rush job appeal notification failed: {e}")
 
         messages.success(request, f'Appeal submitted successfully for "{queue_entry.title}". Admins have been notified.')
-        return redirect('my_queue')
+        return redirect('queue')
 
-    # If not POST, redirect to my_queue
-    return redirect('my_queue')
+    # If not POST, redirect to queue
+    return redirect('queue')
 
 
 @require_queue_status('queued', redirect_to='check_in_check_out')

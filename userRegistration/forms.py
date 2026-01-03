@@ -116,13 +116,16 @@ class UserProfileForm(forms.ModelForm):
             self.fields['security_question_custom'].required = True
             self.fields['security_answer'].required = True
         else:
-            # For existing profiles, make fields optional (not shown in profile template)
+            # For existing profiles, make security question fields optional (not shown in profile template)
             self.fields['security_question_custom'].required = False
-            self.fields['organization'].required = False
-            self.fields['organization_other'].required = False
-            self.fields['department'].required = False
-            self.fields['department_other'].required = False
             self.fields['security_question'].required = False
+
+        # Organization and phone_number are ALWAYS required (model has blank=False)
+        # department, department_other, organization_other, notes are optional
+        self.fields['organization_other'].required = False
+        self.fields['department'].required = False
+        self.fields['department_other'].required = False
+        self.fields['notes'].required = False
 
     def clean(self):
         cleaned_data = super().clean()
