@@ -1556,6 +1556,41 @@
             }
         })();
 
+        // ===============================
+        // Prevent Decimal Input for RF/DC Lines
+        // ===============================
+        (function() {
+            const dcLinesInput = document.getElementById('{{ form.required_dc_lines.id_for_label }}');
+            const rfLinesInput = document.getElementById('{{ form.required_rf_lines.id_for_label }}');
+
+            function preventDecimal(e) {
+                // Prevent decimal point, comma, 'e', and minus sign
+                if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.key === '-' || e.key === '+') {
+                    e.preventDefault();
+                }
+            }
+
+            if (dcLinesInput) {
+                dcLinesInput.addEventListener('keydown', preventDecimal);
+                // Also prevent paste of decimal values
+                dcLinesInput.addEventListener('paste', function(e) {
+                    setTimeout(() => {
+                        this.value = this.value.replace(/[^0-9]/g, '');
+                    }, 0);
+                });
+            }
+
+            if (rfLinesInput) {
+                rfLinesInput.addEventListener('keydown', preventDecimal);
+                // Also prevent paste of decimal values
+                rfLinesInput.addEventListener('paste', function(e) {
+                    setTimeout(() => {
+                        this.value = this.value.replace(/[^0-9]/g, '');
+                    }, 0);
+                });
+            }
+        })();
+
     </script>
 <!--
 </div>
