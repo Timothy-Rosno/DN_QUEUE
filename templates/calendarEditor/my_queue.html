@@ -200,7 +200,7 @@
                         </div>
                     </div>
                     <div>
-                        <a href="{% url 'cancel_queue' entry.pk %}" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Cancel</a>
+                        <a href="{% url 'cancel_queue' entry.pk %}?next=my_queue" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Cancel</a>
                     </div>
                 </div>
                 </div>
@@ -280,7 +280,7 @@
                                     Appeal
                                 </button>
                             {% endif %}
-                            <a href="{% url 'cancel_queue' entry.pk %}" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Cancel</a>
+                            <a href="{% url 'cancel_queue' entry.pk %}?next=my_queue" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Cancel</a>
                         </div>
                     </div>
                     </div>

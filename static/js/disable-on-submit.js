@@ -65,7 +65,32 @@
 
     // Intercept all form submissions
     document.addEventListener('submit', function(e) {
+        const form = e.target;
+
+        // Skip forms marked with data-no-disable attribute
+        if (form.hasAttribute('data-no-disable')) {
+            return;
+        }
+
+        // Skip forms with class 'no-disable'
+        if (form.classList.contains('no-disable')) {
+            return;
+        }
+
         window.disableAllInteractiveElements();
+
+        // After 2 seconds, check if we're still on the same page (form validation failed)
+        setTimeout(function() {
+            if (isSubmitting) {
+                // Check if there are error messages on the page
+                const hasErrors = document.querySelector('.errorlist, .alert-danger, [style*="color: #e74c3c"], [style*="color:#e74c3c"]');
+                if (hasErrors) {
+                    console.log('Form validation failed - re-enabling page');
+                    window.enableAllInteractiveElements();
+                }
+            }
+        }, 2000);
+
         // Let the form submit normally
     }, true); // Use capture phase to catch before other handlers
 
@@ -77,6 +102,22 @@
         const button = target.closest('button');
 
         if (button && button.type !== 'button') {
+            // Skip buttons marked with data-no-disable attribute
+            if (button.hasAttribute('data-no-disable')) {
+                return;
+            }
+
+            // Skip buttons with class 'no-disable'
+            if (button.classList.contains('no-disable')) {
+                return;
+            }
+
+            // Skip common cancel/close buttons
+            const buttonText = button.textContent.toLowerCase().trim();
+            if (buttonText.includes('cancel') || buttonText.includes('close')) {
+                return;
+            }
+
             // Only disable for submit buttons or buttons without explicit type="button"
             // Give a tiny delay to let the click handler execute first
             setTimeout(window.disableAllInteractiveElements, 10);

@@ -95,7 +95,7 @@
                                 </span>
                             </td>
                             <td style="padding: 0.75rem;">{{ entry.estimated_duration_hours|format_duration }}</td>
-                            <td style="padding: 0.75rem;">{{ entry.submitted_at|date:"M d" }}</td>
+                            <td style="padding: 0.75rem;">{{ entry.submitted_at|date:"M d, g:i A" }}</td>
                             <td style="padding: 0.75rem; display: flex; gap: 0.5rem; align-items: stretch;">
 
                                 {% if entry.status == 'queued' and entry.assigned_machine %}

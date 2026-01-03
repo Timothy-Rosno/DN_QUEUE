@@ -116,8 +116,13 @@ class UserProfileForm(forms.ModelForm):
             self.fields['security_question_custom'].required = True
             self.fields['security_answer'].required = True
         else:
-            # For existing profiles, keep the current behavior
+            # For existing profiles, make fields optional (not shown in profile template)
             self.fields['security_question_custom'].required = False
+            self.fields['organization'].required = False
+            self.fields['organization_other'].required = False
+            self.fields['department'].required = False
+            self.fields['department_other'].required = False
+            self.fields['security_question'].required = False
 
     def clean(self):
         cleaned_data = super().clean()
@@ -257,6 +262,7 @@ class NotificationPreferenceForm(forms.ModelForm):
             'notify_account_unapproved': forms.CheckboxInput(attrs={'disabled': True}),
             'notify_account_promoted': forms.CheckboxInput(attrs={'disabled': True}),
             'notify_account_demoted': forms.CheckboxInput(attrs={'disabled': True}),
+            'in_app_notifications': forms.CheckboxInput(attrs={'disabled': True}),
             'notify_account_info_changed': forms.CheckboxInput(attrs={'disabled': True}),
         }
 

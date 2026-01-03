@@ -558,10 +558,15 @@ def cancel_queue_entry(request, pk):
             print(f"WebSocket broadcast failed: {e}")
 
         messages.success(request, 'Queue entry cancelled successfully!')
+        # Redirect based on 'next' parameter
+        next_page = request.GET.get('next', 'my_queue')
+        if next_page == 'public_queue':
+            return redirect('public_queue')
         return redirect('my_queue')
 
     return render(request, 'calendarEditor/cancel_queue.html', {
-        'queue_entry': queue_entry
+        'queue_entry': queue_entry,
+        'next': request.GET.get('next', 'my_queue')
     })
 
 

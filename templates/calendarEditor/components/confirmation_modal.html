@@ -62,15 +62,21 @@ Usage:
         padding: 30px;
         max-width: 500px;
         width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         text-align: center;
         animation: slideIn 0.3s ease-out;
     }
 
     .confirm-modal-image {
-        max-width: 200px;
-        max-height: 200px;
-        margin-bottom: 20px;
+        width: 100%;
+        max-width: 300px;
+        height: auto;
+        max-height: 250px;
+        object-fit: contain;
+        margin: 0 auto 20px auto;
+        display: block;
         border-radius: 8px;
     }
 

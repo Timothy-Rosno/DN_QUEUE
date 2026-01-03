@@ -1078,6 +1078,80 @@ def notify_admins_rush_job_rejected(queue_entry, rejecting_admin, rejection_reas
             )
 
 
+def notify_user_appeal_approved(queue_entry, approving_admin, old_position, new_position):
+    """
+    Notify user when their queue appeal is approved (excluding superusers).
+
+    Args:
+        queue_entry: The QueueEntry that was approved
+        approving_admin: The admin who approved it
+        old_position: Original queue position
+        new_position: New queue position after approval
+    """
+    user = queue_entry.user
+
+    # Skip notification for superusers
+    if user.is_superuser:
+        return
+
+    machine = queue_entry.assigned_machine
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    # Always send notification (regardless of preferences, excluding superusers)
+    if prefs.in_app_notifications:
+        # Build message based on new position
+        if new_position == 1:
+            title = 'Queue Appeal Approved - You\'re On Deck!'
+            message = f'Your queue appeal for "{queue_entry.title}" has been approved by {approving_admin.username}.\n\nYou\'re now On Deck (position #1) on {machine.name}.'
+
+            # Check if machine is ready for immediate check-in
+            if machine.current_status == 'idle':
+                message += '\n\nThe machine is ready - you can check in now!'
+        else:
+            title = 'Queue Appeal Approved'
+            message = f'Your queue appeal for "{queue_entry.title}" has been approved by {approving_admin.username}.\n\nMoved from position #{old_position} to position #{new_position} on {machine.name}.'
+
+        create_notification(
+            recipient=user,
+            notification_type='admin_action',
+            title=title,
+            message=message,
+            related_queue_entry=queue_entry,
+            related_machine=machine,
+            triggering_user=approving_admin,
+        )
+
+
+def notify_user_appeal_rejected(queue_entry, rejecting_admin, rejection_message):
+    """
+    Notify user when their queue appeal is rejected (excluding superusers).
+
+    Args:
+        queue_entry: The QueueEntry that was rejected
+        rejecting_admin: The admin who rejected it
+        rejection_message: The reason for rejection
+    """
+    user = queue_entry.user
+
+    # Skip notification for superusers
+    if user.is_superuser:
+        return
+
+    prefs = NotificationPreference.get_or_create_for_user(user)
+
+    # Always send notification (regardless of preferences, excluding superusers)
+    if prefs.in_app_notifications:
+        create_notification(
+            recipient=user,
+            notification_type='admin_action',
+            title=f'Queue Appeal Rejected: {queue_entry.title}',
+            message=f'Your queue appeal for "{queue_entry.title}" has been rejected by {rejecting_admin.username}.\n\nReason: {rejection_message}\n\nYour job remains in the queue at its current position.',
+            related_queue_entry=queue_entry,
+            related_machine=queue_entry.assigned_machine,
+            triggering_user=rejecting_admin,
+        )
+
+
 def auto_clear_notifications(notification_type=None, related_queue_entry=None,
                              related_preset=None, triggering_user=None, recipient=None):
     """

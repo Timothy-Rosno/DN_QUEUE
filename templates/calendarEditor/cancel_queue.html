@@ -22,7 +22,11 @@
         {% csrf_token %}
         <div style="margin-top: 1.5rem;">
             <button type="submit" class="btn btn-danger">Yes, Cancel Entry</button>
+            {% if next == 'public_queue' %}
+            <a href="{% url 'public_queue' %}" class="btn btn-secondary" style="margin-left: 1rem;">No, Go Back</a>
+            {% else %}
             <a href="{% url 'my_queue' %}" class="btn btn-secondary" style="margin-left: 1rem;">No, Go Back</a>
+            {% endif %}
         </div>
     </form>
 </div>

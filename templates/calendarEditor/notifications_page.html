@@ -291,10 +291,10 @@
             <a href="{% url 'profile' %}" class="btn btn-white" onclick="sessionStorage.setItem('scrollToNotificationPreferences', 'true');">
                 Settings
             </a>
-            <button onclick="markAllAsRead()" class="btn btn-outline" id="mark-all-read-btn">
+            <button type="button" onclick="markAllAsRead()" class="btn btn-outline" id="mark-all-read-btn">
                 Mark All Read
             </button>
-            <button onclick="clearAllRead()" class="btn btn-outline" id="clear-all-btn">
+            <button type="button" onclick="clearAllRead()" class="btn btn-outline" id="clear-all-btn">
                 Clear All Read
             </button>
         </div>
@@ -315,11 +315,11 @@
     <!-- Filters -->
     <div class="notifications-filters">
         <span style="font-weight: 600; color: #666;">Filter:</span>
-        <button class="filter-btn active" data-filter="all">All</button>
-        <button class="filter-btn" data-filter="unread">Unread</button>
-        <button class="filter-btn" data-filter="queue">Queue</button>
-        <button class="filter-btn" data-filter="preset">Presets</button>
-        <button class="filter-btn" data-filter="admin">Admin</button>
+        <button type="button" class="filter-btn active" data-filter="all">All</button>
+        <button type="button" class="filter-btn" data-filter="unread">Unread</button>
+        <button type="button" class="filter-btn" data-filter="queue">Queue</button>
+        <button type="button" class="filter-btn" data-filter="preset">Presets</button>
+        <button type="button" class="filter-btn" data-filter="admin">Admin</button>
     </div>
 
     <!-- Notifications List -->
@@ -666,8 +666,8 @@
         <h2 style="color:#e74c3c; margin-top:0; margin-bottom:1rem;">Delete All Read Notifications?</h2>
         <p style="color:#7f8c8d; margin-bottom:1.5rem;">This will permanently delete all read notifications. This action cannot be undone.</p>
         <div style="display:flex; justify-content:center; gap:1rem;">
-            <button id="clearNotificationsYes" class="btn btn-danger">Delete All Read</button>
-            <button id="clearNotificationsNo" class="btn btn-secondary">Cancel</button>
+            <button type="button" id="clearNotificationsYes" class="btn btn-danger">Delete All Read</button>
+            <button type="button" id="clearNotificationsNo" class="btn btn-secondary">Cancel</button>
         </div>
         <span id="clearNotificationsClose" style="position:absolute; top:0.5rem; right:0.5rem; cursor:pointer; font-size:1.2rem;">&times;</span>
     </div>

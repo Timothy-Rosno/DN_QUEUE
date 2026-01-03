@@ -1003,16 +1003,20 @@ def approve_rush_job(request, entry_id):
             entry.estimated_duration_hours = machine.cooldown_hours + machine.warmup_hours + (entry.requested_measurement_days * 24)
         entry.save()
 
-        # Step 2: Shift existing entries to make room
+        # Step 2: Shift existing entries to make room and track affected users
         queued_list = list(queued_entries)
+        affected_entries = []  # Track entries that moved due to appeal
         for idx in range(len(queued_list) - 1, -1, -1):
             other_entry = queued_list[idx]
             # Skip entries with NULL positions (corrupted data)
             if other_entry.queue_position is None:
                 continue
             if other_entry.queue_position >= queue_position:
+                old_pos = other_entry.queue_position
                 other_entry.queue_position += 1
                 other_entry.save()
+                # Track this entry for position change notification
+                affected_entries.append((other_entry, old_pos, other_entry.queue_position))
 
         # Step 3: Set entry to specified position and mark as approved
         entry.queue_position = queue_position
@@ -1026,8 +1030,12 @@ def approve_rush_job(request, entry_id):
             related_queue_entry=entry
         )
 
-        # Notify user of approval
-        notifications.notify_admin_moved_entry(entry, request.user, old_position, queue_position)
+        # Notify appellant of approval (excluding superusers)
+        notifications.notify_user_appeal_approved(entry, request.user, old_position, queue_position)
+
+        # Notify affected users whose positions changed due to appeal
+        for other_entry, old_pos, new_pos in affected_entries:
+            notifications.notify_queue_position_change(other_entry, old_pos, new_pos)
 
         # Notify all admins on Slack
         notifications.notify_admins_rush_job_approved(entry, request.user)
@@ -1059,16 +1067,8 @@ def reject_rush_job(request, entry_id):
             related_queue_entry=entry
         )
 
-        # Send notification to user with rejection message
-        notifications.create_notification(
-            recipient=entry.user,
-            notification_type='admin_action',  # Changed from 'queue_cancelled' since entry is not cancelled
-            title=f'Queue Appeal Rejected: {entry.title}',
-            message=f'Your queue appeal for "{entry.title}" has been rejected by {request.user.username}.\n\nReason: {rejection_message}\n\nYour job remains in the queue at its current position.',
-            related_queue_entry=entry,
-            related_machine=entry.assigned_machine,
-            triggering_user=request.user,
-        )
+        # Send notification to user with rejection message (excluding superusers)
+        notifications.notify_user_appeal_rejected(entry, request.user, rejection_message)
 
         # Notify all admins on Slack that queue appeal has been rejected (task complete)
         notifications.notify_admins_rush_job_rejected(entry, request.user, rejection_message)

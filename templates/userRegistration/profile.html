@@ -18,6 +18,14 @@
         </p>
     </div>
 
+    {% if messages %}
+        {% for message in messages %}
+            <div style="margin: 1rem 0; padding: 1rem; background-color: {% if message.tags == 'success' %}#d4edda{% elif message.tags == 'error' %}#f8d7da{% elif message.tags == 'warning' %}#fff3cd{% else %}#d1ecf1{% endif %}; color: {% if message.tags == 'success' %}#155724{% elif message.tags == 'error' %}#721c24{% elif message.tags == 'warning' %}#856404{% else %}#0c5460{% endif %}; border-left: 4px solid {% if message.tags == 'success' %}#28a745{% elif message.tags == 'error' %}#e74c3c{% elif message.tags == 'warning' %}#ffc107{% else %}#17a2b8{% endif %}; border-radius: 4px;">
+                <strong>{% if message.tags == 'success' %}Success!{% elif message.tags == 'error' %}Error!{% elif message.tags == 'warning' %}Warning!{% else %}Info!{% endif %}</strong> {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
     <h2 style="margin-top: 2rem;">Update Profile Information</h2>
     <form method="post" style="margin-top: 1rem;" id="profileForm">
         {% csrf_token %}

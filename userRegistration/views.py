@@ -238,9 +238,22 @@ def profile(request):
             if notification_form.is_valid():
                 # Save without committing to ensure critical notifications stay True
                 prefs = notification_form.save(commit=False)
+
+                # Force all critical queue notifications to True (disabled fields don't submit)
                 prefs.notify_on_deck = True
                 prefs.notify_ready_for_check_in = True
+                prefs.notify_checkin_reminder = True
                 prefs.notify_checkout_reminder = True
+
+                # Force all critical account status notifications to True
+                prefs.notify_account_approved = True
+                prefs.notify_account_unapproved = True
+                prefs.notify_account_promoted = True
+                prefs.notify_account_demoted = True
+                prefs.notify_account_info_changed = True
+
+                # Force in-app notifications to always be enabled
+                prefs.in_app_notifications = True
 
                 # Force admin notifications to remain True if user is staff
                 if request.user.is_staff or request.user.is_superuser:
