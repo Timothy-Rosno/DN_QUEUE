@@ -143,9 +143,9 @@ class Machine(models.Model):
             total_time = self.estimated_available_time - timezone.now()
 
         # Add all queued jobs (even if machine is currently idle)
+        # Note: estimated_duration_hours already includes warmup + measurement + cooldown
         for entry in queued:
             total_time += timedelta(hours=entry.estimated_duration_hours)
-            total_time += timedelta(hours=self.cooldown_hours)
 
         return total_time
 

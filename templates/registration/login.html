@@ -45,7 +45,10 @@
         </div>
 
         <div style="margin-top: 1.5rem;">
-            <button type="submit" class="btn">Login</button>
+            <span class="submit-btn-wrapper">
+                <button type="submit" class="btn" id="loginBtn" disabled>Login</button>
+                <div class="validation-tooltip" id="loginValidationTooltip"></div>
+            </span>
             <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Cancel</a>
         </div>
     </form>
@@ -68,6 +71,63 @@
     label:has(input[type="checkbox"]) {
         cursor: pointer !important;
     }
+
+    /* Disabled submit button styles - grayed out blue */
+    .btn:disabled, .btn.btn-disabled {
+        background-color: #7fb3d3 !important;
+        cursor: not-allowed !important;
+        opacity: 0.8;
+    }
+
+    /* Submit button tooltip container */
+    .submit-btn-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    /* Validation tooltip */
+    .validation-tooltip {
+        display: none;
+        position: absolute;
+        bottom: 100%;
+        left: 0;
+        background-color: #2c3e50;
+        color: white;
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        max-width: 300px;
+        width: max-content;
+        z-index: 1000;
+        margin-bottom: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .validation-tooltip::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 20px;
+        border-width: 6px;
+        border-style: solid;
+        border-color: #2c3e50 transparent transparent transparent;
+    }
+
+    .validation-tooltip ul {
+        margin: 0;
+        padding: 0 0 0 1rem;
+        list-style: disc;
+    }
+
+    .validation-tooltip li {
+        margin: 0.25rem 0;
+        word-wrap: break-word;
+    }
+
+    /* Only show tooltip when hovering AND button is disabled */
+    .submit-btn-wrapper:hover .btn:disabled + .validation-tooltip {
+        display: block;
+    }
 </style>
 
 <script>
@@ -76,7 +136,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const tooltip = document.getElementById('remember-tooltip');
     const card = document.querySelector('.card');
     const form = document.querySelector('form');
-    const loginButton = form.querySelector('button[type="submit"]');
     let showTimeout = null;
     let mouseX = 0;
     let mouseY = 0;
@@ -135,70 +194,64 @@ document.addEventListener('DOMContentLoaded', function() {
         tooltip.style.top = top + 'px';
     }
 
-    // Login form validation
-    const usernameInput = form.querySelector('input[name="username"]');
-    const passwordInput = form.querySelector('input[name="password"]');
+    // ===============================
+    // Login Form Validation (Same structure as /submit)
+    // ===============================
+    (function() {
+        const usernameInput = form.querySelector('input[name="username"]');
+        const passwordInput = form.querySelector('input[name="password"]');
+        const loginBtn = document.getElementById('loginBtn');
+        const validationTooltip = document.getElementById('loginValidationTooltip');
 
-    // Create validation tooltip
-    const validationTooltip = document.createElement('div');
-    validationTooltip.id = 'login-validation-tooltip';
-    validationTooltip.style.cssText = 'display: none; position: fixed; background-color: #e74c3c; color: white; padding: 0.75rem; border-radius: 4px; font-size: 0.9rem; z-index: 10000; max-width: 300px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);';
-    document.body.appendChild(validationTooltip);
+        function validateForm() {
+            const errors = [];
 
-    function checkFormValidity() {
-        const usernameEmpty = !usernameInput || !usernameInput.value.trim();
-        const passwordEmpty = !passwordInput || !passwordInput.value.trim();
-
-        if (usernameEmpty && passwordEmpty) {
-            return 'Please enter both username and password';
-        } else if (usernameEmpty) {
-            return 'Please enter your username';
-        } else if (passwordEmpty) {
-            return 'Please enter your password';
-        }
-        return null; // Valid
-    }
-
-    function showValidationTooltip(message) {
-        validationTooltip.textContent = message;
-
-        // Position below the login button
-        const buttonRect = loginButton.getBoundingClientRect();
-        validationTooltip.style.left = buttonRect.left + 'px';
-        validationTooltip.style.top = (buttonRect.bottom + 10) + 'px';
-        validationTooltip.style.display = 'block';
-    }
-
-    function hideValidationTooltip() {
-        validationTooltip.style.display = 'none';
-    }
-
-    // Check on input to hide tooltip when both fields are filled
-    if (usernameInput) {
-        usernameInput.addEventListener('input', function() {
-            if (!checkFormValidity()) {
-                hideValidationTooltip();
+            // Username validation
+            const usernameValue = usernameInput ? usernameInput.value.trim() : '';
+            if (!usernameValue) {
+                errors.push('Enter a username');
             }
-        });
-    }
-    if (passwordInput) {
-        passwordInput.addEventListener('input', function() {
-            if (!checkFormValidity()) {
-                hideValidationTooltip();
-            }
-        });
-    }
 
-    // Validate on form submit
-    form.addEventListener('submit', function(e) {
-        const error = checkFormValidity();
-        if (error) {
-            e.preventDefault();
-            showValidationTooltip(error);
-            return false;
+            // Password validation
+            const passwordValue = passwordInput ? passwordInput.value.trim() : '';
+            if (!passwordValue) {
+                errors.push('Enter a password');
+            }
+
+            return errors;
         }
-        hideValidationTooltip();
-    });
+
+        function updateSubmitButton() {
+            const errors = validateForm();
+            const isValid = errors.length === 0;
+
+            // Update button state
+            loginBtn.disabled = !isValid;
+
+            // Update tooltip
+            if (errors.length > 0) {
+                const tooltipContent = '<ul>' + errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+                validationTooltip.innerHTML = tooltipContent;
+                validationTooltip.style.display = '';  // Reset to default (CSS will control visibility)
+            } else {
+                validationTooltip.innerHTML = '';
+                validationTooltip.style.display = 'none';  // Explicitly hide when valid
+            }
+        }
+
+        // Add event listeners for real-time validation
+        if (usernameInput) {
+            usernameInput.addEventListener('input', updateSubmitButton);
+            usernameInput.addEventListener('blur', updateSubmitButton);
+        }
+        if (passwordInput) {
+            passwordInput.addEventListener('input', updateSubmitButton);
+            passwordInput.addEventListener('blur', updateSubmitButton);
+        }
+
+        // Initial validation on page load
+        updateSubmitButton();
+    })();
 });
 </script>
 {% endblock %}

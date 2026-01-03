@@ -418,8 +418,8 @@
                             <a href="${notif.url}" class="notification-btn" onclick="markAsReadAndNavigate(event, ${notif.id}, '${notif.url}')">
                                 View Details →
                             </a>
-                            ${!notif.is_read ? `<button class="notification-btn" onclick="markAsRead(event, ${notif.id})">Mark Read</button>` : ''}
-                            <button class="notification-btn notification-btn-delete" onclick="deleteNotification(event, ${notif.id})">Delete</button>
+                            ${!notif.is_read ? `<button type="button" class="notification-btn" onclick="markAsRead(event, ${notif.id})">Mark Read</button>` : ''}
+                            <button type="button" class="notification-btn notification-btn-delete" onclick="deleteNotification(event, ${notif.id})">Delete</button>
                         </div>
                     </div>
                 </div>
