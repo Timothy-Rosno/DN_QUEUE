@@ -1955,6 +1955,9 @@ def notification_settings(request):
             saved_prefs.notify_ready_for_check_in = True
             saved_prefs.notify_checkin_reminder = True
             saved_prefs.notify_checkout_reminder = True
+            # Critical appeal notifications (always on)
+            saved_prefs.notify_appeal_approved = True
+            saved_prefs.notify_appeal_rejected = True
             # Critical account status notifications (always on)
             saved_prefs.notify_account_approved = True
             saved_prefs.notify_account_unapproved = True
@@ -1967,6 +1970,7 @@ def notification_settings(request):
                 saved_prefs.notify_admin_new_user = True
                 saved_prefs.notify_admin_rush_job = True
                 saved_prefs.notify_database_restored = True
+                saved_prefs.notify_developer_feedback = True
 
             saved_prefs.save()
             messages.success(request, 'Notification preferences updated successfully!')
@@ -2022,6 +2026,8 @@ def reset_notification_preferences(request):
         prefs.notify_admin_edit_entry = False
         prefs.notify_admin_moved_entry = False
         prefs.notify_machine_status_change = False
+        prefs.notify_appeal_approved = False
+        prefs.notify_appeal_rejected = False
         prefs.notify_account_approved = False
         prefs.notify_account_unapproved = False
         prefs.notify_account_promoted = False
@@ -2029,7 +2035,8 @@ def reset_notification_preferences(request):
         prefs.notify_account_info_changed = False
         prefs.notify_admin_new_user = False
         prefs.notify_admin_rush_job = False
-        prefs.notify_database_restored = False    
+        prefs.notify_database_restored = False
+        prefs.notify_developer_feedback = False    
     elif request.user.is_staff:
         # Admin defaults (minimal notifications)
         prefs.notify_public_preset_created = False
@@ -2051,6 +2058,8 @@ def reset_notification_preferences(request):
         prefs.notify_admin_edit_entry = True
         prefs.notify_admin_moved_entry = True
         prefs.notify_machine_status_change = True
+        prefs.notify_appeal_approved = True
+        prefs.notify_appeal_rejected = True
         prefs.notify_account_approved = True
         prefs.notify_account_unapproved = True
         prefs.notify_account_promoted = True
@@ -2059,6 +2068,7 @@ def reset_notification_preferences(request):
         prefs.notify_admin_new_user = True
         prefs.notify_admin_rush_job = True
         prefs.notify_database_restored = True
+        prefs.notify_developer_feedback = True
     else:
         # Regular user defaults (all notifications enabled)
         prefs.notify_public_preset_created = False
@@ -2080,6 +2090,8 @@ def reset_notification_preferences(request):
         prefs.notify_admin_edit_entry = True
         prefs.notify_admin_moved_entry = True
         prefs.notify_machine_status_change = True
+        prefs.notify_appeal_approved = True
+        prefs.notify_appeal_rejected = True
         prefs.notify_account_approved = True
         prefs.notify_account_unapproved = True
         prefs.notify_account_promoted = True
@@ -2089,6 +2101,7 @@ def reset_notification_preferences(request):
     # Delivery preferences (same for all users)
     prefs.email_notifications = True
     prefs.in_app_notifications = True
+    prefs.slack_notifications = True
 
     prefs.save()
 

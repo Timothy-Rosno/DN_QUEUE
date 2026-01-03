@@ -674,6 +674,10 @@ class NotificationPreference(models.Model):
     notify_admin_moved_entry = models.BooleanField(default=True, help_text="Notify when an admin moves your queue entry")
     notify_machine_status_change = models.BooleanField(default=True, help_text="Notify when admin changes machine status affecting your measurement")
 
+    # Queue appeal notifications (critical - always sent, except to superusers for Slack)
+    notify_appeal_approved = models.BooleanField(default=True, help_text="Notify when your queue appeal is approved - CRITICAL")
+    notify_appeal_rejected = models.BooleanField(default=True, help_text="Notify when your queue appeal is rejected - CRITICAL")
+
     # Account status notifications (critical - always sent)
     notify_account_approved = models.BooleanField(default=True, help_text="Notify when your account is approved - CRITICAL")
     notify_account_unapproved = models.BooleanField(default=True, help_text="Notify when your account is unapproved - CRITICAL")
@@ -686,9 +690,13 @@ class NotificationPreference(models.Model):
     notify_admin_rush_job = models.BooleanField(default=True, help_text="[Admin] Notify when rush jobs are submitted - CRITICAL")
     notify_database_restored = models.BooleanField(default=True, help_text="[Admin] Notify when database is restored - CRITICAL")
 
-    # Delivery preferences (for future email/Slack integration)
+    # Developer-only notifications (only relevant for developer users with feedback permissions)
+    notify_developer_feedback = models.BooleanField(default=True, help_text="[Developer] Notify when users submit feedback - CRITICAL")
+
+    # Delivery preferences
     email_notifications = models.BooleanField(default=True, help_text="Send notifications via email")
     in_app_notifications = models.BooleanField(default=True, help_text="Show notifications in the app")
+    slack_notifications = models.BooleanField(default=True, help_text="Send notifications via Slack direct messages")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -150,8 +150,39 @@
         </h2>
         <div style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
             {% for field in form %}
-                {% if field.name in 'email_notifications,in_app_notifications' %}
+                {% if field.name in 'email_notifications,in_app_notifications,slack_notifications' %}
                     <div style="margin-bottom: {% if not forloop.last %}1.5rem{% else %}0{% endif %}; padding: 1rem; background-color: white; border-radius: 4px; border-left: 4px solid #e67e22;">
+                        <div style="display: flex; align-items: start; gap: 1rem;">
+                            <div style="padding-top: 0.25rem;">
+                                {{ field }}
+                            </div>
+                            <div style="flex: 1;">
+                                <label for="{{ field.id_for_label }}" style="font-weight: bold; color: #2c3e50; margin-bottom: 0.25rem; display: block;">
+                                    {{ field.label }}
+                                </label>
+                                {% if field.help_text %}
+                                <p style="margin: 0; color: #7f8c8d; font-size: 0.9rem;">{{ field.help_text }}</p>
+                                {% endif %}
+                                {% if field.errors %}
+                                <p style="color: #e74c3c; margin-top: 0.5rem;">{{ field.errors }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Queue Appeal Notifications Section -->
+        <h2 style="margin-top: 2rem; margin-bottom: 1rem; color: #e74c3c; border-bottom: 2px solid #e74c3c; padding-bottom: 0.5rem;">
+            Queue Appeal Notifications
+        </h2>
+        <div style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
+            <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.9rem;">Notifications about your queue appeals (critical - cannot be disabled)</p>
+
+            {% for field in form %}
+                {% if field.name in 'notify_appeal_approved,notify_appeal_rejected' %}
+                    <div style="margin-bottom: {% if not forloop.last %}1.5rem{% else %}0{% endif %}; padding: 1rem; background-color: white; border-radius: 4px; border-left: 4px solid #e74c3c;">
                         <div style="display: flex; align-items: start; gap: 1rem;">
                             <div style="padding-top: 0.25rem;">
                                 {{ field }}
@@ -204,6 +235,37 @@
                 {% endif %}
             {% endfor %}
         </div>
+
+        <!-- Developer Settings Section -->
+        <h2 style="margin-top: 2rem; margin-bottom: 1rem; color: #16a085; border-bottom: 2px solid #16a085; padding-bottom: 0.5rem;">
+            💻 Developer Settings
+        </h2>
+        <div style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem;">
+            <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.9rem;">Developer notifications for feedback and bug reports</p>
+
+            {% for field in form %}
+                {% if field.name in 'notify_developer_feedback' %}
+                    <div style="margin-bottom: {% if not forloop.last %}1.5rem{% else %}0{% endif %}; padding: 1rem; background-color: white; border-radius: 4px; border-left: 4px solid #16a085;">
+                        <div style="display: flex; align-items: start; gap: 1rem;">
+                            <div style="padding-top: 0.25rem;">
+                                {{ field }}
+                            </div>
+                            <div style="flex: 1;">
+                                <label for="{{ field.id_for_label }}" style="font-weight: bold; color: #2c3e50; margin-bottom: 0.25rem; display: block;">
+                                    {{ field.label }}
+                                </label>
+                                {% if field.help_text %}
+                                <p style="margin: 0; color: #7f8c8d; font-size: 0.9rem;">{{ field.help_text }}</p>
+                                {% endif %}
+                                {% if field.errors %}
+                                <p style="color: #e74c3c; margin-top: 0.5rem;">{{ field.errors }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
         {% endif %}
 
         <!-- Submit Button -->
@@ -217,8 +279,9 @@
     <div style="margin-top: 2rem; padding: 1rem; background-color: #e8f4f8; border-left: 4px solid #3498db; border-radius: 4px;">
         <h3 style="margin-top: 0; color: #2c3e50;">Important Notes</h3>
         <ul style="margin-bottom: 0; color: #34495e;">
-            <li><strong>Critical notifications are required</strong> and cannot be disabled: ON DECK, Ready for Check-In, and Time for Check-Out.</li>
+            <li><strong>Critical notifications are required</strong> and cannot be disabled: ON DECK, Ready for Check-In, Time for Check-Out, Queue Appeal Approved/Rejected, and Account Status Changes.</li>
             <li>Disabling in-app notifications will hide all notification popups in the web interface.</li>
+            <li>Superusers receive only in-app notifications, not Slack notifications.</li>
             <li>Email notifications are not yet implemented but will use these preferences when enabled.</li>
             <li>Changes take effect immediately after saving.</li>
         </ul>

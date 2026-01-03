@@ -91,6 +91,9 @@ def send_slack_dm(user, title, message, notification=None):
     Send a Slack direct message to a user with a secure login link.
     Automatically looks up and caches Slack member ID if not set.
 
+    Superusers never receive Slack notifications.
+    Users can disable Slack notifications via their preferences.
+
     Args:
         user: Django User object
         title: Notification title
@@ -103,9 +106,19 @@ def send_slack_dm(user, title, message, notification=None):
     if not settings.SLACK_ENABLED:
         return False
 
+    # CRITICAL: Superusers NEVER receive Slack notifications
+    if user.is_superuser:
+        return False
+
     try:
         # Check if user has profile
         if not hasattr(user, 'profile'):
+            return False
+
+        # Check if user wants Slack notifications
+        from .models import NotificationPreference
+        prefs = NotificationPreference.get_or_create_for_user(user)
+        if not prefs.slack_notifications:
             return False
 
         slack_member_id = user.profile.slack_member_id
@@ -1092,15 +1105,16 @@ def notify_user_appeal_approved(queue_entry, approving_admin, old_position, new_
     """
     user = queue_entry.user
 
-    # Skip notification for superusers
+    # Skip notification for superusers - they receive NO appeal notifications
     if user.is_superuser:
         return
 
     machine = queue_entry.assigned_machine
     prefs = NotificationPreference.get_or_create_for_user(user)
 
-    # Always send notification (regardless of preferences, excluding superusers)
-    if prefs.in_app_notifications:
+    # Check if user wants appeal approval notifications (this is a CRITICAL preference, always True)
+    # Also check if user wants in-app notifications
+    if prefs.notify_appeal_approved and prefs.in_app_notifications:
         # Build message based on new position
         if new_position == 1:
             title = 'Queue Appeal Approved - You\'re On Deck!'
@@ -1135,14 +1149,15 @@ def notify_user_appeal_rejected(queue_entry, rejecting_admin, rejection_message)
     """
     user = queue_entry.user
 
-    # Skip notification for superusers
+    # Skip notification for superusers - they receive NO appeal notifications
     if user.is_superuser:
         return
 
     prefs = NotificationPreference.get_or_create_for_user(user)
 
-    # Always send notification (regardless of preferences, excluding superusers)
-    if prefs.in_app_notifications:
+    # Check if user wants appeal rejection notifications (this is a CRITICAL preference, always True)
+    # Also check if user wants in-app notifications
+    if prefs.notify_appeal_rejected and prefs.in_app_notifications:
         create_notification(
             recipient=user,
             notification_type='admin_action',

@@ -163,7 +163,7 @@ class NotificationPreferenceForm(forms.ModelForm):
             )
             self.fields['notify_admin_rush_job'] = forms.BooleanField(
                 required=False,
-                label='Rush job submitted',
+                label='Rush job/Queue appeal submitted',
                 help_text='Critical notification - cannot be disabled',
                 widget=forms.CheckboxInput(attrs={'disabled': True}),
                 initial=self.instance.notify_admin_rush_job if self.instance.pk else True
@@ -174,6 +174,18 @@ class NotificationPreferenceForm(forms.ModelForm):
                 help_text='Critical notification - cannot be disabled',
                 widget=forms.CheckboxInput(attrs={'disabled': True}),
                 initial=self.instance.notify_database_restored if self.instance.pk else True
+            )
+
+        # Add developer fields if user has developer permissions
+        # For now, we'll show this to all staff/superusers, but this could be refined
+        # with a specific permission check like: user.has_perm('calendarEditor.view_feedback')
+        if user and (user.is_staff or user.is_superuser):
+            self.fields['notify_developer_feedback'] = forms.BooleanField(
+                required=False,
+                label='User feedback submitted',
+                help_text='Critical notification - cannot be disabled',
+                widget=forms.CheckboxInput(attrs={'disabled': True}),
+                initial=self.instance.notify_developer_feedback if self.instance.pk else True
             )
 
     class Meta:
@@ -203,6 +215,9 @@ class NotificationPreferenceForm(forms.ModelForm):
             'notify_admin_edit_entry',
             'notify_admin_moved_entry',
             'notify_machine_status_change',
+            # Queue appeal notifications
+            'notify_appeal_approved',
+            'notify_appeal_rejected',
             # Account status notifications
             'notify_account_approved',
             'notify_account_unapproved',
@@ -211,6 +226,7 @@ class NotificationPreferenceForm(forms.ModelForm):
             'notify_account_info_changed',
             # Delivery preferences
             'in_app_notifications',
+            'slack_notifications',
             'email_notifications',
         )
         labels = {
@@ -233,12 +249,15 @@ class NotificationPreferenceForm(forms.ModelForm):
             'notify_admin_edit_entry': 'Admin edits your queue entry',
             'notify_admin_moved_entry': 'Admin moves your queue entry',
             'notify_machine_status_change': 'Admin changes machine status',
+            'notify_appeal_approved': 'Queue appeal approved',
+            'notify_appeal_rejected': 'Queue appeal rejected',
             'notify_account_approved': 'Account approved',
             'notify_account_unapproved': 'Account unapproved',
             'notify_account_promoted': 'Promoted to staff',
             'notify_account_demoted': 'Demoted from staff',
             'notify_account_info_changed': 'Account information changed by admin',
             'in_app_notifications': 'Show notifications in app',
+            'slack_notifications': 'Send notifications via Slack',
             'email_notifications': 'Send notifications via email',
         }
         help_texts = {
@@ -246,6 +265,8 @@ class NotificationPreferenceForm(forms.ModelForm):
             'notify_ready_for_check_in': 'Critical notification - cannot be disabled',
             'notify_checkin_reminder': 'Critical notification - cannot be disabled',
             'notify_checkout_reminder': 'Critical notification - cannot be disabled',
+            'notify_appeal_approved': 'Critical notification - cannot be disabled',
+            'notify_appeal_rejected': 'Critical notification - cannot be disabled',
             'notify_account_approved': 'Critical notification - cannot be disabled',
             'notify_account_unapproved': 'Critical notification - cannot be disabled',
             'notify_account_promoted': 'Critical notification - cannot be disabled',
@@ -258,6 +279,8 @@ class NotificationPreferenceForm(forms.ModelForm):
             'notify_ready_for_check_in': forms.CheckboxInput(attrs={'disabled': True}),
             'notify_checkin_reminder': forms.CheckboxInput(attrs={'disabled': True}),
             'notify_checkout_reminder': forms.CheckboxInput(attrs={'disabled': True}),
+            'notify_appeal_approved': forms.CheckboxInput(attrs={'disabled': True}),
+            'notify_appeal_rejected': forms.CheckboxInput(attrs={'disabled': True}),
             'notify_account_approved': forms.CheckboxInput(attrs={'disabled': True}),
             'notify_account_unapproved': forms.CheckboxInput(attrs={'disabled': True}),
             'notify_account_promoted': forms.CheckboxInput(attrs={'disabled': True}),
