@@ -1991,7 +1991,12 @@ def admin_edit_entry(request, entry_id):
                         old_machine.estimated_available_time = None
                         old_machine.save()
 
-            # Save the entry first
+            # If machine changed, set queue_position to NULL first to avoid UNIQUE constraint violations
+            # The reorder_queue function will assign the proper position
+            if old_machine != target_machine:
+                edited_entry.queue_position = None
+
+            # Save the entry
             edited_entry.save()
 
             # If machine changed, handle queue reassignment
