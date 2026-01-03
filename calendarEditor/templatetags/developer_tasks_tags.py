@@ -26,13 +26,13 @@ def get_pending_users_count():
         # Count users where profile status is 'pending' (not approved or rejected)
         pending_users = User.objects.filter(is_active=True, profile__status='pending')
         count = pending_users.count()
-        if count > 0:
-            print(f"[PENDING_USERS] Found {count} pending users:")
-            for user in pending_users:
-                print(f"  - {user.username}: status={user.profile.status}, is_approved={user.profile.is_approved}")
+        # if count > 0:
+        #     print(f"[PENDING_USERS] Found {count} pending users:")
+        #     for user in pending_users:
+        #         print(f"  - {user.username}: status={user.profile.status}, is_approved={user.profile.is_approved}")
         return count
     except Exception as e:
-        print(f"[PENDING_USERS] Error: {e}")
+        # print(f"[PENDING_USERS] Error: {e}")
         return 0
 
 
@@ -47,13 +47,13 @@ def get_rush_jobs_count():
             status='queued'  # Only count queued entries (not completed/cancelled)
         )
         count = rush_jobs.count()
-        if count > 0:
-            print(f"[RUSH_JOBS] Found {count} rush jobs:")
-            for entry in rush_jobs:
-                print(f"  - {entry.title} by {entry.user.username} (is_rush_job={entry.is_rush_job}, status={entry.status})")
+        # if count > 0:
+        #     print(f"[RUSH_JOBS] Found {count} rush jobs:")
+        #     for entry in rush_jobs:
+        #         print(f"  - {entry.title} by {entry.user.username} (is_rush_job={entry.is_rush_job}, status={entry.status})")
         return count
     except Exception as e:
-        print(f"[RUSH_JOBS] Error: {e}")
+        # print(f"[RUSH_JOBS] Error: {e}")
         return 0
 
 
@@ -63,5 +63,5 @@ def get_admin_actions_count():
     pending_users = get_pending_users_count()
     rush_jobs = get_rush_jobs_count()
     total = pending_users + rush_jobs
-    print(f"[ADMIN_ACTIONS] Pending users: {pending_users}, Rush jobs: {rush_jobs}, Total: {total}")
+    # print(f"[ADMIN_ACTIONS] Pending users: {pending_users}, Rush jobs: {rush_jobs}, Total: {total}")
     return total

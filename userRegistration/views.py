@@ -232,6 +232,9 @@ def profile(request):
                 form.save()
                 messages.success(request, 'Profile updated successfully!')
                 return redirect('profile')
+            else:
+                # Form has errors - will be displayed in template
+                messages.error(request, 'Failed to update profile. Please check the errors below.')
         elif 'submit_notifications' in request.POST:
             form = UserProfileForm(instance=user_profile)
             notification_form = NotificationPreferenceForm(request.POST, instance=notification_prefs, user=request.user)

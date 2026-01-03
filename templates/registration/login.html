@@ -75,10 +75,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const label = document.getElementById('remember-label');
     const tooltip = document.getElementById('remember-tooltip');
     const card = document.querySelector('.card');
+    const form = document.querySelector('form');
+    const loginButton = form.querySelector('button[type="submit"]');
     let showTimeout = null;
     let mouseX = 0;
     let mouseY = 0;
 
+    // Remember Me tooltip
     label.addEventListener('mouseenter', function(e) {
         mouseX = e.clientX;
         mouseY = e.clientY;
@@ -131,6 +134,71 @@ document.addEventListener('DOMContentLoaded', function() {
         tooltip.style.left = left + 'px';
         tooltip.style.top = top + 'px';
     }
+
+    // Login form validation
+    const usernameInput = form.querySelector('input[name="username"]');
+    const passwordInput = form.querySelector('input[name="password"]');
+
+    // Create validation tooltip
+    const validationTooltip = document.createElement('div');
+    validationTooltip.id = 'login-validation-tooltip';
+    validationTooltip.style.cssText = 'display: none; position: fixed; background-color: #e74c3c; color: white; padding: 0.75rem; border-radius: 4px; font-size: 0.9rem; z-index: 10000; max-width: 300px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);';
+    document.body.appendChild(validationTooltip);
+
+    function checkFormValidity() {
+        const usernameEmpty = !usernameInput || !usernameInput.value.trim();
+        const passwordEmpty = !passwordInput || !passwordInput.value.trim();
+
+        if (usernameEmpty && passwordEmpty) {
+            return 'Please enter both username and password';
+        } else if (usernameEmpty) {
+            return 'Please enter your username';
+        } else if (passwordEmpty) {
+            return 'Please enter your password';
+        }
+        return null; // Valid
+    }
+
+    function showValidationTooltip(message) {
+        validationTooltip.textContent = message;
+
+        // Position below the login button
+        const buttonRect = loginButton.getBoundingClientRect();
+        validationTooltip.style.left = buttonRect.left + 'px';
+        validationTooltip.style.top = (buttonRect.bottom + 10) + 'px';
+        validationTooltip.style.display = 'block';
+    }
+
+    function hideValidationTooltip() {
+        validationTooltip.style.display = 'none';
+    }
+
+    // Check on input to hide tooltip when both fields are filled
+    if (usernameInput) {
+        usernameInput.addEventListener('input', function() {
+            if (!checkFormValidity()) {
+                hideValidationTooltip();
+            }
+        });
+    }
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+            if (!checkFormValidity()) {
+                hideValidationTooltip();
+            }
+        });
+    }
+
+    // Validate on form submit
+    form.addEventListener('submit', function(e) {
+        const error = checkFormValidity();
+        if (error) {
+            e.preventDefault();
+            showValidationTooltip(error);
+            return false;
+        }
+        hideValidationTooltip();
+    });
 });
 </script>
 {% endblock %}

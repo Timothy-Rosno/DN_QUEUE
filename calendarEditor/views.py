@@ -775,13 +775,13 @@ def check_out_job(request, queue_entry):
     machine.current_user = None
     machine.save()
 
-    print(f"[USER CHECKOUT] Completed checkout for {queue_entry.title} on {machine.name}")
-    print(f"[USER CHECKOUT] Machine status after checkout: {machine.current_status}, is_available: {machine.is_available}")
+    # print(f"[USER CHECKOUT] Completed checkout for {queue_entry.title} on {machine.name}")
+    # print(f"[USER CHECKOUT] Machine status after checkout: {machine.current_status}, is_available: {machine.is_available}")
 
     # DIRECTLY notify the next person in line - bypass all complex logic
     # Only notify if machine is available (not in maintenance)
     if next_entry and machine.is_available:
-        print(f"[USER CHECKOUT] DIRECTLY creating notification for {next_entry.user.username}")
+        # print(f"[USER CHECKOUT] DIRECTLY creating notification for {next_entry.user.username}")
         try:
             from .models import Notification
             from channels.layers import get_channel_layer
@@ -796,7 +796,7 @@ def check_out_job(request, queue_entry):
                 related_queue_entry=next_entry,
                 related_machine=machine,
             )
-            print(f"[USER CHECKOUT] Created notification {notif.id} in database")
+            # print(f"[USER CHECKOUT] Created notification {notif.id} in database")
 
             # Send via WebSocket immediately
             try:
@@ -812,17 +812,19 @@ def check_out_job(request, queue_entry):
                         'created_at': notif.created_at.isoformat(),
                     }
                 )
-                print(f"[USER CHECKOUT] WebSocket sent for notification {notif.id}")
+                # print(f"[USER CHECKOUT] WebSocket sent for notification {notif.id}")
             except Exception as ws_err:
-                print(f"[USER CHECKOUT] WebSocket failed but notification {notif.id} still in DB: {ws_err}")
+                # print(f"[USER CHECKOUT] WebSocket failed but notification {notif.id} still in DB: {ws_err}")
+                pass
 
             # Send via Slack if enabled (don't wait for it)
             if settings.SLACK_ENABLED:
                 try:
                     notifications.send_slack_dm(next_entry.user, notif.title, notif.message, notif)
-                    print(f"[USER CHECKOUT] Slack sent for notification {notif.id}")
+                    # print(f"[USER CHECKOUT] Slack sent for notification {notif.id}")
                 except Exception as slack_err:
-                    print(f"[USER CHECKOUT] Slack failed but notification {notif.id} still in DB: {slack_err}")
+                    # print(f"[USER CHECKOUT] Slack failed but notification {notif.id} still in DB: {slack_err}")
+                    pass
 
         except Exception as e:
             print(f"[USER CHECKOUT] ERROR creating notification: {e}")
@@ -833,7 +835,7 @@ def check_out_job(request, queue_entry):
     # (Reminder won't send because entry status changed from 'running' to 'completed')
 
     # Reorder queue (skip notifications since we already sent them)
-    print(f"[USER CHECKOUT] Calling reorder_queue for {machine.name}")
+    # print(f"[USER CHECKOUT] Calling reorder_queue for {machine.name}")
     from .matching_algorithm import reorder_queue
     reorder_queue(machine, notify=False)
 

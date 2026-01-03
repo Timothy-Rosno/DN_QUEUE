@@ -189,7 +189,7 @@ def create_notification(recipient, notification_type, title, message, **kwargs):
     Returns:
         Notification object
     """
-    print(f"[CREATE_NOTIFICATION] Creating notification for {recipient.username}, type={notification_type}")
+    # print(f"[CREATE_NOTIFICATION] Creating notification for {recipient.username}, type={notification_type}")
 
     try:
         notification = Notification.objects.create(
@@ -202,7 +202,7 @@ def create_notification(recipient, notification_type, title, message, **kwargs):
             related_machine=kwargs.get('related_machine'),
             triggering_user=kwargs.get('triggering_user'),
         )
-        print(f"[CREATE_NOTIFICATION] Notification {notification.id} created in database")
+        # print(f"[CREATE_NOTIFICATION] Notification {notification.id} created in database")
     except Exception as e:
         print(f"[CREATE_NOTIFICATION] ERROR creating notification in database: {e}")
         import traceback
@@ -211,7 +211,7 @@ def create_notification(recipient, notification_type, title, message, **kwargs):
 
     # Send via WebSocket
     try:
-        print(f"[CREATE_NOTIFICATION] Attempting WebSocket send...")
+        # print(f"[CREATE_NOTIFICATION] Attempting WebSocket send...")
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f'user_{recipient.id}_notifications',
@@ -224,26 +224,28 @@ def create_notification(recipient, notification_type, title, message, **kwargs):
                 'created_at': notification.created_at.isoformat(),
             }
         )
-        print(f"[CREATE_NOTIFICATION] WebSocket send completed")
+        # print(f"[CREATE_NOTIFICATION] WebSocket send completed")
     except Exception as e:
-        print(f"[CREATE_NOTIFICATION] WebSocket send failed: {e}")
-        import traceback
-        traceback.print_exc()
+        # print(f"[CREATE_NOTIFICATION] WebSocket send failed: {e}")
+        # import traceback
+        # traceback.print_exc()
+        pass
 
     # Send via Slack if enabled and user has Slack ID
     try:
-        print(f"[CREATE_NOTIFICATION] Attempting Slack send (SLACK_ENABLED={settings.SLACK_ENABLED})...")
+        # print(f"[CREATE_NOTIFICATION] Attempting Slack send (SLACK_ENABLED={settings.SLACK_ENABLED})...")
         if settings.SLACK_ENABLED:
             send_slack_dm(recipient, title, message, notification)
-            print(f"[CREATE_NOTIFICATION] Slack send completed")
-        else:
-            print(f"[CREATE_NOTIFICATION] Slack disabled, skipping")
+            # print(f"[CREATE_NOTIFICATION] Slack send completed")
+        # else:
+            # print(f"[CREATE_NOTIFICATION] Slack disabled, skipping")
     except Exception as e:
-        print(f"[CREATE_NOTIFICATION] Slack send failed: {e}")
-        import traceback
-        traceback.print_exc()
+        # print(f"[CREATE_NOTIFICATION] Slack send failed: {e}")
+        # import traceback
+        # traceback.print_exc()
+        pass
 
-    print(f"[CREATE_NOTIFICATION] Returning notification {notification.id}")
+    # print(f"[CREATE_NOTIFICATION] Returning notification {notification.id}")
     return notification
 
 
@@ -396,7 +398,7 @@ def notify_on_deck(queue_entry, reason=None):
     """
     user = queue_entry.user
     machine = queue_entry.assigned_machine
-    print(f"[NOTIFY_ON_DECK] Creating notification for user {user.username}, reason={reason}")
+    # print(f"[NOTIFY_ON_DECK] Creating notification for user {user.username}, reason={reason}")
 
     # Build message based on reason
     if reason == 'maintenance':
@@ -421,7 +423,7 @@ def notify_on_deck(queue_entry, reason=None):
         related_queue_entry=queue_entry,
         related_machine=machine,
     )
-    print(f"[NOTIFY_ON_DECK] Notification created with ID {notif.id}")
+    # print(f"[NOTIFY_ON_DECK] Notification created with ID {notif.id}")
 
 
 def notify_bumped_from_on_deck(queue_entry, reason='priority request'):
@@ -463,7 +465,7 @@ def notify_ready_for_check_in(queue_entry, bypass_preferences=False):
         bypass_preferences: Deprecated - notification always sends
     """
     user = queue_entry.user
-    print(f"[NOTIFY_READY] Creating notification for user {user.username}")
+    # print(f"[NOTIFY_READY] Creating notification for user {user.username}")
     # Always send this critical notification - it's essential for queue system to work
     notif = create_notification(
         recipient=user,
@@ -473,7 +475,7 @@ def notify_ready_for_check_in(queue_entry, bypass_preferences=False):
         related_queue_entry=queue_entry,
         related_machine=queue_entry.assigned_machine,
     )
-    print(f"[NOTIFY_READY] Notification created with ID {notif.id}")
+    # print(f"[NOTIFY_READY] Notification created with ID {notif.id}")
 
 
 def notify_queue_position_change(queue_entry, old_position, new_position):
@@ -777,8 +779,8 @@ def check_and_notify_on_deck_status(machine):
     """
     from .models import Notification
 
-    print(f"[CHECK_ON_DECK] Called for machine {machine.name}")
-    print(f"[CHECK_ON_DECK] Machine status: {machine.current_status}, is_available: {machine.is_available}")
+    # print(f"[CHECK_ON_DECK] Called for machine {machine.name}")
+    # print(f"[CHECK_ON_DECK] Machine status: {machine.current_status}, is_available: {machine.is_available}")
 
     try:
         # Get the entry at position #1
@@ -788,10 +790,10 @@ def check_and_notify_on_deck_status(machine):
             queue_position=1
         ).first()
 
-        if not on_deck_entry:
-            print(f"[CHECK_ON_DECK] No entry at position #1")
-        else:
-            print(f"[CHECK_ON_DECK] Found position #1: {on_deck_entry.title} for user {on_deck_entry.user.username}")
+        # if not on_deck_entry:
+        #     print(f"[CHECK_ON_DECK] No entry at position #1")
+        # else:
+        #     print(f"[CHECK_ON_DECK] Found position #1: {on_deck_entry.title} for user {on_deck_entry.user.username}")
 
         # Get all queued entries for this machine to find who was bumped
         all_queued = QueueEntry.objects.filter(
@@ -838,12 +840,12 @@ def check_and_notify_on_deck_status(machine):
         if on_deck_entry:
             # Simple logic: if machine is idle, user can check in. Otherwise, they're on deck.
             # (If machine is unavailable, nothing should be assigned to it anyway)
-            print(f"[CHECK_ON_DECK] Machine status: {machine.current_status}")
+            # print(f"[CHECK_ON_DECK] Machine status: {machine.current_status}")
 
             machine_is_ready = (machine.current_status == 'idle')
 
             correct_notif_type = 'ready_for_check_in' if machine_is_ready else 'on_deck'
-            print(f"[CHECK_ON_DECK] machine_is_ready={machine_is_ready}, will send: {correct_notif_type}")
+            # print(f"[CHECK_ON_DECK] machine_is_ready={machine_is_ready}, will send: {correct_notif_type}")
 
             # Determine reason for not being ready (for on_deck notification message)
             on_deck_reason = None
@@ -854,7 +856,7 @@ def check_and_notify_on_deck_status(machine):
                     on_deck_reason = 'running'
                 elif machine.current_status == 'cooldown':
                     on_deck_reason = 'cooldown'
-                print(f"[CHECK_ON_DECK] Not ready reason: {on_deck_reason}")
+                # print(f"[CHECK_ON_DECK] Not ready reason: {on_deck_reason}")
 
             # Check what notification the user currently has (check for any unread position 1 notifications)
             existing_notif = Notification.objects.filter(
@@ -865,26 +867,26 @@ def check_and_notify_on_deck_status(machine):
             ).first()
 
             if existing_notif:
-                print(f"[CHECK_ON_DECK] Found existing notification: {existing_notif.notification_type}")
+                # print(f"[CHECK_ON_DECK] Found existing notification: {existing_notif.notification_type}")
                 # User already has a position 1 notification
                 if existing_notif.notification_type == correct_notif_type:
                     # Same notification type - don't send duplicate
-                    print(f"[CHECK_ON_DECK] Same type as existing, skipping duplicate")
+                    # print(f"[CHECK_ON_DECK] Same type as existing, skipping duplicate")
                     return
                 else:
                     # Machine status changed! Clear old notification and send new one
                     # Example: had "on_deck", now machine is ready → send "ready_for_check_in"
-                    print(f"[CHECK_ON_DECK] Deleting old notification and sending new one")
+                    # print(f"[CHECK_ON_DECK] Deleting old notification and sending new one")
                     existing_notif.delete()
-            else:
-                print(f"[CHECK_ON_DECK] No existing notification found")
+            # else:
+                # print(f"[CHECK_ON_DECK] No existing notification found")
 
             # Send the appropriate notification based on machine status
             if machine_is_ready:
                 # Machine is fully ready - user can check in immediately
-                print(f"[CHECK_ON_DECK] Calling notify_ready_for_check_in")
+                # print(f"[CHECK_ON_DECK] Calling notify_ready_for_check_in")
                 notify_ready_for_check_in(on_deck_entry)
-                print(f"[CHECK_ON_DECK] notify_ready_for_check_in completed")
+                # print(f"[CHECK_ON_DECK] notify_ready_for_check_in completed")
 
                 # Initialize check-in reminder (send first reminder after 12 hours, then every 12 hours)
                 from django.utils import timezone
@@ -893,19 +895,19 @@ def check_and_notify_on_deck_status(machine):
                 on_deck_entry.last_checkin_reminder_sent_at = None  # Reset counter
                 on_deck_entry.checkin_reminder_snoozed_until = None  # Clear any snooze
                 on_deck_entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
-                print(f"[CHECK_ON_DECK] Initialized check-in reminder for {on_deck_entry.title} (due in 6 hours)")
+                # print(f"[CHECK_ON_DECK] Initialized check-in reminder for {on_deck_entry.title} (due in 6 hours)")
             else:
                 # Machine is busy, unavailable, offline, in maintenance, or cooling down - user is on deck but must wait
-                print(f"[CHECK_ON_DECK] Calling notify_on_deck with reason={on_deck_reason}")
+                # print(f"[CHECK_ON_DECK] Calling notify_on_deck with reason={on_deck_reason}")
                 notify_on_deck(on_deck_entry, reason=on_deck_reason)
-                print(f"[CHECK_ON_DECK] notify_on_deck completed")
+                # print(f"[CHECK_ON_DECK] notify_on_deck completed")
 
                 # Clear check-in reminder since machine isn't ready yet
                 on_deck_entry.checkin_reminder_due_at = None
                 on_deck_entry.last_checkin_reminder_sent_at = None
                 on_deck_entry.checkin_reminder_snoozed_until = None
                 on_deck_entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
-                print(f"[CHECK_ON_DECK] Cleared check-in reminder for {on_deck_entry.title} (machine not ready)")
+                # print(f"[CHECK_ON_DECK] Cleared check-in reminder for {on_deck_entry.title} (machine not ready)")
     except Exception as e:
         print(f"[CHECK_ON_DECK] ERROR: {e}")
         import traceback
@@ -1022,13 +1024,13 @@ def notify_admins_rush_job_approved(queue_entry, approving_admin):
     title = 'Queue Appeal Approved'
     message = f'{approving_admin.username} approved queue appeal "{queue_entry.title}" by {queue_entry.user.username} on {queue_entry.assigned_machine.name}. Moved to position {queue_entry.queue_position}.'
 
-    print(f"[RUSH_JOB_APPROVED] Notifying {admin_users.count()} other admins (excluding entry owner and approving admin)")
+    # print(f"[RUSH_JOB_APPROVED] Notifying {admin_users.count()} other admins (excluding entry owner and approving admin)")
 
     for admin in admin_users:
         prefs = NotificationPreference.get_or_create_for_user(admin)
         if prefs.notify_admin_rush_job:
             # Create web notification with link to queue
-            print(f"[RUSH_JOB_APPROVED] Creating notification for {admin.username}")
+            # print(f"[RUSH_JOB_APPROVED] Creating notification for {admin.username}")
             notification = create_notification(
                 recipient=admin,
                 notification_type='admin_action',
@@ -1060,13 +1062,13 @@ def notify_admins_rush_job_rejected(queue_entry, rejecting_admin, rejection_reas
     title = 'Queue Appeal Rejected'
     message = f'{rejecting_admin.username} rejected queue appeal "{queue_entry.title}" by {queue_entry.user.username}.\nReason: {rejection_reason}'
 
-    print(f"[RUSH_JOB_REJECTED] Notifying {admin_users.count()} other admins (excluding entry owner and rejecting admin)")
+    # print(f"[RUSH_JOB_REJECTED] Notifying {admin_users.count()} other admins (excluding entry owner and rejecting admin)")
 
     for admin in admin_users:
         prefs = NotificationPreference.get_or_create_for_user(admin)
         if prefs.notify_admin_rush_job:
             # Create web notification with link to queue
-            print(f"[RUSH_JOB_REJECTED] Creating notification for {admin.username}")
+            # print(f"[RUSH_JOB_REJECTED] Creating notification for {admin.username}")
             notification = create_notification(
                 recipient=admin,
                 notification_type='admin_action',

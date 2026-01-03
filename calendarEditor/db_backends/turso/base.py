@@ -348,7 +348,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                     timeout=5  # 5 second timeout - fail fast
                 )
             except requests.exceptions.Timeout:
-                print(f"TIMEOUT executing SQL: {sql[:200]}")
+                # print(f"TIMEOUT executing SQL: {sql[:200]}")
                 raise Exception(f"Turso query timeout (5s): {sql[:200]}")
 
             if response.status_code != 200:
@@ -404,7 +404,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                     # NOT NULL, UNIQUE, FOREIGN KEY constraints indicate data problems
                     if any(err in error_msg.lower() for err in ignorable):
                         # Log ignorable errors for debugging (eventual consistency, schema mismatches)
-                        print(f"[TURSO WARNING] Ignoring error: {error_msg}")
+                        # print(f"[TURSO WARNING] Ignoring error: {error_msg}")
                         return {'rows': [], 'cols': []}
 
                     raise Exception(f"Turso query error: {error_msg}")

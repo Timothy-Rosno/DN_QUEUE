@@ -403,7 +403,7 @@ def reorder_queue(machine, notify=True):
     """
     from django.db.models import F
 
-    print(f"[REORDER_QUEUE] Called for machine {machine.name}, notify={notify}")
+    # print(f"[REORDER_QUEUE] Called for machine {machine.name}, notify={notify}")
 
     # Get all queued entries, handling NULLs by ordering them last
     # This ensures we process valid positions first, then fix any corrupted NULL positions
@@ -412,7 +412,7 @@ def reorder_queue(machine, notify=True):
         status='queued'
     ).order_by(F('queue_position').asc(nulls_last=True), 'submitted_at')
 
-    print(f"[REORDER_QUEUE] Found {queued_entries.count()} queued entries")
+    # print(f"[REORDER_QUEUE] Found {queued_entries.count()} queued entries")
 
     # Track old positions before reordering
     old_positions = {}
@@ -442,7 +442,7 @@ def reorder_queue(machine, notify=True):
         entry.save()
         if index == 1:
             new_position_1_entry_id = entry.id
-            print(f"[REORDER_QUEUE] Position #1: {entry.title} for user {entry.user.username}")
+            # print(f"[REORDER_QUEUE] Position #1: {entry.title} for user {entry.user.username}")
 
     # Notify users of position changes (unless notify=False)
     if notify:
@@ -451,16 +451,18 @@ def reorder_queue(machine, notify=True):
             if new_pos != 1:  # Position 1 is handled by check_and_notify_on_deck_status
                 try:
                     notifications.notify_queue_position_change(entry, old_pos, new_pos)
-                    print(f"[REORDER_QUEUE] Notified {entry.user.username} of position change: {old_pos} -> {new_pos}")
+                    # print(f"[REORDER_QUEUE] Notified {entry.user.username} of position change: {old_pos} -> {new_pos}")
                 except Exception as e:
                     print(f"[REORDER_QUEUE] Position change notification failed: {e}")
+                    import traceback
+                    traceback.print_exc()
 
         # Only notify position 1 if it actually changed (new user at position 1)
         # This prevents notifying position 1 when someone behind them is deleted
         position_1_changed = (new_position_1_entry_id != old_position_1_entry_id)
 
         if position_1_changed and new_position_1_entry_id is not None:
-            print(f"[REORDER_QUEUE] Position #1 changed, calling check_and_notify_on_deck_status")
+            # print(f"[REORDER_QUEUE] Position #1 changed, calling check_and_notify_on_deck_status")
             try:
                 notifications.check_and_notify_on_deck_status(machine)
             except Exception as e:
@@ -468,7 +470,8 @@ def reorder_queue(machine, notify=True):
                 import traceback
                 traceback.print_exc()
         else:
-            print(f"[REORDER_QUEUE] Position #1 unchanged (id={new_position_1_entry_id}), skipping on-deck notification")
+            pass
+            # print(f"[REORDER_QUEUE] Position #1 unchanged (id={new_position_1_entry_id}), skipping on-deck notification")
 
 
 def move_queue_entry_up(entry_id):

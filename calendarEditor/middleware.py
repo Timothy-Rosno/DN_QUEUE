@@ -495,7 +495,7 @@ class OnlineUserTrackingMiddleware:
                 
             except Exception as e:
                 # Don't break the request if tracking fails
-                print(f"[OnlineUserTracking] Error: {e}")
+                # print(f"[OnlineUserTracking] Error: {e}")
                 pass
         
         return response
