@@ -196,7 +196,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                     f"Response: {response.text}"
                 )
 
-            print(f"✅ Connected to Turso via HTTP: {self.turso_url}")
+            # print(f"✅ Connected to Turso via HTTP: {self.turso_url}")
 
             # Create an in-memory SQLite connection for Django's ORM
             # We'll intercept execute() to send queries to Turso instead

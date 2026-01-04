@@ -76,6 +76,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "userRegistration.middleware.UserApprovalMiddleware",  # Custom middleware for user approval
+    "calendarEditor.error_handling_middleware.ErrorHandlingMiddleware",  # Global error handling with redirects
     "calendarEditor.middleware.CheckReminderMiddleware",  # Check for pending checkout reminders
     "calendarEditor.middleware.RenderUsageMiddleware",  # Track Render usage
     # "calendarEditor.middleware.OnlineUserTrackingMiddleware",  # DISABLED: Reduces Render usage
@@ -314,3 +315,29 @@ BASE_URL = os.environ.get('BASE_URL', 'http://127.0.0.1:8000')
 MAX_DATABASE_SIZE_MB = int(os.environ.get('MAX_DATABASE_SIZE_MB', '500'))
 # Warning threshold as decimal (0.80 = 80%)
 STORAGE_WARNING_THRESHOLD = 0.80
+
+
+# Logging Configuration - Silence successful GET requests
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'skip_successful_gets': {
+            '()': 'django.utils.log.CallbackFilter',
+            'callback': lambda record: not (hasattr(record, 'status_code') and record.status_code == 200 and getattr(record, 'request_method', '') == 'GET')
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'filters': ['skip_successful_gets'],
+        },
+    },
+    'loggers': {
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

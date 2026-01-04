@@ -224,18 +224,18 @@ def profile(request):
     notification_prefs = NotificationPreference.get_or_create_for_user(request.user)
 
     if request.method == 'POST':
-        # Determine which form was submitted
-        if 'submit_profile' in request.POST:
+        # Determine which form was submitted - check for phone_number field instead of button name
+        if 'phone_number' in request.POST:
             form = UserProfileForm(request.POST, instance=user_profile)
             notification_form = NotificationPreferenceForm(instance=notification_prefs, user=request.user)
+
             if form.is_valid():
                 form.save()
                 messages.success(request, 'Profile updated successfully!')
                 return redirect('profile')
             else:
-                # Form has errors - will be displayed in template
                 messages.error(request, 'Failed to update profile. Please check the errors below.')
-        elif 'submit_notifications' in request.POST:
+        elif 'email_notifications' in request.POST or 'in_app_notifications' in request.POST:
             form = UserProfileForm(instance=user_profile)
             notification_form = NotificationPreferenceForm(request.POST, instance=notification_prefs, user=request.user)
             if notification_form.is_valid():
@@ -273,10 +273,6 @@ def profile(request):
                 messages.success(request, 'Notification preferences updated successfully!')
                 return redirect('profile')
             else:
-                # Log validation errors
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f'Notification form validation failed: {notification_form.errors}')
                 messages.error(request, 'Failed to save notification preferences. Please check the form for errors.')
         else:
             form = UserProfileForm(instance=user_profile)

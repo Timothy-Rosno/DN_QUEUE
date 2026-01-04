@@ -55,11 +55,13 @@ class UserRegistrationForm(UserCreationForm):
         return user
 
 class UserProfileForm(forms.ModelForm):
+    # Security question fields (for registration)
     security_answer = forms.CharField(
-        max_length=200,
-        required=False,
-        widget=forms.TextInput(attrs={'autocomplete': 'off'}),
-        help_text="For password recovery"
+        max_length=100,
+        required=True,
+        widget=forms.PasswordInput(attrs={'autocomplete': 'off'}),
+        label='Security Answer',
+        help_text='This will be used for password recovery (case-insensitive)'
     )
 
     class Meta:
@@ -86,9 +88,10 @@ class UserProfileForm(forms.ModelForm):
                 'maxlength': '50',
                 'placeholder': 'e.g., U01234ABCD (leave blank for auto-lookup)'
             }),
+            'security_question': forms.Select(),
             'security_question_custom': forms.TextInput(attrs={
-                'placeholder': 'Enter your custom security question',
-                'autocomplete': 'off'
+                'maxlength': '200',
+                'placeholder': 'Enter your custom question'
             }),
         }
         labels = {
@@ -108,12 +111,14 @@ class UserProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         # Make security question required for new registrations and force custom question
         if not self.instance.pk:
             # Force custom question for new registrations
             self.fields['security_question'].initial = 'custom'
             self.fields['security_question'].widget = forms.HiddenInput()
             self.fields['security_question_custom'].required = True
+            self.fields['security_question_custom'].label = 'Security Question'
             self.fields['security_answer'].required = True
         else:
             # For existing profiles, make security question fields optional (not shown in profile template)
@@ -129,16 +134,12 @@ class UserProfileForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        security_question = cleaned_data.get('security_question')
-        security_question_custom = cleaned_data.get('security_question_custom')
         organization = cleaned_data.get('organization')
         organization_other = cleaned_data.get('organization_other')
         department = cleaned_data.get('department')
         department_other = cleaned_data.get('department_other')
-
-        # If custom question is selected, custom text is required
-        if security_question == 'custom' and not security_question_custom:
-            self.add_error('security_question_custom', 'Please enter your custom security question.')
+        security_question = cleaned_data.get('security_question')
+        security_question_custom = cleaned_data.get('security_question_custom')
 
         # If "Other" organization is selected, organization_other is required
         if organization == 'other' and not organization_other:
@@ -148,7 +149,21 @@ class UserProfileForm(forms.ModelForm):
         if department == 'other' and not department_other:
             self.add_error('department_other', 'Please enter your department name.')
 
+        # If custom security question is selected, custom question text is required
+        if security_question == 'custom' and not security_question_custom:
+            self.add_error('security_question_custom', 'Please enter your custom security question.')
+
         return cleaned_data
+
+    def save(self, commit=True):
+        profile = super().save(commit=False)
+        # Hash the security answer
+        security_answer = self.cleaned_data.get('security_answer')
+        if security_answer:
+            profile.set_security_answer(security_answer)
+        if commit:
+            profile.save()
+        return profile
 
 class NotificationPreferenceForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):

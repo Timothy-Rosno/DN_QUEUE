@@ -950,8 +950,9 @@
         }
 
         function showGlobalUpdateBanner(data) {
-            // Don't show banner if current user triggered the update
-            if (data.triggering_user_id && Number(data.triggering_user_id) === Number(globalCurrentUserId)) {
+            // Don't show banner if user is logged out or if current user triggered the update
+            if (!globalCurrentUserId ||
+                (data.triggering_user_id && Number(data.triggering_user_id) === Number(globalCurrentUserId))) {
                 return;
             }
 
@@ -1011,6 +1012,11 @@
                 }
             }, 10000);
         }
+
+        // Clear cached queue updates if user is logged out
+        {% if not request.user.is_authenticated %}
+        sessionStorage.removeItem('queueUpdateInfo');
+        {% endif %}
 
         // Connect on page load (only if user is authenticated)
         {% if request.user.is_authenticated %}

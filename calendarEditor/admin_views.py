@@ -207,7 +207,27 @@ def reject_user(request, user_id):
             profile.is_approved = False  # Keep legacy field in sync
             profile.approved_by = None
             profile.approved_at = None
+
+            # Strip staff and developer privileges when unapproving
+            was_staff = user.is_staff
+            was_developer = profile.is_developer
+
+            user.is_staff = False
+            user.save()
+
+            profile.is_developer = False
+            profile.developer_promoted_by = None
+            profile.developer_promoted_at = None
             profile.save()
+
+            # Build message about what was removed
+            removed_roles = []
+            if was_developer:
+                removed_roles.append('developer')
+            if was_staff:
+                removed_roles.append('staff')
+
+            roles_msg = f" (removed {', '.join(removed_roles)} privileges)" if removed_roles else ""
 
             # Send notification to the user via the notification system (Slack first, then email fallback)
             notifications.create_notification(
@@ -218,12 +238,32 @@ def reject_user(request, user_id):
                 triggering_user=request.user,
             )
 
-            messages.success(request, f'User {user.username} has been unapproved.')
+            messages.success(request, f'User {user.username} has been unapproved{roles_msg}.')
         elif profile.status == 'pending':
             # Reject a pending user -> set to 'rejected'
             profile.status = 'rejected'
             profile.is_approved = False  # Keep legacy field in sync
+
+            # Strip staff and developer privileges when rejecting
+            was_staff = user.is_staff
+            was_developer = profile.is_developer
+
+            user.is_staff = False
+            user.save()
+
+            profile.is_developer = False
+            profile.developer_promoted_by = None
+            profile.developer_promoted_at = None
             profile.save()
+
+            # Build message about what was removed
+            removed_roles = []
+            if was_developer:
+                removed_roles.append('developer')
+            if was_staff:
+                removed_roles.append('staff')
+
+            roles_msg = f" (removed {', '.join(removed_roles)} privileges)" if removed_roles else ""
 
             # Auto-clear all "new user signup" notifications for this user (task completed)
             auto_clear_notifications(
@@ -240,7 +280,7 @@ def reject_user(request, user_id):
                 triggering_user=request.user,
             )
 
-            messages.success(request, f'User {user.username} has been rejected.')
+            messages.success(request, f'User {user.username} has been rejected{roles_msg}.')
         else:
             messages.info(request, f'User {user.username} is already rejected.')
     except UserProfile.DoesNotExist:
@@ -269,8 +309,56 @@ def delete_user(request, user_id):
             messages.error(request, f'Only superusers can delete staff users.')
             return redirect('admin_users')
 
-        user.delete()
-        messages.success(request, f'User {username} has been deleted.')
+        try:
+            # Get counts of related objects before deletion
+            from django.db import transaction
+            from django.core.exceptions import ProtectedError
+
+            with transaction.atomic():
+                # Count related objects that will be deleted
+                queue_count = user.queue_entries.count()
+                archive_count = user.archived_measurements.count()
+                notification_count = user.notifications.count()
+
+                # Delete the user (CASCADE will handle related objects)
+                user.delete()
+
+            # Build informative success message
+            deleted_items = []
+            if queue_count > 0:
+                deleted_items.append(f"{queue_count} queue entry/entries")
+            if archive_count > 0:
+                deleted_items.append(f"{archive_count} archive entry/entries")
+            if notification_count > 0:
+                deleted_items.append(f"{notification_count} notification(s)")
+
+            if deleted_items:
+                items_msg = f" and {', '.join(deleted_items)}"
+            else:
+                items_msg = ""
+
+            messages.success(request, f'User {username} has been deleted{items_msg}.')
+
+        except ProtectedError as e:
+            # Some related object is protected from deletion
+            messages.error(
+                request,
+                f'Cannot delete user {username}. This user has protected related objects that must be handled first.'
+            )
+        except Exception as e:
+            # Unexpected error - show details to staff/developers
+            if request.user.is_staff or request.user.is_superuser:
+                messages.error(
+                    request,
+                    f'Error deleting user {username}: {type(e).__name__}: {str(e)}'
+                )
+            else:
+                messages.error(request, f'An error occurred while deleting user {username}.')
+
+            # Log the error for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error deleting user {username} (ID: {user_id}): {str(e)}", exc_info=True)
 
     # Redirect back with preserved query parameters
     referer = request.META.get('HTTP_REFERER', '')

@@ -446,13 +446,10 @@ def my_queue(request):
 def cancel_queue_entry(request, pk):
     """Cancel a queued or running entry."""
     # Check if entry exists and belongs to current user
-    try:
-        queue_entry = QueueEntry.objects.get(pk=pk)
-        if queue_entry.user != request.user:
-            messages.warning(request, 'This queue entry is not for your account. Returning to home page.')
-            return redirect('home')
-    except QueueEntry.DoesNotExist:
-        raise Http404("Queue entry not found")
+    queue_entry = get_object_or_404(QueueEntry, pk=pk)
+    if queue_entry.user != request.user:
+        messages.warning(request, 'This queue entry is not for your account. Returning to home page.')
+        return redirect('home')
 
     if queue_entry.status not in ['queued', 'running']:
         messages.error(request, 'Can only cancel queued or running entries.')
@@ -574,13 +571,10 @@ def cancel_queue_entry(request, pk):
 def appeal_queue_entry(request, pk):
     """Submit an appeal for a queued entry (marks as rush job)."""
     # Check if entry exists and belongs to current user
-    try:
-        queue_entry = QueueEntry.objects.get(pk=pk)
-        if queue_entry.user != request.user:
-            messages.warning(request, 'This queue entry is not for your account.')
-            return redirect('home')
-    except QueueEntry.DoesNotExist:
-        raise Http404("Queue entry not found")
+    queue_entry = get_object_or_404(QueueEntry, pk=pk)
+    if queue_entry.user != request.user:
+        messages.warning(request, 'This queue entry is not for your account.')
+        return redirect('home')
 
     # Only allow appeals for queued entries
     if queue_entry.status != 'queued':
@@ -874,13 +868,10 @@ def snooze_checkout_reminder(request, entry_id):
     - Entry must be running
     """
     # Check if entry exists and belongs to current user
-    try:
-        queue_entry = QueueEntry.objects.get(id=entry_id)
-        if queue_entry.user != request.user:
-            messages.warning(request, 'This notification is not for your account. Returning to home page.')
-            return redirect('home')
-    except QueueEntry.DoesNotExist:
-        raise Http404("Queue entry not found")
+    queue_entry = get_object_or_404(QueueEntry, id=entry_id)
+    if queue_entry.user != request.user:
+        messages.warning(request, 'This notification is not for your account. Returning to home page.')
+        return redirect('home')
 
     # Only allow snoozing for running entries
     if queue_entry.status != 'running':
@@ -909,13 +900,10 @@ def snooze_checkin_reminder(request, entry_id):
     - Entry must be queued at position 1 (ON DECK)
     """
     # Check if entry exists and belongs to current user
-    try:
-        queue_entry = QueueEntry.objects.get(id=entry_id)
-        if queue_entry.user != request.user:
-            messages.warning(request, 'This notification is not for your account. Returning to home page.')
-            return redirect('home')
-    except QueueEntry.DoesNotExist:
-        raise Http404("Queue entry not found")
+    queue_entry = get_object_or_404(QueueEntry, id=entry_id)
+    if queue_entry.user != request.user:
+        messages.warning(request, 'This notification is not for your account. Returning to home page.')
+        return redirect('home')
 
     # Only allow snoozing for position 1 queued entries
     if queue_entry.status != 'queued' or queue_entry.queue_position != 1:
@@ -2347,13 +2335,10 @@ def archive_create(request):
 def save_to_archive(request, queue_entry_id):
     """Save a completed queue entry to the archive."""
     # Check if entry exists and belongs to current user
-    try:
-        queue_entry = QueueEntry.objects.get(id=queue_entry_id)
-        if queue_entry.user != request.user:
-            messages.warning(request, 'This queue entry is not for your account. Returning to home page.')
-            return redirect('home')
-    except QueueEntry.DoesNotExist:
-        raise Http404("Queue entry not found")
+    queue_entry = get_object_or_404(QueueEntry, id=queue_entry_id)
+    if queue_entry.user != request.user:
+        messages.warning(request, 'This queue entry is not for your account. Returning to home page.')
+        return redirect('home')
 
     if request.method == 'POST':
         form = ArchivedMeasurementForm(request.POST, request.FILES)

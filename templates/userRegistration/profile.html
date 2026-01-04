@@ -3,8 +3,66 @@
 {% block title %}Profile - Scheduler App{% endblock %}
 
 {% block content %}
+<style>
+    /* Disabled submit button styles - grayed out blue */
+    .btn:disabled, .btn.btn-disabled {
+        background-color: #7fb3d3 !important;
+        cursor: not-allowed !important;
+        opacity: 0.8;
+    }
+
+    /* Submit button tooltip container */
+    .submit-btn-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    /* Validation tooltip */
+    .validation-tooltip {
+        display: none;
+        position: absolute;
+        bottom: 100%;
+        left: 0;
+        background-color: #2c3e50;
+        color: white;
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        max-width: 300px;
+        width: max-content;
+        z-index: 1000;
+        margin-bottom: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .validation-tooltip::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 20px;
+        border-width: 6px;
+        border-style: solid;
+        border-color: #2c3e50 transparent transparent transparent;
+    }
+
+    .validation-tooltip ul {
+        margin: 0;
+        padding: 0 0 0 1rem;
+        list-style: disc;
+    }
+
+    .validation-tooltip li {
+        margin: 0.25rem 0;
+        word-wrap: break-word;
+    }
+
+    /* Only show tooltip when hovering AND button is disabled */
+    .submit-btn-wrapper:hover .btn:disabled + .validation-tooltip {
+        display: block;
+    }
+</style>
 <div class="card">
-    <h1>Your Profile</h1>
+    <h1>Your AWESOME Profile</h1>
 
     <div style="margin: 1.5rem 0; padding: 1rem; background-color: #ecf0f1; border-radius: 4px;">
         <p><strong>Username:</strong> {{ user.username }}</p>
@@ -26,13 +84,13 @@
         </div>
     {% endif %}
 
-    <form method="post" style="margin-top: 1rem;" id="profileForm">
+    <form method="post" style="margin-top: 1rem;" id="profileForm" novalidate>
         {% csrf_token %}
 
         <!-- Phone Number Field -->
         <div style="margin-bottom: 1.5rem;">
             <label for="{{ form.phone_number.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
-                {{ form.phone_number.label }} <span style="color: #e74c3c;">*</span>
+                {{ form.phone_number.label }}
             </label>
             {{ form.phone_number }}
             {% if form.phone_number.errors %}
@@ -40,10 +98,10 @@
             {% endif %}
         </div>
 
-        <!-- Organization Field (REQUIRED) -->
+        <!-- Organization Field -->
         <div style="margin-bottom: 1.5rem;">
             <label for="{{ form.organization.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
-                {{ form.organization.label }} <span style="color: #e74c3c;">*</span>
+                {{ form.organization.label }}
             </label>
             {{ form.organization }}
             {% if form.organization.errors %}
@@ -63,7 +121,7 @@
         </div>
 
         <!-- Department Field -->
-        <div style="margin-bottom: 1.5rem;">
+        <div id="departmentFieldContainer" style="margin-bottom: 1.5rem;">
             <label for="{{ form.department.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
                 {{ form.department.label }}
             </label>
@@ -93,6 +151,7 @@
             <label for="{{ form.notes.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
                 {{ form.notes.label }}
             </label>
+            <small style="color: #7f8c8d; display: block; margin-bottom: 0.5rem;">(Optional)</small>
             {{ form.notes }}
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
                 <div id="notesError" style="color: #e74c3c; font-size: 0.9rem; display: none; font-weight: bold;"></div>
@@ -119,7 +178,10 @@
         </div>
 
         <div style="margin-top: 1.5rem;">
-            <button type="submit" name="submit_profile" class="btn">Update Profile</button>
+            <span class="submit-btn-wrapper">
+                <button type="submit" name="submit_profile" value="1" class="btn" id="updateProfileBtn">Update Profile</button>
+                <div class="validation-tooltip" id="profileValidationTooltip"></div>
+            </span>
             <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Back to Home</a>
         </div>
     </form>
@@ -618,43 +680,165 @@ document.addEventListener('DOMContentLoaded', function() {
     setupCharacterCounter('{{ form.department_other.id_for_label }}', 'departmentOtherCharCount', 'departmentOtherError', 100);
     setupCharacterCounter('{{ form.notes.id_for_label }}', 'notesCharCount', 'notesError', 500);
 
-    // Show/hide organization_other field based on organization selection
+    // ===============================
+    // Prevent Non-Numeric Input for Phone Number
+    // ===============================
+    (function() {
+        const phoneNumberInput = document.getElementById('{{ form.phone_number.id_for_label }}');
+
+        function preventNonNumeric(e) {
+            // Allow: backspace, delete, tab, escape, enter, decimal (but will be removed on paste)
+            if ([46, 8, 9, 27, 13, 110].indexOf(e.keyCode) !== -1 ||
+                // Allow: Ctrl+A/C/V/X
+                (e.keyCode === 65 && e.ctrlKey === true) ||
+                (e.keyCode === 67 && e.ctrlKey === true) ||
+                (e.keyCode === 86 && e.ctrlKey === true) ||
+                (e.keyCode === 88 && e.ctrlKey === true) ||
+                // Allow: home, end, left, right
+                (e.keyCode >= 35 && e.keyCode <= 39)) {
+                return;
+            }
+            // Prevent if not a number
+            if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                e.preventDefault();
+            }
+        }
+
+        if (phoneNumberInput) {
+            phoneNumberInput.addEventListener('keydown', preventNonNumeric);
+            // Strip non-numeric on paste
+            phoneNumberInput.addEventListener('paste', function(e) {
+                setTimeout(() => {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                }, 0);
+            });
+        }
+    })();
+
+    // Get all DOM elements
     const organizationField = document.getElementById('{{ form.organization.id_for_label }}');
     const organizationOtherContainer = document.getElementById('organizationOtherContainer');
-
-    function toggleOrganizationOther() {
-        if (organizationField && organizationOtherContainer) {
-            if (organizationField.value === 'other') {
-                organizationOtherContainer.style.display = 'block';
-            } else {
-                organizationOtherContainer.style.display = 'none';
-            }
-        }
-    }
-
-    if (organizationField) {
-        organizationField.addEventListener('change', toggleOrganizationOther);
-        toggleOrganizationOther(); // Run on page load
-    }
-
-    // Show/hide department_other field based on department selection
+    const organizationOtherField = document.getElementById('{{ form.organization_other.id_for_label }}');
+    const departmentFieldContainer = document.getElementById('departmentFieldContainer');
     const departmentField = document.getElementById('{{ form.department.id_for_label }}');
     const departmentOtherContainer = document.getElementById('departmentOtherContainer');
+    const departmentOtherField = document.getElementById('{{ form.department_other.id_for_label }}');
+    const phoneField = document.getElementById('{{ form.phone_number.id_for_label }}');
+    const updateProfileBtn = document.getElementById('updateProfileBtn');
+    const profileValidationTooltip = document.getElementById('profileValidationTooltip');
 
-    function toggleDepartmentOther() {
-        if (departmentField && departmentOtherContainer) {
-            if (departmentField.value === 'other') {
-                departmentOtherContainer.style.display = 'block';
-            } else {
-                departmentOtherContainer.style.display = 'none';
+    // Handle organization selection changes (copied from registration)
+    function toggleOrganizationFields() {
+        const orgValue = organizationField.value;
+
+        // Show/hide organization_other field
+        if (orgValue === 'other') {
+            organizationOtherContainer.style.display = 'block';
+        } else {
+            organizationOtherContainer.style.display = 'none';
+        }
+
+        // Show/hide department field (for schools: uark, montana, vtech)
+        if (orgValue === 'uark' || orgValue === 'montana' || orgValue === 'vtech') {
+            departmentFieldContainer.style.display = 'block';
+        } else {
+            departmentFieldContainer.style.display = 'none';
+            // Reset department selection when hiding
+            departmentField.value = '';
+            departmentOtherContainer.style.display = 'none';
+        }
+
+        // Revalidate form after changing fields
+        updateProfileSubmitButton();
+    }
+
+    // Handle department selection changes (copied from registration)
+    function toggleDepartmentOtherField() {
+        const deptValue = departmentField.value;
+
+        // Show/hide department_other field
+        if (deptValue === 'other') {
+            departmentOtherContainer.style.display = 'block';
+        } else {
+            departmentOtherContainer.style.display = 'none';
+        }
+
+        // Revalidate form after changing fields
+        updateProfileSubmitButton();
+    }
+
+    // Form validation function - returns array of error messages (copied from registration)
+    function validateProfileForm() {
+        const errors = [];
+
+        // Check profile form fields
+        if (!phoneField || !phoneField.value.trim()) {
+            errors.push('Enter your phone number');
+        }
+        if (!organizationField || !organizationField.value.trim()) {
+            errors.push('Select your organization');
+        }
+
+        // Check conditional fields based on organization selection
+        const orgValue = organizationField ? organizationField.value : '';
+        if (orgValue === 'other') {
+            if (!organizationOtherField || !organizationOtherField.value.trim()) {
+                errors.push('Enter your organization name');
             }
+        }
+
+        // Require department for schools (uark, montana, vtech) but not for 'other'
+        if (orgValue === 'uark' || orgValue === 'montana' || orgValue === 'vtech') {
+            if (!departmentField || !departmentField.value.trim()) {
+                errors.push('Select your department');
+            } else {
+                // Check if department is 'other' and requires department_other
+                const deptValue = departmentField ? departmentField.value : '';
+                if (deptValue === 'other') {
+                    if (!departmentOtherField || !departmentOtherField.value.trim()) {
+                        errors.push('Enter your department name');
+                    }
+                }
+            }
+        }
+
+        return errors;
+    }
+
+    // Update button and tooltip (copied from registration)
+    function updateProfileSubmitButton() {
+        const errors = validateProfileForm();
+        const isValid = errors.length === 0;
+
+        // Update button state
+        updateProfileBtn.disabled = !isValid;
+
+        // Update tooltip
+        if (errors.length > 0) {
+            const tooltipContent = '<ul>' + errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+            profileValidationTooltip.innerHTML = tooltipContent;
+            profileValidationTooltip.style.display = '';
+        } else {
+            profileValidationTooltip.innerHTML = '';
+            profileValidationTooltip.style.display = 'none';
         }
     }
 
-    if (departmentField) {
-        departmentField.addEventListener('change', toggleDepartmentOther);
-        toggleDepartmentOther(); // Run on page load
-    }
+    // Add event listeners for validation
+    organizationField.addEventListener('change', toggleOrganizationFields);
+    departmentField.addEventListener('change', toggleDepartmentOtherField);
+
+    // Add validation event listeners to all form inputs
+    const formInputs = document.querySelectorAll('#profileForm input, #profileForm select, #profileForm textarea');
+    formInputs.forEach(function(input) {
+        input.addEventListener('input', updateProfileSubmitButton);
+        input.addEventListener('change', updateProfileSubmitButton);
+    });
+
+    // Initialize on page load
+    toggleOrganizationFields();
+    toggleDepartmentOtherField();
+    updateProfileSubmitButton();
 });
 
 // Character counter setup function
