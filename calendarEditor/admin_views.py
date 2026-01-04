@@ -312,7 +312,7 @@ def delete_user(request, user_id):
         try:
             # Get counts of related objects before deletion
             from django.db import transaction
-            from django.core.exceptions import ProtectedError
+            from django.db.models.deletion import ProtectedError
 
             with transaction.atomic():
                 # Count related objects that will be deleted
