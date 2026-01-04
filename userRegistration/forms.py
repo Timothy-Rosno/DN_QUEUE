@@ -155,16 +155,6 @@ class UserProfileForm(forms.ModelForm):
 
         return cleaned_data
 
-    def save(self, commit=True):
-        profile = super().save(commit=False)
-        # Hash the security answer
-        security_answer = self.cleaned_data.get('security_answer')
-        if security_answer:
-            profile.set_security_answer(security_answer)
-        if commit:
-            profile.save()
-        return profile
-
 class NotificationPreferenceForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)

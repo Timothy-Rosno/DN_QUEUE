@@ -76,7 +76,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "userRegistration.middleware.UserApprovalMiddleware",  # Custom middleware for user approval
-    "calendarEditor.error_handling_middleware.ErrorHandlingMiddleware",  # Global error handling with redirects
+    # "calendarEditor.error_handling_middleware.ErrorHandlingMiddleware",  # TEMPORARILY DISABLED - hiding registration errors
     "calendarEditor.middleware.CheckReminderMiddleware",  # Check for pending checkout reminders
     "calendarEditor.middleware.RenderUsageMiddleware",  # Track Render usage
     # "calendarEditor.middleware.OnlineUserTrackingMiddleware",  # DISABLED: Reduces Render usage
