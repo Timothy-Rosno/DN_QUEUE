@@ -677,6 +677,7 @@ class NotificationPreference(models.Model):
     # Queue appeal notifications (critical - always sent, except to superusers for Slack)
     notify_appeal_approved = models.BooleanField(default=True, help_text="Notify when your queue appeal is approved - CRITICAL")
     notify_appeal_rejected = models.BooleanField(default=True, help_text="Notify when your queue appeal is rejected - CRITICAL")
+    notify_appeal_response = models.BooleanField(default=True, help_text="Notify when you receive a response to your appeal - CRITICAL")
 
     # Account status notifications (critical - always sent)
     notify_account_approved = models.BooleanField(default=True, help_text="Notify when your account is approved - CRITICAL")
