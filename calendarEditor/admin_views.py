@@ -3423,6 +3423,76 @@ def clear_all_completed_feedback(request):
 
 
 @staff_member_required
+def developer_errors(request):
+    """Developer error log page - view and analyze system errors."""
+    from .models import ErrorLog
+    from django.db.models import Count, Q
+    from datetime import timedelta
+
+    # Only developers and superusers can access
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_developer) and not request.user.is_superuser:
+        messages.error(request, 'Developer access required.')
+        return redirect('admin_dashboard')
+
+    # Get filter parameters
+    error_type_filter = request.GET.get('type', 'all')
+    time_filter = request.GET.get('time', '24h')
+
+    # Calculate time cutoff
+    time_cutoffs = {
+        '1h': timezone.now() - timedelta(hours=1),
+        '24h': timezone.now() - timedelta(hours=24),
+        '7d': timezone.now() - timedelta(days=7),
+        '30d': timezone.now() - timedelta(days=30),
+        'all': None,
+    }
+    time_cutoff = time_cutoffs.get(time_filter)
+
+    # Base queryset
+    errors = ErrorLog.objects.select_related('user').all()
+
+    # Apply time filter
+    if time_cutoff:
+        errors = errors.filter(created_at__gte=time_cutoff)
+
+    # Apply error type filter
+    if error_type_filter != 'all':
+        errors = errors.filter(error_type=error_type_filter)
+
+    # Get recent critical errors (500s and exceptions from last 24h)
+    critical_errors = ErrorLog.objects.filter(
+        error_type__in=['500', 'exception'],
+        created_at__gte=timezone.now() - timedelta(hours=24)
+    ).select_related('user').order_by('-created_at')[:20]
+
+    # Get error statistics
+    error_stats = ErrorLog.objects.filter(
+        created_at__gte=timezone.now() - timedelta(hours=24)
+    ).values('error_type').annotate(count=Count('id')).order_by('-count')
+
+    # Get most common error paths
+    common_paths = ErrorLog.objects.filter(
+        created_at__gte=timezone.now() - timedelta(hours=24),
+        error_type__in=['500', 'exception']
+    ).values('path').annotate(count=Count('id')).order_by('-count')[:10]
+
+    # Get all errors with current filters
+    all_errors = errors.order_by('-created_at')[:100]  # Limit to 100 most recent
+
+    context = {
+        'critical_errors': critical_errors,
+        'all_errors': all_errors,
+        'error_stats': error_stats,
+        'common_paths': common_paths,
+        'error_type_filter': error_type_filter,
+        'time_filter': time_filter,
+        'total_count': errors.count(),
+    }
+
+    return render(request, 'calendarEditor/admin/developer_errors.html', context)
+
+
+@staff_member_required
 @never_cache
 def developer_data(request):
     """

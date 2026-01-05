@@ -65,3 +65,21 @@ def get_admin_actions_count():
     total = pending_users + rush_jobs
     # print(f"[ADMIN_ACTIONS] Pending users: {pending_users}, Rush jobs: {rush_jobs}, Total: {total}")
     return total
+
+
+@register.simple_tag
+def get_critical_errors_count():
+    """Get count of critical errors (500s and exceptions) in last 24 hours"""
+    try:
+        from calendarEditor.models import ErrorLog
+        from django.utils import timezone
+        from datetime import timedelta
+
+        # Count 500 errors and exceptions from last 24 hours
+        count = ErrorLog.objects.filter(
+            error_type__in=['500', 'exception'],
+            created_at__gte=timezone.now() - timedelta(hours=24)
+        ).count()
+        return count
+    except Exception as e:
+        return 0

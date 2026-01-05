@@ -138,11 +138,12 @@ urlpatterns = [
     # Feedback system
     path('feedback/', views.submit_feedback, name='submit_feedback'),
 
-    # Developer pages (Tasks and Data)
+    # Developer pages (Tasks, Errors, and Data)
     path('developer/tasks/', admin_views.developer_tasks, name='developer_tasks'),
     path('developer/tasks/update/<int:feedback_id>/', admin_views.update_feedback_status, name='update_feedback_status'),
     path('developer/tasks/delete/<int:feedback_id>/', admin_views.delete_feedback, name='delete_feedback'),
     path('developer/tasks/clear-all-completed/', admin_views.clear_all_completed_feedback, name='clear_all_completed_feedback'),
+    path('developer/errors/', admin_views.developer_errors, name='developer_errors'),
     # Removed developer_data analytics page to reduce database reads - now using Google Analytics
     # path('developer/data/', admin_views.developer_data, name='developer_data'),
     # path('developer/data/recalculate/', admin_views.recalculate_analytics, name='recalculate_analytics'),

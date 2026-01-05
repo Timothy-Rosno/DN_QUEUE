@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Developer Errors{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>System Error Log{% if critical_errors|length > 0 %} <span style="background: #e74c3c; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.9rem;">{{ critical_errors|length }} Critical</span>{% endif %}</h1>
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary" style="margin-bottom: 1rem;">← Back to Dashboard</a>
+
+    <!-- Filters -->
+    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <div>
+            <label style="font-weight: 600; margin-bottom: 0.25rem; display: block;">Time Period:</label>
+            <select id="time-filter" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;" onchange="applyFilters()">
+                <option value="1h" {% if time_filter == '1h' %}selected{% endif %}>Last Hour</option>
+                <option value="24h" {% if time_filter == '24h' %}selected{% endif %}>Last 24 Hours</option>
+                <option value="7d" {% if time_filter == '7d' %}selected{% endif %}>Last 7 Days</option>
+                <option value="30d" {% if time_filter == '30d' %}selected{% endif %}>Last 30 Days</option>
+                <option value="all" {% if time_filter == 'all' %}selected{% endif %}>All Time</option>
+            </select>
+        </div>
+        <div>
+            <label style="font-weight: 600; margin-bottom: 0.25rem; display: block;">Error Type:</label>
+            <select id="type-filter" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;" onchange="applyFilters()">
+                <option value="all" {% if error_type_filter == 'all' %}selected{% endif %}>All Types</option>
+                <option value="500" {% if error_type_filter == '500' %}selected{% endif %}>500 - Server Error</option>
+                <option value="404" {% if error_type_filter == '404' %}selected{% endif %}>404 - Not Found</option>
+                <option value="403" {% if error_type_filter == '403' %}selected{% endif %}>403 - Forbidden</option>
+                <option value="400" {% if error_type_filter == '400' %}selected{% endif %}>400 - Bad Request</option>
+                <option value="exception" {% if error_type_filter == 'exception' %}selected{% endif %}>Unhandled Exception</option>
+            </select>
+        </div>
+        <div style="align-self: flex-end;">
+            <span style="padding: 0.5rem 1rem; background: #f8f9fa; border-radius: 4px; border: 1px solid #ddd; display: inline-block;">
+                Total: <strong>{{ total_count }}</strong> errors
+            </span>
+        </div>
+    </div>
+
+    <!-- Error Statistics -->
+    <h2 style="margin-top: 1.5rem; margin-bottom: 1rem;">Error Statistics (Last 24h)</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        {% for stat in error_stats %}
+        <div class="card" style="padding: 1rem; text-align: center; border-left: 4px solid {% if stat.error_type == '500' or stat.error_type == 'exception' %}#e74c3c{% elif stat.error_type == '404' %}#f39c12{% else %}#3498db{% endif %};">
+            <div style="font-size: 2rem; font-weight: 700; color: {% if stat.error_type == '500' or stat.error_type == 'exception' %}#e74c3c{% elif stat.error_type == '404' %}#f39c12{% else %}#3498db{% endif %};">{{ stat.count }}</div>
+            <div style="color: #7f8c8d; font-size: 0.9rem;">{{ stat.error_type|upper }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Common Error Paths -->
+    {% if common_paths %}
+    <h2 style="margin-top: 1.5rem; margin-bottom: 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;" onclick="toggleSection('common-paths')">
+        <span id="common-paths-arrow" style="transition: transform 0.2s;">▶</span>
+        Most Common Error Paths (Last 24h)
+    </h2>
+    <div id="common-paths-section" style="display: none; margin-bottom: 2rem;">
+        <div class="card" style="padding: 1rem;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #ecf0f1;">
+                        <th style="text-align: left; padding: 0.5rem;">Path</th>
+                        <th style="text-align: right; padding: 0.5rem;">Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for path_stat in common_paths %}
+                    <tr style="border-bottom: 1px solid #ecf0f1;">
+                        <td style="padding: 0.5rem; font-family: 'Courier New', monospace; font-size: 0.9rem;">{{ path_stat.path }}</td>
+                        <td style="padding: 0.5rem; text-align: right; font-weight: 700; color: #e74c3c;">{{ path_stat.count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- CRITICAL ERRORS (Always Expanded) -->
+    <h2 style="margin-top: 1.5rem; margin-bottom: 1rem;">Critical Errors (Last 24h) - {{ critical_errors|length }}</h2>
+    {% if critical_errors %}
+        {% for error in critical_errors %}
+        <div class="card" style="margin-bottom: 1rem; border-left: 4px solid #e74c3c;">
+            <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+                <div style="flex: 1; min-width: 300px;">
+                    <h3 style="margin: 0 0 0.5rem 0;">
+                        <span style="background: #e74c3c; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">{{ error.get_error_type_display }}</span>
+                        <span style="background: #7f8c8d; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">{{ error.status_code }}</span>
+                        {{ error.path }}
+                    </h3>
+                    <p style="color: #7f8c8d; margin: 0.25rem 0; font-size: 0.9rem;">
+                        {% if error.user %}By <strong>{{ error.user.username }}</strong>{% else %}Anonymous{% endif %}
+                        - {{ error.created_at|date:"M d, Y g:i A" }}
+                        - IP: {{ error.ip_address|default:"N/A" }}
+                    </p>
+
+                    {% if error.error_message %}
+                        <div style="margin-top: 0.75rem; padding: 0.75rem; background: #fff3cd; border-radius: 4px;">
+                            <strong>Error Message:</strong>
+                            <p style="margin: 0.25rem 0 0 0; font-family: 'Courier New', monospace; font-size: 0.85rem; color: #856404;">{{ error.error_message|truncatewords:50 }}</p>
+                        </div>
+                    {% endif %}
+
+                    <div style="margin-top: 0.75rem; padding: 0.5rem; background: #f8f9fa; border-radius: 4px; font-size: 0.85rem;">
+                        <strong>Method:</strong> {{ error.method }} | <strong>Session:</strong> {{ error.session_key|default:"N/A"|truncatechars:20 }}
+                    </div>
+
+                    <div style="margin-top: 1rem;">
+                        <a href="{% url 'error_detail' error.id %}" class="btn" style="background-color: #3498db; color: white; padding: 0.5rem 1rem;">View Full Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #27ae60; padding: 1rem; background: #d4edda; border-radius: 4px; font-weight: 600;">✅ No critical errors in the last 24 hours!</p>
+    {% endif %}
+
+    <!-- ALL ERRORS (Collapsible) -->
+    <h2 style="margin-top: 2rem; margin-bottom: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;" onclick="toggleSection('all-errors')">
+        <span id="all-errors-arrow" style="transition: transform 0.2s;">▶</span>
+        All Errors ({{ all_errors|length }} shown)
+    </h2>
+    <div id="all-errors-section" style="display: none;">
+        {% if all_errors %}
+            {% for error in all_errors %}
+            <div class="card" style="margin-bottom: 0.75rem; opacity: 0.9; border-left: 4px solid {% if error.error_type == '500' or error.error_type == 'exception' %}#e74c3c{% elif error.error_type == '404' %}#f39c12{% else %}#3498db{% endif %};">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="flex: 1; min-width: 250px;">
+                        <div style="font-size: 0.9rem;">
+                            <span style="background: {% if error.error_type == '500' or error.error_type == 'exception' %}#e74c3c{% elif error.error_type == '404' %}#f39c12{% else %}#3498db{% endif %}; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem;">{{ error.status_code }}</span>
+                            <code style="margin-left: 0.5rem;">{{ error.path }}</code>
+                        </div>
+                        <p style="color: #7f8c8d; margin: 0.25rem 0; font-size: 0.8rem;">
+                            {{ error.created_at|date:"M d, g:i A" }}
+                            {% if error.user %} - {{ error.user.username }}{% endif %}
+                        </p>
+                    </div>
+                    <a href="{% url 'error_detail' error.id %}" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Details</a>
+                </div>
+            </div>
+            {% endfor %}
+            {% if total_count > 100 %}
+            <p style="color: #7f8c8d; font-style: italic; text-align: center; margin-top: 1rem;">
+                Showing 100 most recent errors. Use filters to narrow results.
+            </p>
+            {% endif %}
+        {% else %}
+            <p style="color: #7f8c8d; padding: 1rem; background: #f8f9fa; border-radius: 4px;">No errors found with current filters</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function applyFilters() {
+    const timeFilter = document.getElementById('time-filter').value;
+    const typeFilter = document.getElementById('type-filter').value;
+    window.location.href = `?time=${timeFilter}&type=${typeFilter}`;
+}
+
+function toggleSection(sectionName) {
+    const section = document.getElementById(sectionName + '-section');
+    const arrow = document.getElementById(sectionName + '-arrow');
+
+    if (section.style.display === 'none') {
+        section.style.display = 'block';
+        arrow.style.transform = 'rotate(90deg)';
+    } else {
+        section.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
+    }
+}
+</script>
+{% endblock %}
