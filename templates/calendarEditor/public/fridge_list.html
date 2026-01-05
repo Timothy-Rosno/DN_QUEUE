@@ -405,64 +405,9 @@ function toggleMachine(machineId) {
 }
 
 // Temperature polling - update temperatures every 15 seconds while user is on page
-let temperaturePollingInterval = null;
-
-async function updateMachineTemperatures() {
-    try {
-        const response = await fetch('{% url "machine_status_api" %}');
-        if (!response.ok) {
-            console.error('Failed to fetch machine temperatures');
-            return;
-        }
-
-        const data = await response.json();
-
-        // Update temperature displays for each machine
-        data.machines.forEach(machine => {
-            // Update all temperature displays for this machine
-            const tempElements = document.querySelectorAll(`[data-machine-id="${machine.id}"] .machine-temp`);
-            tempElements.forEach(elem => {
-                if (machine.temperature !== null) {
-                    elem.innerHTML = `${machine.temperature.toFixed(2)} K`;
-                } else {
-                    elem.innerHTML = '<span style="color: #999;">N/A</span>';
-                }
-            });
-
-            // Update status badges if they exist
-            const statusBadges = document.querySelectorAll(`[data-machine-id="${machine.id}"] .status-badge`);
-            statusBadges.forEach(badge => {
-                // Use full display status from API (e.g., "Connected - Idle", "Disconnected - Measuring")
-                const displayStatus = machine.status || (machine.is_online ? 'Connected' : 'Disconnected');
-
-                // Convert display status to CSS class name (e.g., "Connected - Idle" -> "status-connected-idle")
-                const statusClass = 'status-' + displayStatus.toLowerCase().replace(/ /g, '');
-
-                badge.className = 'status-badge machine-status ' + statusClass;
-                badge.textContent = displayStatus;
-            });
-        });
-
-    } catch (error) {
-        console.error('Error updating machine temperatures:', error);
-    }
-}
-
-// Start polling when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    // Initial update
-    updateMachineTemperatures();
-
-    // Poll every 15 seconds
-    temperaturePollingInterval = setInterval(updateMachineTemperatures, 15000);
-});
-
-// Stop polling when user leaves page
-window.addEventListener('beforeunload', function() {
-    if (temperaturePollingInterval) {
-        clearInterval(temperaturePollingInterval);
-    }
-});
+// Machine status/temperature polling removed to reduce server load
+// Temperature updates happen server-side via background thread
+// Page shows current values on load; users can refresh for latest updates
 
 // Countdown timer functionality for running jobs
 let countdownInterval = null;

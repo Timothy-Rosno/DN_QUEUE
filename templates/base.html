@@ -845,55 +845,9 @@
         });
     </script>
 
-    <script>
-        // Update machine temperatures and status from cached values (NO page refresh)
-        function updateMachineStatus() {
-            fetch('/schedule/api/machine-status/')
-                .then(response => response.json())
-                .then(data => {
-                    data.machines.forEach(machine => {
-                        // Find all cards for this machine
-                        const cards = document.querySelectorAll(`[data-machine-id="${machine.id}"]`);
-
-                        cards.forEach(card => {
-                            // Update temperature text only
-                            const tempEl = card.querySelector('.machine-temp');
-                            if (tempEl) {
-                                if (machine.temperature !== null) {
-                                    tempEl.innerHTML = machine.temperature.toFixed(2) + ' K';
-                                } else {
-                                    tempEl.innerHTML = '<span style="color: #999;">N/A</span>';
-                                }
-                            }
-
-                            // Update status text and color only
-                            const statusEl = card.querySelector('.machine-status');
-                            if (statusEl) {
-                                statusEl.textContent = machine.status;
-                                // Remove only status color classes, keep structure classes like status-badge
-                                statusEl.classList.remove('status-online', 'status-offline', 'status-maintenance',
-                                    'status-online-measuring', 'status-online-idle',
-                                    'status-offline-measuring', 'status-offline-idle', 'status-offline-maintenance',
-                                    'status-connected-measuring', 'status-connected-idle',
-                                    'status-disconnected-measuring', 'status-disconnected-idle', 'status-disconnected-maintenance');
-                                // Ensure status-badge class is present (for styling)
-                                if (!statusEl.classList.contains('status-badge')) {
-                                    statusEl.classList.add('status-badge');
-                                }
-                                // Convert status to CSS class (e.g., "Connected - Measuring" -> "status-connected-measuring")
-                                // First replace spaces with dashes, then collapse multiple consecutive dashes into one
-                                const statusClass = 'status-' + machine.status.toLowerCase().replace(/\s+/g, '-').replace(/-+/g, '-');
-                                statusEl.classList.add(statusClass);
-                            }
-                        });
-                    });
-                })
-                .catch(error => console.error('Error updating machine status:', error));
-        }
-
-        // Update temperatures every 10 seconds (just the text values, NOT the page)
-        setInterval(updateMachineStatus, 10000);
-    </script>
+    <!-- Machine status polling removed to reduce server load -->
+    <!-- Temperature updates happen server-side via background thread -->
+    <!-- Users can refresh page to see latest status/temperatures -->
 
     <!-- Global Queue Update WebSocket -->
     <script>
