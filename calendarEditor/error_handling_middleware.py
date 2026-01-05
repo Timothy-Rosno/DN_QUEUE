@@ -2,16 +2,21 @@
 Error Handling Middleware for Calendar Editor
 
 Catches 404, 403, and 500 errors globally and redirects users to appropriate pages
-with helpful error messages.
+with helpful error messages. Also sends developer notifications for critical errors.
 """
 
 from django.http import Http404
 from django.core.exceptions import PermissionDenied, ValidationError, ObjectDoesNotExist
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.urls import resolve
 from django.db import DatabaseError, IntegrityError
+from django.contrib.auth.models import User
+from django.db.models import Q
+from django.utils import timezone
+from datetime import timedelta
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -71,57 +76,55 @@ class ErrorHandlingMiddleware:
         return self._handle_500(request, exception)
 
     def _handle_404(self, request):
-        """Handle 404 errors with context-aware redirects"""
-        # Determine what resource was being accessed based on URL path
+        """Handle 404 errors with custom error page"""
         path = request.path
-        resource_type = self._identify_resource_type(path)
 
-        # Create helpful error message
-        if resource_type:
-            messages.error(
-                request,
-                f'{resource_type} not found. It may have been deleted or you may not have access to it.'
-            )
-        else:
-            messages.error(request, 'The page you requested could not be found.')
+        # Render custom 404 page
+        response = render(request, '404.html', {
+            'request_path': path,
+        }, status=404)
 
-        # Redirect to appropriate page
-        return redirect(self._get_redirect_target(request, path))
+        return response
 
     def _handle_403(self, request):
-        """Handle permission denied errors with context-aware redirects"""
+        """Handle permission denied errors with custom error page"""
         path = request.path
-        resource_type = self._identify_resource_type(path)
 
-        # Create helpful error message
-        if resource_type:
-            messages.error(
-                request,
-                f'You do not have permission to access this {resource_type.lower()}.'
-            )
-        else:
-            messages.error(request, 'You do not have permission to access this page.')
+        # Render custom 403 page
+        response = render(request, '403.html', {
+            'request_path': path,
+        }, status=403)
 
-        # Redirect to appropriate page
-        return redirect(self._get_redirect_target(request, path))
+        return response
 
     def _handle_500(self, request, exception):
-        """Handle 500 errors with helpful error messages"""
-        # For developers/staff, show detailed error information
-        if request.user.is_authenticated and (request.user.is_staff or hasattr(request.user, 'profile') and getattr(request.user.profile, 'is_developer', False)):
-            if exception:
-                error_message = f'Developer Debug: {type(exception).__name__}: {str(exception)}'
-            else:
-                error_message = 'Developer Debug: 500 Internal Server Error (no exception details available)'
-        else:
-            # For regular users, show user-friendly message
-            error_message = self._get_error_message(exception)
+        """Handle 500 errors with custom error page and developer notifications"""
+        # Get the ErrorLog entry ID if available (created by ErrorLoggingMiddleware)
+        error_id = None
+        try:
+            from .models import ErrorLog
+            # Try to find the most recent error log for this request
+            recent_error = ErrorLog.objects.filter(
+                path=request.path,
+                error_type__in=['500', 'exception'],
+                created_at__gte=timezone.now() - timedelta(seconds=5)
+            ).order_by('-created_at').first()
 
-        # Show error message to user
-        messages.error(request, error_message)
+            if recent_error:
+                error_id = recent_error.id
+        except Exception as e:
+            logger.error(f"Failed to retrieve error log ID: {e}")
 
-        # Redirect to appropriate page (usually home)
-        return redirect(self._get_500_redirect_target(request))
+        # Send notification to developers for 500 errors
+        if error_id:
+            self._notify_developers_of_error(error_id, request, exception)
+
+        # Render custom 500 page with error ID
+        response = render(request, '500.html', {
+            'error_id': error_id,
+        }, status=500)
+
+        return response
 
     def _get_error_message(self, exception):
         """
@@ -165,6 +168,65 @@ class ErrorHandlingMiddleware:
 
         # Generic error for unknown exceptions
         return 'An unexpected error occurred. Our team has been notified. Please try again.'
+
+    def _notify_developers_of_error(self, error_id, request, exception):
+        """
+        Send notifications to developers when a 500 error occurs.
+
+        Only sends notifications if:
+        - Error is not in excluded paths (static files, admin, etc.)
+        - Error hasn't been notified about recently (avoid spam)
+        """
+        try:
+            from .notifications import create_notification
+            from .models import ErrorLog
+
+            # Skip notification for certain paths
+            excluded_paths = ['/static/', '/media/', '/admin/', '/favicon.ico']
+            if any(excluded in request.path for excluded in excluded_paths):
+                return
+
+            # Check if we've already notified about similar errors recently (last 10 minutes)
+            recent_similar = ErrorLog.objects.filter(
+                path=request.path,
+                error_type__in=['500', 'exception'],
+                created_at__gte=timezone.now() - timedelta(minutes=10)
+            ).count()
+
+            # Only notify for first occurrence in 10 minutes to avoid spam
+            if recent_similar > 1:
+                return
+
+            # Get error details
+            error_log = ErrorLog.objects.filter(id=error_id).first()
+            if not error_log:
+                return
+
+            # Get all staff/superuser developers
+            developers = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
+
+            # Build notification message
+            error_type = type(exception).__name__ if exception else 'Unknown Error'
+            error_msg = str(exception)[:100] if exception else 'No details'
+
+            title = f'500 Error: {error_type}'
+            message = f'A server error occurred on {request.path}\n\nError: {error_msg}\n\nError ID: {error_id}\n\nUser: {request.user.username if request.user.is_authenticated else "Anonymous"}'
+
+            # Send notification to each developer
+            for dev in developers:
+                try:
+                    create_notification(
+                        recipient=dev,
+                        notification_type='admin_action',
+                        title=title,
+                        message=message,
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to notify developer {dev.username}: {e}")
+
+        except Exception as e:
+            # Don't let notification errors break error handling
+            logger.error(f"Error in _notify_developers_of_error: {e}")
 
     def _get_500_redirect_target(self, request):
         """

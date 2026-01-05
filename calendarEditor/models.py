@@ -746,6 +746,37 @@ class NotificationPreference(models.Model):
 
         return prefs
 
+    def save(self, *args, **kwargs):
+        """Ensure critical admin/developer notifications are always enabled."""
+        # Force admin action notifications based on user type
+        if self.user.is_superuser:
+            # Superusers have ALL admin/developer notifications OFF
+            self.notify_admin_check_in = False
+            self.notify_admin_checkout = False
+            self.notify_admin_edit_entry = False
+            self.notify_admin_moved_entry = False
+            self.notify_machine_status_change = False
+            self.notify_admin_new_user = False
+            self.notify_admin_rush_job = False
+            self.notify_database_restored = False
+            self.notify_developer_feedback = False
+        else:
+            # Regular users have admin action notifications ON
+            self.notify_admin_check_in = True
+            self.notify_admin_checkout = True
+            self.notify_admin_edit_entry = True
+            self.notify_admin_moved_entry = True
+            self.notify_machine_status_change = True
+
+            # Force admin notifications to always be True for staff/developers (but NOT superusers)
+            if self.user.is_staff or (hasattr(self.user, 'profile') and self.user.profile.is_developer):
+                self.notify_admin_new_user = True
+                self.notify_admin_rush_job = True
+                self.notify_database_restored = True
+                self.notify_developer_feedback = True
+
+        super().save(*args, **kwargs)
+
 
 def archived_measurement_upload_path(instance, filename):
     """

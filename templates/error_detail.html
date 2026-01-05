@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+
+{% block title %}Error Details - {{ error.id }}{% endblock %}
+
+{% block content %}
+<style>
+    .error-detail-container {
+        background: white;
+        border-radius: 8px;
+        padding: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .error-header {
+        border-bottom: 3px solid #e74c3c;
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+    }
+    .error-header h1 {
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    .error-id {
+        font-family: 'Courier New', monospace;
+        color: #e74c3c;
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+    .error-section {
+        margin-bottom: 2rem;
+    }
+    .error-section h2 {
+        color: #2c3e50;
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #ecf0f1;
+    }
+    .error-info-grid {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .error-label {
+        font-weight: 600;
+        color: #555;
+    }
+    .error-value {
+        color: #333;
+        word-break: break-all;
+    }
+    .error-value code {
+        background: #f8f9fa;
+        padding: 0.2rem 0.5rem;
+        border-radius: 3px;
+        font-size: 0.9rem;
+    }
+    .stack-trace {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 1.5rem;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .badge-error { background: #e74c3c; color: white; }
+    .badge-warning { background: #f39c12; color: white; }
+    .badge-info { background: #3498db; color: white; }
+    .actions-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s;
+        display: inline-block;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+    .btn-primary:hover {
+        background: #2980b9;
+    }
+    .btn-secondary {
+        background: #95a5a6;
+        color: white;
+    }
+    .btn-secondary:hover {
+        background: #7f8c8d;
+    }
+    .btn-danger {
+        background: #e74c3c;
+        color: white;
+    }
+    .btn-danger:hover {
+        background: #c0392b;
+    }
+    .alert {
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1.5rem;
+    }
+    .alert-warning {
+        background: #fff3cd;
+        border-left: 4px solid #f39c12;
+        color: #856404;
+    }
+    .similar-errors {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-top: 1rem;
+    }
+    .similar-errors h3 {
+        font-size: 1.1rem;
+        color: #2c3e50;
+        margin-bottom: 0.75rem;
+    }
+    .similar-errors ul {
+        list-style: none;
+        padding: 0;
+    }
+    .similar-errors li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .similar-errors li:last-child {
+        border-bottom: none;
+    }
+    .similar-errors a {
+        color: #3498db;
+        text-decoration: none;
+    }
+    .similar-errors a:hover {
+        text-decoration: underline;
+    }
+    .timestamp {
+        color: #7f8c8d;
+        font-size: 0.9rem;
+    }
+    @media (max-width: 768px) {
+        .error-info-grid {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+        .error-label {
+            font-weight: 700;
+        }
+        .actions-bar {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="error-detail-container">
+    <div class="error-header">
+        <h1>Error Details</h1>
+        <p class="error-id">ID: {{ error.id }}</p>
+    </div>
+
+    <div class="actions-bar">
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+        {% if error.user %}
+        <a href="{% url 'admin_users' %}" class="btn btn-primary">View Users</a>
+        {% endif %}
+        <button onclick="if(confirm('Send error notification to developers via Slack?')) { window.location.href='{% url 'notify_error' error.id %}'; }" class="btn btn-danger">
+            Notify Developers
+        </button>
+    </div>
+
+    {% if recently_occurred %}
+    <div class="alert alert-warning">
+        <strong>Recent Error Pattern Detected!</strong> This error has occurred {{ similar_errors_count }} time(s) in the last hour.
+        There may be a systemic issue.
+    </div>
+    {% endif %}
+
+    <div class="error-section">
+        <h2>Error Information</h2>
+        <div class="error-info-grid">
+            <div class="error-label">Error Type:</div>
+            <div class="error-value">
+                <span class="badge {% if error.error_type == '500' or error.error_type == 'exception' %}badge-error{% elif error.error_type == '403' or error.error_type == '404' %}badge-warning{% else %}badge-info{% endif %}">
+                    {{ error.get_error_type_display }}
+                </span>
+            </div>
+
+            <div class="error-label">Status Code:</div>
+            <div class="error-value"><code>{{ error.status_code }}</code></div>
+
+            <div class="error-label">Occurred At:</div>
+            <div class="error-value">{{ error.created_at|date:"Y-m-d H:i:s" }}</div>
+
+            <div class="error-label">Path:</div>
+            <div class="error-value"><code>{{ error.path }}</code></div>
+
+            <div class="error-label">HTTP Method:</div>
+            <div class="error-value"><code>{{ error.method }}</code></div>
+        </div>
+    </div>
+
+    <div class="error-section">
+        <h2>Error Message</h2>
+        <div class="stack-trace">{{ error.error_message|default:"No error message provided" }}</div>
+    </div>
+
+    {% if error.stack_trace %}
+    <div class="error-section">
+        <h2>Stack Trace</h2>
+        <div class="stack-trace">{{ error.stack_trace }}</div>
+    </div>
+    {% endif %}
+
+    <div class="error-section">
+        <h2>User Information</h2>
+        <div class="error-info-grid">
+            <div class="error-label">User:</div>
+            <div class="error-value">
+                {% if error.user %}
+                {{ error.user.username }} ({{ error.user.email }})
+                {% else %}
+                Anonymous
+                {% endif %}
+            </div>
+
+            <div class="error-label">Session Key:</div>
+            <div class="error-value"><code>{{ error.session_key|default:"N/A" }}</code></div>
+
+            <div class="error-label">IP Address:</div>
+            <div class="error-value"><code>{{ error.ip_address|default:"N/A" }}</code></div>
+
+            <div class="error-label">User Agent:</div>
+            <div class="error-value" style="word-break: break-word;">{{ error.user_agent|default:"N/A" }}</div>
+        </div>
+    </div>
+
+    {% if similar_errors %}
+    <div class="error-section">
+        <div class="similar-errors">
+            <h3>Similar Recent Errors ({{ similar_errors.count }})</h3>
+            <ul>
+                {% for similar in similar_errors|slice:":10" %}
+                <li>
+                    <a href="{% url 'error_detail' similar.id %}">
+                        Error #{{ similar.id }}
+                    </a>
+                    - <span class="timestamp">{{ similar.created_at|date:"Y-m-d H:i:s" }}</span>
+                    {% if similar.user %}
+                    - User: {{ similar.user.username }}
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% if similar_errors.count > 10 %}
+            <p style="margin-top: 0.5rem; color: #7f8c8d; font-style: italic;">
+                Showing 10 of {{ similar_errors.count }} similar errors
+            </p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

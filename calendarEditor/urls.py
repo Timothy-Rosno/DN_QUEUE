@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import admin_views
+from . import error_views
 
 urlpatterns = [
     # Public pages
@@ -35,6 +36,11 @@ urlpatterns = [
 
     # Custom Admin Interface
     path('admin-dashboard/', admin_views.admin_dashboard, name='admin_dashboard'),
+
+    # Error Management (Staff Only)
+    path('errors/<int:error_id>/', error_views.error_detail, name='error_detail'),
+    path('errors/<int:error_id>/notify/', error_views.notify_error, name='notify_error'),
+
     path('admin-users/', admin_views.admin_users, name='admin_users'),
     path('admin-users/approve/<int:user_id>/', admin_views.approve_user, name='approve_user'),
     path('admin-users/reject/<int:user_id>/', admin_views.reject_user, name='reject_user'),
