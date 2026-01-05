@@ -69,17 +69,33 @@ def get_admin_actions_count():
 
 @register.simple_tag
 def get_critical_errors_count():
-    """Get count of critical errors (500s and exceptions) in last 24 hours"""
+    """
+    Get count of critical errors (500s and exceptions) in last 24 hours.
+
+    Cached for 5 minutes to reduce database load.
+    """
     try:
         from calendarEditor.models import ErrorLog
         from django.utils import timezone
         from datetime import timedelta
+        from django.core.cache import cache
 
-        # Count 500 errors and exceptions from last 24 hours
+        # Check cache first (5 minute TTL)
+        cache_key = 'critical_errors_count'
+        cached_count = cache.get(cache_key)
+
+        if cached_count is not None:
+            return cached_count
+
+        # Cache miss - query database
         count = ErrorLog.objects.filter(
             error_type__in=['500', 'exception'],
             created_at__gte=timezone.now() - timedelta(hours=24)
         ).count()
+
+        # Store in cache for 5 minutes
+        cache.set(cache_key, count, 300)
+
         return count
     except Exception as e:
         return 0
