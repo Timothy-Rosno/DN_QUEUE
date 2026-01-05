@@ -313,6 +313,7 @@ def delete_user(request, user_id):
             # Get counts of related objects before deletion
             from django.db import transaction
             from django.db.models.deletion import ProtectedError
+            from .matching_algorithm import reorder_queue
 
             with transaction.atomic():
                 # Count related objects that will be deleted
@@ -320,8 +321,25 @@ def delete_user(request, user_id):
                 archive_count = user.archived_measurements.count()
                 notification_count = user.notifications.count()
 
+                # Get affected machines before deletion (to reorder queues afterward)
+                affected_machines = set(
+                    user.queue_entries.filter(status='queued')
+                    .values_list('assigned_machine', flat=True)
+                    .distinct()
+                )
+
                 # Delete the user (CASCADE will handle related objects)
                 user.delete()
+
+                # Reorder queues for all affected machines to close gaps
+                from .models import Machine
+                for machine_id in affected_machines:
+                    if machine_id:
+                        try:
+                            machine = Machine.objects.get(id=machine_id)
+                            reorder_queue(machine, notify=True)
+                        except Machine.DoesNotExist:
+                            pass
 
             # Build informative success message
             deleted_items = []
@@ -337,7 +355,7 @@ def delete_user(request, user_id):
             else:
                 items_msg = ""
 
-            messages.success(request, f'User {username} has been deleted{items_msg}.')
+            messages.success(request, f'User {username} has been deleted{items_msg}. Queue positions reordered.')
 
         except ProtectedError as e:
             # Some related object is protected from deletion

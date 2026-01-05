@@ -10,7 +10,10 @@ class CalendareditorConfig(AppConfig):
     temperature_thread_started = False
 
     def ready(self):
-        """Called when Django starts - start background temperature updater."""
+        """Called when Django starts - import signals and start background temperature updater."""
+        # Import signal handlers (must be imported for signals to register)
+        from . import signals
+
         # Only run in the main process (not in reloader or other processes)
         if os.environ.get('RUN_MAIN') != 'true':
             return
