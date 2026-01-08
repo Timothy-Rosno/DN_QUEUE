@@ -77,8 +77,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "userRegistration.middleware.UserApprovalMiddleware",  # Custom middleware for user approval
     "calendarEditor.error_handling_middleware.ErrorHandlingMiddleware",  # Error handling with custom pages and developer notifications
-    "calendarEditor.middleware.ErrorLoggingMiddleware",  # Log all errors to database for analytics
-    "calendarEditor.middleware.CheckReminderMiddleware",  # Check for pending checkout reminders
+    # "calendarEditor.middleware.ErrorLoggingMiddleware",  # DISABLED: Removed to reduce Render usage - relying on user feedback instead
+    # "calendarEditor.middleware.CheckReminderMiddleware",  # DISABLED: GitHub Actions handles reminder checking via /api/check-reminders/
     "calendarEditor.middleware.RenderUsageMiddleware",  # Track Render usage
     # "calendarEditor.middleware.OnlineUserTrackingMiddleware",  # DISABLED: Reduces Render usage
 ]

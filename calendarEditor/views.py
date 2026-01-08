@@ -2120,6 +2120,23 @@ def notification_list_api(request):
 
 
 @login_required
+def notification_count_api(request):
+    """
+    Lightweight API endpoint returning only the count of unread notifications.
+    Much more efficient than fetching all notifications just to count them.
+    Returns: {"unread_count": N}
+    """
+    from .models import Notification
+
+    count = Notification.objects.filter(
+        recipient=request.user,
+        is_read=False
+    ).count()
+
+    return JsonResponse({'unread_count': count})
+
+
+@login_required
 @require_http_methods(["POST"])
 def notification_mark_read_api(request):
     """API endpoint to mark a notification as read."""

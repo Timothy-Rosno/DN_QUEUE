@@ -115,6 +115,7 @@ urlpatterns = [
     path('notifications/settings/', views.notification_settings, name='notification_settings'),
     path('notifications/settings/reset/', views.reset_notification_preferences, name='reset_notification_preferences'),
     path('notifications/api/list/', views.notification_list_api, name='notification_list_api'),
+    path('notifications/api/count/', views.notification_count_api, name='notification_count_api'),
     path('notifications/api/mark-read/', views.notification_mark_read_api, name='notification_mark_read_api'),
     path('notifications/api/mark-all-read/', views.notification_mark_all_read_api, name='notification_mark_all_read_api'),
     path('notifications/api/dismiss/', views.notification_dismiss_api, name='notification_dismiss_api'),

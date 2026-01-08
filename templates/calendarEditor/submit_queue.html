@@ -969,65 +969,9 @@
         // ===============================
         // WebSocket Real-Time Updates
         // ===============================
+        // Using SharedWebSocketManager from base.html instead of dedicated connection
 
-        let socket = null;
-        let reconnectAttempts = 0;
-        const maxReconnectAttempts = 5;
         const currentUserId = {{ request.user.id }};
-
-        function connectWebSocket() {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}/ws/queue-updates/`;
-
-            try {
-                socket = new WebSocket(wsUrl);
-
-                socket.onopen = function(e) {
-                    console.log('WebSocket connection established');
-                    reconnectAttempts = 0;
-                    updateConnectionStatus('connected');
-                };
-
-                socket.onmessage = function(e) {
-                    const data = JSON.parse(e.data);
-                    console.log('Received WebSocket message:', data);
-
-                    if (data.message_type === 'preset_update') {
-                        handlePresetUpdate(data);
-                    }
-                };
-
-                socket.onclose = function(e) {
-                    console.log('WebSocket connection closed');
-                    updateConnectionStatus('disconnected');
-
-                    // Attempt to reconnect with exponential backoff
-                    if (reconnectAttempts < maxReconnectAttempts) {
-                        reconnectAttempts++;
-                        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 16000);
-                        console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
-                        updateConnectionStatus('reconnecting');
-                        setTimeout(connectWebSocket, delay);
-                    } else {
-                        console.log('Max reconnection attempts reached. Real-time updates disabled.');
-                        updateConnectionStatus('offline');
-                    }
-                };
-
-                socket.onerror = function(e) {
-                    console.error('WebSocket error:', e);
-                };
-            } catch (error) {
-                console.error('Failed to create WebSocket:', error);
-                updateConnectionStatus('offline');
-            }
-        }
-
-        // Update connection status indicator - DISABLED (status not shown to users)
-        function updateConnectionStatus(status) {
-            // No-op: WebSocket still works in background, but status indicator is hidden
-            // This matches behavior of other pages (home, public queue) which also hide the indicator
-        }
 
         // Handle preset updates from WebSocket
         function handlePresetUpdate(data) {
@@ -1104,8 +1048,22 @@
             }
         }
 
-        // Initialize WebSocket connection
-        connectWebSocket();
+        // Register preset update handler with SharedWebSocketManager
+        // This page-specific handler will be called when preset_update messages arrive
+        if (window.SharedWebSocketManager) {
+            SharedWebSocketManager.registerHandler('preset_update', handlePresetUpdate);
+            console.log('[SubmitQueue] Registered preset_update handler');
+        } else {
+            console.error('[SubmitQueue] SharedWebSocketManager not available');
+        }
+
+        // Cleanup: Unregister handler when leaving the page
+        window.addEventListener('beforeunload', function() {
+            if (window.SharedWebSocketManager) {
+                SharedWebSocketManager.unregisterHandler('preset_update', handlePresetUpdate);
+                console.log('[SubmitQueue] Unregistered preset_update handler');
+            }
+        });
         // Reload the preset dropdown via AJAX
         // Reload the preset dropdown via AJAX
         // Reload the preset dropdown via AJAX
