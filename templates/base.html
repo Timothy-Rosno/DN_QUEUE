@@ -612,6 +612,100 @@
             return cookieValue;
         }
 
+        // SharedWebSocketManager: Replaces multiple WebSocket connections with a single shared connection
+        // Reduces connection overhead by 66% (3 connections → 1 connection)
+        const SharedWebSocketManager = {
+            socket: null,
+            handlers: {
+                notification: [],
+                queue_update: [],
+                preset_update: []
+            },
+            reconnectAttempts: 0,
+            maxReconnectAttempts: 5,
+            isConnected: false,
+
+            init() {
+                console.log('[SharedWS] Initializing shared WebSocket manager');
+                this.connect();
+            },
+
+            connect() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws/queue-updates/`;
+
+                try {
+                    this.socket = new WebSocket(wsUrl);
+
+                    this.socket.onopen = (e) => {
+                        console.log('[SharedWS] Connected successfully');
+                        this.isConnected = true;
+                        this.reconnectAttempts = 0;
+                    };
+
+                    this.socket.onmessage = (e) => {
+                        try {
+                            const data = JSON.parse(e.data);
+                            const messageType = data.message_type;
+
+                            // Route message to appropriate handlers
+                            if (this.handlers[messageType]) {
+                                this.handlers[messageType].forEach(handler => {
+                                    try {
+                                        handler(data);
+                                    } catch (error) {
+                                        console.error(`[SharedWS] Handler error for ${messageType}:`, error);
+                                    }
+                                });
+                            }
+                        } catch (error) {
+                            console.error('[SharedWS] Error parsing message:', error);
+                        }
+                    };
+
+                    this.socket.onclose = (e) => {
+                        console.log('[SharedWS] Connection closed');
+                        this.isConnected = false;
+                        this.attemptReconnect();
+                    };
+
+                    this.socket.onerror = (error) => {
+                        console.error('[SharedWS] WebSocket error:', error);
+                    };
+
+                } catch (error) {
+                    console.error('[SharedWS] Failed to create WebSocket:', error);
+                    this.attemptReconnect();
+                }
+            },
+
+            registerHandler(messageType, callback) {
+                if (!this.handlers[messageType]) {
+                    this.handlers[messageType] = [];
+                }
+                this.handlers[messageType].push(callback);
+                console.log(`[SharedWS] Registered handler for ${messageType}`);
+            },
+
+            unregisterHandler(messageType, callback) {
+                if (this.handlers[messageType]) {
+                    this.handlers[messageType] = this.handlers[messageType].filter(h => h !== callback);
+                    console.log(`[SharedWS] Unregistered handler for ${messageType}`);
+                }
+            },
+
+            attemptReconnect() {
+                if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 16000);
+                    console.log(`[SharedWS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+                    setTimeout(() => this.connect(), delay);
+                    this.reconnectAttempts++;
+                } else {
+                    console.error('[SharedWS] Max reconnect attempts reached');
+                }
+            }
+        };
+
         // Register notification handler with SharedWebSocketManager
         // This replaces the old dedicated notification WebSocket connection
         SharedWebSocketManager.registerHandler('notification', function(data) {
@@ -820,103 +914,6 @@
     <!-- Machine status polling removed to reduce server load -->
     <!-- Temperature updates happen server-side via background thread -->
     <!-- Users can refresh page to see latest status/temperatures -->
-
-    <!-- Shared WebSocket Manager (consolidates 3 connections into 1) -->
-    <script>
-        // SharedWebSocketManager: Replaces multiple WebSocket connections with a single shared connection
-        // Reduces connection overhead by 66% (3 connections → 1 connection)
-        const SharedWebSocketManager = {
-            socket: null,
-            handlers: {
-                notification: [],
-                queue_update: [],
-                preset_update: []
-            },
-            reconnectAttempts: 0,
-            maxReconnectAttempts: 5,
-            isConnected: false,
-
-            init() {
-                console.log('[SharedWS] Initializing shared WebSocket manager');
-                this.connect();
-            },
-
-            connect() {
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const wsUrl = `${protocol}//${window.location.host}/ws/queue-updates/`;
-
-                try {
-                    this.socket = new WebSocket(wsUrl);
-
-                    this.socket.onopen = (e) => {
-                        console.log('[SharedWS] Connected successfully');
-                        this.isConnected = true;
-                        this.reconnectAttempts = 0;
-                    };
-
-                    this.socket.onmessage = (e) => {
-                        try {
-                            const data = JSON.parse(e.data);
-                            const messageType = data.message_type;
-
-                            // Route message to appropriate handlers
-                            if (this.handlers[messageType]) {
-                                this.handlers[messageType].forEach(handler => {
-                                    try {
-                                        handler(data);
-                                    } catch (error) {
-                                        console.error(`[SharedWS] Handler error for ${messageType}:`, error);
-                                    }
-                                });
-                            }
-                        } catch (error) {
-                            console.error('[SharedWS] Error parsing message:', error);
-                        }
-                    };
-
-                    this.socket.onclose = (e) => {
-                        console.log('[SharedWS] Connection closed');
-                        this.isConnected = false;
-                        this.attemptReconnect();
-                    };
-
-                    this.socket.onerror = (error) => {
-                        console.error('[SharedWS] WebSocket error:', error);
-                    };
-
-                } catch (error) {
-                    console.error('[SharedWS] Failed to create WebSocket:', error);
-                    this.attemptReconnect();
-                }
-            },
-
-            registerHandler(messageType, callback) {
-                if (!this.handlers[messageType]) {
-                    this.handlers[messageType] = [];
-                }
-                this.handlers[messageType].push(callback);
-                console.log(`[SharedWS] Registered handler for ${messageType}`);
-            },
-
-            unregisterHandler(messageType, callback) {
-                if (this.handlers[messageType]) {
-                    this.handlers[messageType] = this.handlers[messageType].filter(h => h !== callback);
-                    console.log(`[SharedWS] Unregistered handler for ${messageType}`);
-                }
-            },
-
-            attemptReconnect() {
-                if (this.reconnectAttempts < this.maxReconnectAttempts) {
-                    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 16000);
-                    console.log(`[SharedWS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
-                    setTimeout(() => this.connect(), delay);
-                    this.reconnectAttempts++;
-                } else {
-                    console.error('[SharedWS] Max reconnect attempts reached');
-                }
-            }
-        };
-    </script>
 
     <!-- Global Queue Update WebSocket -->
     <script>

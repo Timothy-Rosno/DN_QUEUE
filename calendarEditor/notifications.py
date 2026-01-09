@@ -88,8 +88,8 @@ def lookup_slack_member_id(user):
 
 def send_slack_dm(user, title, message, notification=None):
     """
-    Send a Slack direct message to a user with a secure login link.
-    Automatically looks up and caches Slack member ID if not set.
+    Send a Slack direct message to a user with a secure login link (non-blocking).
+    Launches background thread to avoid blocking HTTP request cycle.
 
     Superusers never receive Slack notifications.
     Users can disable Slack notifications via their preferences.
@@ -101,25 +101,52 @@ def send_slack_dm(user, title, message, notification=None):
         notification: Optional Notification object (for generating secure login link)
 
     Returns:
-        bool: True if sent successfully, False otherwise
+        None (fires and forgets - errors logged in background)
     """
     if not settings.SLACK_ENABLED:
-        return False
+        return
 
     # CRITICAL: Superusers NEVER receive Slack notifications
     if user.is_superuser:
-        return False
+        return
 
+    # Basic validation before launching thread
+    if not hasattr(user, 'profile'):
+        return
+
+    # Launch in background thread - returns immediately
+    import threading
+    thread = threading.Thread(
+        target=_send_slack_dm_worker,
+        args=(user.id, title, message, notification.id if notification else None),
+        daemon=True
+    )
+    thread.start()
+    # HTTP request completes here - Slack call happens in background
+
+
+def _send_slack_dm_worker(user_id, title, message, notification_id):
+    """
+    Background worker for sending Slack DM.
+    Runs in separate thread to avoid blocking HTTP requests.
+
+    Args:
+        user_id: Django User ID
+        title: Notification title
+        message: Notification message
+        notification_id: Optional Notification ID for generating secure login link
+    """
     try:
-        # Check if user has profile
-        if not hasattr(user, 'profile'):
-            return False
+        from django.contrib.auth.models import User
+        from .models import Notification, NotificationPreference
+
+        user = User.objects.get(id=user_id)
+        notification = Notification.objects.get(id=notification_id) if notification_id else None
 
         # Check if user wants Slack notifications
-        from .models import NotificationPreference
         prefs = NotificationPreference.get_or_create_for_user(user)
         if not prefs.slack_notifications:
-            return False
+            return
 
         slack_member_id = user.profile.slack_member_id
 
@@ -133,7 +160,7 @@ def send_slack_dm(user, title, message, notification=None):
                 print(f"Cached Slack member ID for {user.username}: {slack_member_id}")
             else:
                 # Couldn't find member ID
-                return False
+                return
 
         # Format message for Slack
         slack_text = f"*{title}*\n{message}"
@@ -160,7 +187,7 @@ def send_slack_dm(user, title, message, notification=None):
             # Append link to message
             slack_text += f"\n\n<{full_url}|View Details>"
 
-        # Send message via Slack API
+        # Send message via Slack API (now in background - doesn't block HTTP request)
         response = requests.post(
             'https://slack.com/api/chat.postMessage',
             headers={
@@ -179,13 +206,9 @@ def send_slack_dm(user, title, message, notification=None):
         result = response.json()
         if not result.get('ok'):
             print(f"Slack API error: {result.get('error', 'Unknown error')}")
-            return False
-
-        return True
 
     except Exception as e:
-        print(f"Failed to send Slack DM to {user.username}: {e}")
-        return False
+        print(f"Background Slack send failed for user {user_id}: {e}")
 
 
 def create_notification(recipient, notification_type, title, message, **kwargs):
