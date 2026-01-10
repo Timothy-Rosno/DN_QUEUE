@@ -1146,6 +1146,57 @@ def approve_rush_job(request, entry_id):
         # Notify all admins on Slack
         notifications.notify_admins_rush_job_approved(entry, request.user)
 
+        # Broadcast queue update to all connected users via WebSocket
+        try:
+            channel_layer = get_channel_layer()
+
+            if old_machine and machine != old_machine:
+                # Machine changed - broadcast to BOTH machines
+                # Broadcast for old machine (entry removed)
+                async_to_sync(channel_layer.group_send)(
+                    'queue_updates',
+                    {
+                        'type': 'queue_update',
+                        'update_type': 'position_changed',
+                        'entry_id': entry.id,
+                        'user_id': entry.user.id,
+                        'machine_id': old_machine.id,
+                        'machine_name': old_machine.name,
+                        'triggering_user_id': request.user.id,
+                    }
+                )
+
+                # Broadcast for new machine (entry added/reordered)
+                async_to_sync(channel_layer.group_send)(
+                    'queue_updates',
+                    {
+                        'type': 'queue_update',
+                        'update_type': 'position_changed',
+                        'entry_id': entry.id,
+                        'user_id': entry.user.id,
+                        'machine_id': machine.id,
+                        'machine_name': machine.name,
+                        'triggering_user_id': request.user.id,
+                    }
+                )
+            else:
+                # Same machine - broadcast only once
+                async_to_sync(channel_layer.group_send)(
+                    'queue_updates',
+                    {
+                        'type': 'queue_update',
+                        'update_type': 'position_changed',
+                        'entry_id': entry.id,
+                        'user_id': entry.user.id,
+                        'machine_id': machine.id,
+                        'machine_name': machine.name,
+                        'triggering_user_id': request.user.id,
+                    }
+                )
+        except Exception as e:
+            # WebSocket broadcast failed (Redis likely not running) - continue anyway
+            print(f"WebSocket broadcast failed: {e}")
+
         messages.success(request, f'Appeal approved for "{entry.title}" - moved to position {queue_position} on {machine.name}.')
     else:
         messages.error(request, 'Invalid request method.')
@@ -2177,6 +2228,58 @@ def admin_edit_entry(request, entry_id):
 
             # Send notification to user
             notifications.notify_admin_edit_entry(edited_entry, request.user, changes_summary)
+
+            # Broadcast queue update to all connected users via WebSocket
+            try:
+                channel_layer = get_channel_layer()
+
+                if old_machine != target_machine:
+                    # Machine changed - broadcast to BOTH machines
+                    # Broadcast for old machine (entry removed)
+                    if old_machine:
+                        async_to_sync(channel_layer.group_send)(
+                            'queue_updates',
+                            {
+                                'type': 'queue_update',
+                                'update_type': 'position_changed',
+                                'entry_id': edited_entry.id,
+                                'user_id': edited_entry.user.id,
+                                'machine_id': old_machine.id,
+                                'machine_name': old_machine.name,
+                                'triggering_user_id': request.user.id,
+                            }
+                        )
+
+                    # Broadcast for new machine (entry added/reordered)
+                    async_to_sync(channel_layer.group_send)(
+                        'queue_updates',
+                        {
+                            'type': 'queue_update',
+                            'update_type': 'position_changed',
+                            'entry_id': edited_entry.id,
+                            'user_id': edited_entry.user.id,
+                            'machine_id': target_machine.id,
+                            'machine_name': target_machine.name,
+                            'triggering_user_id': request.user.id,
+                        }
+                    )
+                else:
+                    # Same machine - broadcast only once
+                    async_to_sync(channel_layer.group_send)(
+                        'queue_updates',
+                        {
+                            'type': 'queue_update',
+                            'update_type': 'position_changed',
+                            'entry_id': edited_entry.id,
+                            'user_id': edited_entry.user.id,
+                            'machine_id': target_machine.id,
+                            'machine_name': target_machine.name,
+                            'triggering_user_id': request.user.id,
+                        }
+                    )
+            except Exception as e:
+                # WebSocket broadcast failed (Redis likely not running) - continue anyway
+                print(f"WebSocket broadcast failed: {e}")
 
             messages.success(request, f'Queue entry "{edited_entry.title}" updated successfully.')
             return redirect(return_url)
