@@ -141,6 +141,14 @@ def _send_slack_dm_worker(user_id, title, message, notification_id):
         from .models import Notification, NotificationPreference
 
         user = User.objects.get(id=user_id)
+
+        # CHECK SUPERUSER STATUS BEFORE ANY OPERATIONS
+        # This prevents creating tokens, calling Slack API, etc. for admins
+        # NOTE: This should never be reached due to check in create_notification(),
+        # but kept as defensive programming in case send_slack_dm() is called directly
+        if user.is_superuser:
+            return
+
         notification = Notification.objects.get(id=notification_id) if notification_id else None
 
         # Check if user wants Slack notifications
@@ -215,6 +223,9 @@ def create_notification(recipient, notification_type, title, message, **kwargs):
     """
     Create a notification for a user and send via WebSocket and Slack.
 
+    CRITICAL: Superusers NEVER receive notifications to avoid unnecessary resource usage.
+    Returns None if recipient is a superuser.
+
     Args:
         recipient: User object who will receive the notification
         notification_type: Type of notification (from Notification.NOTIFICATION_TYPES)
@@ -223,8 +234,12 @@ def create_notification(recipient, notification_type, title, message, **kwargs):
         **kwargs: Optional related objects (related_preset, related_queue_entry, related_machine, triggering_user)
 
     Returns:
-        Notification object
+        Notification object or None (if recipient is superuser)
     """
+    # FILTER OUT SUPERUSERS IMMEDIATELY - Prevents database writes, WebSocket broadcasts, and Slack API calls
+    if recipient.is_superuser:
+        return None
+
     # print(f"[CREATE_NOTIFICATION] Creating notification for {recipient.username}, type={notification_type}")
 
     try:
@@ -1006,11 +1021,12 @@ def notify_admins_rush_job(queue_entry):
     for admin in admin_users:
         prefs = NotificationPreference.get_or_create_for_user(admin)
         if prefs.notify_admin_rush_job and prefs.in_app_notifications:
+            machine_info = f" on {queue_entry.assigned_machine.name}" if queue_entry.assigned_machine else " (no machine assigned)"
             create_notification(
                 recipient=admin,
                 notification_type='admin_rush_job',
                 title='Queue Appeal Submitted',
-                message=f'{queue_entry.user.username} submitted a queue appeal request for "{queue_entry.title}" on {queue_entry.assigned_machine.name}. Review needed.',
+                message=f'{queue_entry.user.username} submitted a queue appeal request for "{queue_entry.title}"{machine_info}. Review needed.',
                 related_queue_entry=queue_entry,
                 related_machine=queue_entry.assigned_machine,
                 triggering_user=queue_entry.user,
