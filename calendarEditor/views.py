@@ -552,6 +552,7 @@ def cancel_queue_entry(request, pk):
                     'entry_id': queue_entry.id,
                     'user_id': queue_entry.user.id,
                     'machine_id': machine.id if machine else None,
+                    'machine_name': machine_name,
                     'triggering_user_id': request.user.id,
                 }
             )
@@ -564,6 +565,8 @@ def cancel_queue_entry(request, pk):
         next_page = request.GET.get('next', 'my_queue')
         if next_page == 'public_queue':
             return redirect('public_queue')
+        elif next_page == 'check_in_check_out':
+            return redirect('check_in_check_out')
         return redirect('my_queue')
 
     return render(request, 'calendarEditor/cancel_queue.html', {
