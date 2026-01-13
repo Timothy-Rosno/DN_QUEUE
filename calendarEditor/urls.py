@@ -34,7 +34,7 @@ urlpatterns = [
     path('preset/<int:preset_id>/follow/', views.follow_preset, name='follow_preset'),
     path('preset/<int:preset_id>/unfollow/', views.unfollow_preset, name='unfollow_preset'),
 
-    # Custom Admin Interface
+    # Custom Admin Interface 
     path('admin-dashboard/', admin_views.admin_dashboard, name='admin_dashboard'),
 
     # Error Management (Staff Only)
