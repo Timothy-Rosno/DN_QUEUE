@@ -993,8 +993,9 @@ def notify_admins_new_user(new_user):
     Args:
         new_user: The User object that was just created
     """
-    # Get all staff/admin users
-    admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
+    # Get all staff/admin users (excluding superusers at query level for efficiency)
+    # Note: create_notification() filters superusers, but excluding here avoids wasted iterations
+    admin_users = User.objects.filter(is_staff=True).exclude(is_superuser=True)
 
     for admin in admin_users:
         prefs = NotificationPreference.get_or_create_for_user(admin)
@@ -1015,8 +1016,9 @@ def notify_admins_rush_job(queue_entry):
     Args:
         queue_entry: The QueueEntry that was marked as queue appeal
     """
-    # Get all staff/admin users
-    admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
+    # Get all staff/admin users (excluding superusers at query level for efficiency)
+    # Note: create_notification() filters superusers, but excluding here avoids wasted iterations
+    admin_users = User.objects.filter(is_staff=True).exclude(is_superuser=True)
 
     for admin in admin_users:
         prefs = NotificationPreference.get_or_create_for_user(admin)
@@ -1042,8 +1044,9 @@ def notify_admins_rush_job_deleted(queue_entry_title, machine_name, deleting_use
         machine_name: Name of the machine the job was for
         deleting_user: User who deleted the queue appeal
     """
-    # Get all staff/admin users
-    admin_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
+    # Get all staff/admin users (excluding superusers at query level for efficiency)
+    # Note: create_notification() filters superusers, but excluding here avoids wasted iterations
+    admin_users = User.objects.filter(is_staff=True).exclude(is_superuser=True)
 
     for admin in admin_users:
         prefs = NotificationPreference.get_or_create_for_user(admin)

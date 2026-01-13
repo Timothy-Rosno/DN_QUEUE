@@ -59,6 +59,7 @@ def home(request):
         running_job = next((e for e in machine.prefetched_entries if e.status == 'running'), None)
         on_deck_job = next((e for e in machine.prefetched_entries if e.status == 'queued' and e.queue_position == 1), None)
         queue_count = sum(1 for e in machine.prefetched_entries if e.status == 'queued')
+        running_entries = [e for e in machine.prefetched_entries if e.status == 'running']
 
         machine_status_data.append({
             'machine': machine,
@@ -66,7 +67,7 @@ def home(request):
             'on_deck_job': on_deck_job,
             'queue_count': queue_count,
             'live_temp': machine.get_live_temperature(),
-            'display_status': machine.get_display_status(),
+            'display_status': machine.get_display_status(prefetch_running=running_entries),
         })
 
     # Build filtered machine data (data is already prefetched on cached objects)
@@ -79,12 +80,13 @@ def home(request):
         if wait_time.total_seconds() > 0:
             estimated_available_time = timezone.now() + wait_time
 
+        running_entries = [e for e in machine.prefetched_entries if e.status == 'running']
         data = {
             'machine': machine,
             'wait_time': wait_time,
             'estimated_available_time': estimated_available_time,
             'live_temp': machine.get_live_temperature(),
-            'display_status': machine.get_display_status(),
+            'display_status': machine.get_display_status(prefetch_running=running_entries),
         }
 
         # Only fetch queue details if user is logged in
@@ -177,6 +179,7 @@ def public_queue(request):
         running_job = next((e for e in machine.prefetched_entries if e.status == 'running'), None)
         on_deck_job = next((e for e in machine.prefetched_entries if e.status == 'queued' and e.queue_position == 1), None)
         queue_count = sum(1 for e in machine.prefetched_entries if e.status == 'queued')
+        running_entries = [e for e in machine.prefetched_entries if e.status == 'running']
 
         machine_status_data.append({
             'machine': machine,
@@ -184,7 +187,7 @@ def public_queue(request):
             'on_deck_job': on_deck_job,
             'queue_count': queue_count,
             'live_temp': machine.get_live_temperature(),
-            'display_status': machine.get_display_status(),
+            'display_status': machine.get_display_status(prefetch_running=running_entries),
         })
 
     # Build queue data for filtered machines (show ALL queue entries, not just top 3)
@@ -193,6 +196,7 @@ def public_queue(request):
         # Use prefetched data (already on cached objects)
         queued_entries = [e for e in machine.prefetched_entries if e.status == 'queued']
         running_entry = next((e for e in machine.prefetched_entries if e.status == 'running'), None)
+        running_entries = [e for e in machine.prefetched_entries if e.status == 'running']
 
         # Calculate wait time
         wait_time = machine.get_estimated_wait_time()
@@ -208,7 +212,7 @@ def public_queue(request):
             'wait_time': wait_time,
             'estimated_available_time': estimated_available_time,
             'live_temp': machine.get_live_temperature(),
-            'display_status': machine.get_display_status(),
+            'display_status': machine.get_display_status(prefetch_running=running_entries),
         })
 
     context = {
@@ -396,9 +400,10 @@ def _get_presets_for_user(user):
 @login_required
 def my_queue(request):
     """Show user's queue entries."""
-    queued = QueueEntry.objects.filter(user=request.user, status='queued').order_by('assigned_machine', 'queue_position')
-    running = QueueEntry.objects.filter(user=request.user, status='running')
-    completed = QueueEntry.objects.filter(user=request.user, status='completed').order_by('-completed_at')[:10]
+    # OPTIMIZED: Added select_related to prevent N+1 queries when accessing assigned_machine
+    queued = QueueEntry.objects.filter(user=request.user, status='queued').select_related('assigned_machine').order_by('assigned_machine', 'queue_position')
+    running = QueueEntry.objects.filter(user=request.user, status='running').select_related('assigned_machine')
+    completed = QueueEntry.objects.filter(user=request.user, status='completed').select_related('assigned_machine').order_by('-completed_at')[:10]
 
     # Check which machines have running jobs and annotate entries
     machines_with_running_jobs = {}
@@ -2574,7 +2579,13 @@ def machine_status_api(request):
     script running on the university network. This endpoint no longer tries to
     read from machines directly since Render cannot reach local IPs.
     """
-    machines = Machine.objects.all().order_by('name')
+    # OPTIMIZED: Prefetch running entries to avoid N+1 queries in get_display_status()
+    from django.db.models import Prefetch
+    machines = Machine.objects.prefetch_related(
+        Prefetch('queue_entries',
+                 queryset=QueueEntry.objects.filter(status='running'),
+                 to_attr='running_entries_cache')
+    ).order_by('name')
 
     data = []
     for machine in machines:
@@ -2585,7 +2596,7 @@ def machine_status_api(request):
             'id': machine.id,
             'name': machine.name,
             'temperature': machine.get_live_temperature(),
-            'status': machine.get_display_status(),
+            'status': machine.get_display_status(prefetch_running=machine.running_entries_cache),
             'is_online': machine.is_online(),
             'last_update': machine.last_temp_update.isoformat() if machine.last_temp_update else None,
         })
@@ -2790,6 +2801,103 @@ def export_my_measurements(request):
         ])
 
     return response
+
+
+@login_required
+def check_in_out_data_json(request):
+    """
+    Lightweight JSON endpoint for check-in/check-out page DOM updates.
+    Returns minimal data needed to update the page without full reload.
+    OPTIMIZED: Prevents 50KB+ HTML downloads on every queue update.
+    """
+    # Get user's entries organized by status
+    ready_to_check_out = QueueEntry.objects.filter(
+        user=request.user,
+        status='running',
+        assigned_machine__current_status__in=['idle', 'cooldown']
+    ).select_related('assigned_machine').order_by('started_at')
+
+    currently_running = QueueEntry.objects.filter(
+        user=request.user,
+        status='running'
+    ).exclude(
+        assigned_machine__current_status__in=['idle', 'cooldown']
+    ).select_related('assigned_machine').order_by('started_at')
+
+    ready_to_check_in = QueueEntry.objects.filter(
+        user=request.user,
+        status='queued',
+        queue_position=1,
+        assigned_machine__current_status='idle'
+    ).select_related('assigned_machine')
+
+    waiting_entries = QueueEntry.objects.filter(
+        user=request.user,
+        status='queued',
+        queue_position=1
+    ).exclude(
+        assigned_machine__current_status='idle'
+    ).select_related('assigned_machine')
+
+    # Serialize to minimal JSON (only essential fields)
+    def serialize_entry(entry):
+        return {
+            'id': entry.id,
+            'title': entry.title[:80],
+            'description': entry.description[:150] if entry.description else '',
+            'machine_name': entry.assigned_machine.name if entry.assigned_machine else 'No machine',
+            'machine_status': entry.assigned_machine.current_status if entry.assigned_machine else 'unknown',
+            'machine_available': entry.assigned_machine.is_available if entry.assigned_machine else False,
+            'estimated_duration': entry.estimated_duration_hours,
+            'started_at': entry.started_at.isoformat() if entry.started_at else None,
+        }
+
+    return JsonResponse({
+        'ready_to_check_out': [serialize_entry(e) for e in ready_to_check_out],
+        'currently_running': [serialize_entry(e) for e in currently_running],
+        'ready_to_check_in': [serialize_entry(e) for e in ready_to_check_in],
+        'waiting_entries': [serialize_entry(e) for e in waiting_entries],
+    })
+
+
+@login_required
+def my_queue_data_json(request):
+    """
+    Lightweight JSON endpoint for my_queue page DOM updates.
+    Returns minimal data needed to update the page without full reload.
+    OPTIMIZED: Prevents 50KB+ HTML downloads on every queue update.
+    """
+    queued = QueueEntry.objects.filter(
+        user=request.user, status='queued'
+    ).select_related('assigned_machine').order_by('assigned_machine', 'queue_position')
+
+    running = QueueEntry.objects.filter(
+        user=request.user, status='running'
+    ).select_related('assigned_machine')
+
+    completed = QueueEntry.objects.filter(
+        user=request.user, status='completed'
+    ).select_related('assigned_machine').order_by('-completed_at')[:10]
+
+    # Serialize entries
+    def serialize_entry(entry):
+        return {
+            'id': entry.id,
+            'title': entry.title[:80],
+            'machine_name': entry.assigned_machine.name if entry.assigned_machine else 'Unassigned',
+            'machine_id': entry.assigned_machine.id if entry.assigned_machine else None,
+            'queue_position': entry.queue_position,
+            'status': entry.status,
+            'estimated_duration': entry.estimated_duration_hours,
+            'started_at': entry.started_at.isoformat() if entry.started_at else None,
+            'completed_at': entry.completed_at.isoformat() if entry.completed_at else None,
+        }
+
+    return JsonResponse({
+        'queued': [serialize_entry(e) for e in queued],
+        'running': [serialize_entry(e) for e in running],
+        'completed': [serialize_entry(e) for e in completed],
+    })
 
 
 def health_check(request):

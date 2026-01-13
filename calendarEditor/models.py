@@ -222,18 +222,27 @@ class Machine(models.Model):
 
         return self.cached_online
 
-    def get_display_status(self):
+    def get_display_status(self, prefetch_running=None):
         """
         Get the display status for the machine.
         Returns status like: 'Connected - Measuring', 'Connected - Idle', 'Disconnected - Measuring',
         'Disconnected - Idle', or 'Disconnected - Maintenance'
+
+        Args:
+            prefetch_running: Optional list/queryset of running entries. If provided, avoids DB query.
+                             Use this when calling in loops with prefetched data for optimization.
         """
         # If admin has marked as unavailable, it's in maintenance
         if not self.is_available:
             return 'Disconnected - Maintenance'
 
-        # Check if machine is measuring (has a running job)
-        is_measuring = self.queue_entries.filter(status='running').exists()
+        # OPTIMIZED: Check if machine is measuring using prefetched data if available
+        if prefetch_running is not None:
+            # Use prefetched data (no query!)
+            is_measuring = len(prefetch_running) > 0
+        else:
+            # Fallback to query (when not called from optimized code path)
+            is_measuring = self.queue_entries.filter(status='running').exists()
 
         # Determine connected/disconnected status
         connection_status = 'Connected' if self.is_online() else 'Disconnected'

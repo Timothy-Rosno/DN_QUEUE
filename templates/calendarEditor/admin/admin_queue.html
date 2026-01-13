@@ -402,9 +402,18 @@ document.addEventListener('DOMContentLoaded', function() {
 // Auto-Reload on Queue Updates
 // ========================================
 
-// Listen for global queue updates and reload page (preserving scroll position)
+// OPTIMIZED: Reload on updates, but skip if current admin triggered it (they already see the change)
 window.addEventListener('queueUpdate', function(e) {
-    console.log('Admin queue page: received queue update, reloading...');
+    const data = e.detail;
+
+    // Skip reload if current admin just triggered this update (avoids double-reload)
+    if (data.triggering_user_id && Number(data.triggering_user_id) === Number(globalCurrentUserId)) {
+        console.log('Admin queue: Current admin triggered, skip reload');
+        return;
+    }
+
+    // Other user's update - reload to show changes (preserve scroll position)
+    console.log('Admin queue: Update from other user, reloading...');
     sessionStorage.setItem('adminQueueScrollPosition', window.scrollY);
     location.reload();
 });

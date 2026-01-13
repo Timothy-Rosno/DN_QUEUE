@@ -518,9 +518,18 @@
     setInterval(updateCountdowns, 1000);
     updateCountdowns(); // Initial update
 
-    // Listen for global queue updates and reload page
+    // OPTIMIZED: Reload on updates, but skip if current user triggered it (they already see the change)
     window.addEventListener('queueUpdate', function(e) {
-        console.log('Home page: received queue update, reloading...');
+        const data = e.detail;
+
+        // Skip reload if current user just triggered this update (avoids double-reload)
+        if (data.triggering_user_id && Number(data.triggering_user_id) === Number(globalCurrentUserId)) {
+            console.log('Home page: Current user triggered, skip reload');
+            return;
+        }
+
+        // Other user's update - reload to show changes
+        console.log('Home page: Update from other user, reloading...');
         location.reload();
     });
 

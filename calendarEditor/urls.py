@@ -124,6 +124,10 @@ urlpatterns = [
     # Machine status API
     path('api/machine-status/', views.machine_status_api, name='machine_status_api'),
 
+    # Lightweight JSON endpoints for DOM updates (prevents full page reloads)
+    path('api/check-in-out-data/', views.check_in_out_data_json, name='check_in_out_data_json'),
+    path('api/my-queue-data/', views.my_queue_data_json, name='my_queue_data_json'),
+
     # Reminder check API (for GitHub Actions cron)
     path('api/check-reminders/', views.api_check_reminders, name='api_check_reminders'),
 

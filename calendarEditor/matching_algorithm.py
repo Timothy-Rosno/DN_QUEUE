@@ -446,7 +446,8 @@ def reorder_queue(machine, notify=True):
 
     # Notify users of position changes (unless notify=False)
     if notify:
-        # Notify users who moved up in the queue (but not position 1, handled separately)
+        # OPTIMIZED: Notify users of position changes (individual notifications are needed)
+        # But send a single WebSocket broadcast about queue reorder rather than per-entry
         for entry, old_pos, new_pos in position_changes:
             if new_pos != 1:  # Position 1 is handled by check_and_notify_on_deck_status
                 try:
@@ -456,6 +457,25 @@ def reorder_queue(machine, notify=True):
                     print(f"[REORDER_QUEUE] Position change notification failed: {e}")
                     import traceback
                     traceback.print_exc()
+
+        # Send single batched WebSocket broadcast for queue reorder (instead of per-entry)
+        if position_changes:
+            try:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    'queue_updates',
+                    {
+                        'type': 'queue_update',
+                        'update_type': 'positions_reordered',
+                        'machine_id': machine.id,
+                        'machine_name': machine.name,
+                        'count': len(position_changes),
+                    }
+                )
+            except Exception as e:
+                print(f"[REORDER_QUEUE] Batch broadcast failed: {e}")
 
         # Only notify position 1 if it actually changed (new user at position 1)
         # This prevents notifying position 1 when someone behind them is deleted
