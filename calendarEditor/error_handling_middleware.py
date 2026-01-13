@@ -98,28 +98,15 @@ class ErrorHandlingMiddleware:
         return response
 
     def _handle_500(self, request, exception):
-        """Handle 500 errors with custom error page and developer notifications"""
-        # Get the ErrorLog entry ID if available (created by ErrorLoggingMiddleware)
+        """Handle 500 errors with custom error page (NO database queries to save usage)"""
+        # DISABLED: ErrorLog queries to avoid usage on free tier
+        # Users will submit bug reports via feedback instead
         error_id = None
-        try:
-            from .models import ErrorLog
-            # Try to find the most recent error log for this request
-            recent_error = ErrorLog.objects.filter(
-                path=request.path,
-                error_type__in=['500', 'exception'],
-                created_at__gte=timezone.now() - timedelta(seconds=5)
-            ).order_by('-created_at').first()
 
-            if recent_error:
-                error_id = recent_error.id
-        except Exception as e:
-            logger.error(f"Failed to retrieve error log ID: {e}")
+        # DISABLED: Developer notifications to avoid database writes
+        # Notifications via feedback submissions only
 
-        # Send notification to developers for 500 errors
-        if error_id:
-            self._notify_developers_of_error(error_id, request, exception)
-
-        # Render custom 500 page with error ID
+        # Render custom 500 page (no error ID tracking)
         response = render(request, '500.html', {
             'error_id': error_id,
         }, status=500)

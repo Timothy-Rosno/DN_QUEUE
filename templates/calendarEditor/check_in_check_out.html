@@ -55,6 +55,7 @@
                     <button type="button" class="btn btn-warning btn-lg undo-check-in-btn" style="width: 150px;" data-entry-id="{{ entry.id }}" data-entry-title="{{ entry.title }}">Undo Check-In</button>
                     {% endif %}
                 </form>
+                <a href="{% url 'cancel_queue' entry.id %}?next=check_in_check_out" class="btn btn-danger" style="width: 150px; text-align: center;">Cancel Entry</a>
             </div>
         </div>
     </div>
@@ -91,6 +92,7 @@
                     <button type="button" class="btn btn-warning btn-lg undo-check-in-btn" style="width: 150px;" data-entry-id="{{ entry.id }}" data-entry-title="{{ entry.title }}">Undo Check-In</button>
                     {% endif %}
                 </form>
+                <a href="{% url 'cancel_queue' entry.id %}?next=check_in_check_out" class="btn btn-danger" style="width: 150px; text-align: center;">Cancel Entry</a>
                 <p style="color: #7f8c8d; font-size: 0.9rem; margin: 0;">
                     Still running… check out if ready
                 </p>
@@ -117,15 +119,16 @@
                 <p style="word-wrap: break-word; overflow-wrap: break-word;"><strong>Description:</strong> {{ entry.description|truncatewords:30 }}</p>
                 {% endif %}
             </div>
-            <div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
                 <form method="post" action="{% url 'check_in_job' entry.id %}" data-protect data-loading-text="Checking in..." data-save-scroll="true">
                     {% csrf_token %}
                     {% if not entry.assigned_machine.is_available %}
-                    <button type="button" class="btn btn-secondary btn-lg" style="cursor: not-allowed;" disabled title="Machine is unavailable. Please contact an administrator.">Check In Now</button>
+                    <button type="button" class="btn btn-secondary btn-lg" style="width: 150px; cursor: not-allowed;" disabled title="Machine is unavailable. Please contact an administrator.">Check In Now</button>
                     {% else %}
-                    <button type="submit" class="btn btn-success btn-lg">Check In Now</button>
+                    <button type="submit" class="btn btn-success btn-lg" style="width: 150px;">Check In Now</button>
                     {% endif %}
                 </form>
+                <a href="{% url 'cancel_queue' entry.id %}?next=check_in_check_out" class="btn btn-danger" style="width: 150px; text-align: center;">Cancel Entry</a>
             </div>
         </div>
     </div>
@@ -153,13 +156,14 @@
                 <p style="word-wrap: break-word; overflow-wrap: break-word;"><strong>Description:</strong> {{ entry.description|truncatewords:30 }}</p>
                 {% endif %}
             </div>
-            <div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
                 {% if entry.assigned_machine.current_status == 'cooldown' %}
-                <p style="color: #f39c12; font-weight: bold;">Machine cooling down...</p>
-                <p style="color: #7f8c8d; font-size: 0.9rem;">Check back soon</p>
+                <p style="color: #f39c12; font-weight: bold; margin: 0;">Machine cooling down...</p>
+                <p style="color: #7f8c8d; font-size: 0.9rem; margin: 0;">Check back soon</p>
                 {% else %}
-                <p style="color: #7f8c8d; font-weight: bold;">Waiting for machine...</p>
+                <p style="color: #7f8c8d; font-weight: bold; margin: 0;">Waiting for machine...</p>
                 {% endif %}
+                <a href="{% url 'cancel_queue' entry.id %}?next=check_in_check_out" class="btn btn-danger" style="width: 150px; text-align: center; margin-top: 0.5rem;">Cancel Entry</a>
             </div>
         </div>
     </div>

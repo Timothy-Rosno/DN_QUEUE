@@ -224,8 +224,13 @@
 
             feedbackTypeSelect.addEventListener('change', updateFieldVisibility);
 
-            // Initialize on page load
+            // Initialize on page load (triggers visibility update for pre-selected values)
             updateFieldVisibility();
+
+            // Trigger change event if value is pre-selected (from URL parameter)
+            if (feedbackTypeSelect.value) {
+                feedbackTypeSelect.dispatchEvent(new Event('change'));
+            }
 
             // Form validation
             const form = document.getElementById('feedbackForm');

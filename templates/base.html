@@ -452,7 +452,9 @@
                     <li style="position: relative;">
                         <a href="{% url 'check_in_check_out' %}">Check-In/Check-Out</a>
                         {% if check_in_out_count > 0 %}
-                        <span class="notification-badge">{{ check_in_out_count }}</span>
+                        <span class="notification-badge" id="checkInOutBadge">{{ check_in_out_count }}</span>
+                        {% else %}
+                        <span class="notification-badge" id="checkInOutBadge" style="display: none;"></span>
                         {% endif %}
                     </li>
                     <li><a href="{% url 'archive_list' %}">Archive</a></li>
@@ -593,6 +595,27 @@
                 }
             } catch (error) {
                 console.error('Error updating badge:', error);
+            }
+        }
+
+        // Update check-in/check-out badge count
+        async function updateCheckInOutBadge() {
+            try {
+                // Fetch updated count from lightweight JSON endpoint
+                const response = await fetch('/schedule/api/check-in-out-data/');
+                const data = await response.json();
+                const badge = document.getElementById('checkInOutBadge');
+
+                const count = (data.ready_to_check_in?.length || 0) + (data.ready_to_check_out?.length || 0);
+
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error updating check-in/out badge:', error);
             }
         }
 
@@ -930,6 +953,11 @@
                                    Number(data.triggering_user_id) === Number(globalCurrentUserId);
             if (!isSelfTriggered) {
                 sessionStorage.setItem('queueUpdateInfo', JSON.stringify(data));
+            }
+
+            // Update check-in/check-out badge if this update affects current user
+            if (globalCurrentUserId && data.user_id && Number(data.user_id) === Number(globalCurrentUserId)) {
+                updateCheckInOutBadge();
             }
 
             // Dispatch custom event for pages that want to auto-reload

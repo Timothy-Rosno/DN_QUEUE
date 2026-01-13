@@ -2999,7 +2999,12 @@ def submit_feedback(request):
             messages.success(request, 'Thank you for your feedback!')
             return redirect('home')
     else:
-        form = FeedbackForm()
+        # Pre-select feedback type from query parameter (e.g., ?type=bug from error page)
+        feedback_type = request.GET.get('type', '')
+        if feedback_type in ['bug', 'feature', 'opinion']:
+            form = FeedbackForm(initial={'feedback_type': feedback_type})
+        else:
+            form = FeedbackForm()
 
     return render(request, 'calendarEditor/feedback/submit_feedback.html', {
         'form': form
