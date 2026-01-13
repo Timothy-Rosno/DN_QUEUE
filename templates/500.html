@@ -190,7 +190,7 @@
 
         {% else %}
         <p class="error-message">
-            Oops! Something went wrong on our end. We've been notified and are working to fix it.
+            Oops! Something went wrong on our end. Please help us fix it by submitting a bug report below.
         </p>
 
         <div class="info-box">
@@ -200,8 +200,13 @@
             <p>
                 • Try refreshing the page<br>
                 • Go back and try again<br>
-                • If the problem persists, contact support
+                • If the problem persists, please submit a bug report via Feedback
             </p>
+        </div>
+
+        <div class="developer-note">
+            <strong>Help us fix this!</strong>
+            <p>Please submit a bug report with details about what you were doing when this error occurred. This helps us improve the system for everyone.</p>
         </div>
 
         {% if error_id %}
@@ -214,6 +219,7 @@
 
         <div class="actions">
             {% if user.is_authenticated %}
+                <a href="{% url 'submit_feedback' %}" class="btn btn-debug">Submit Bug Report</a>
                 <a href="{% url 'my_queue' %}" class="btn btn-primary">Go to My Queue</a>
                 <a href="{% url 'home' %}" class="btn btn-secondary">Go to Home</a>
             {% else %}

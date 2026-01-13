@@ -925,8 +925,12 @@
         SharedWebSocketManager.registerHandler('queue_update', function(data) {
             console.log('Global received queue update:', data);
 
-            // Store update info for banner display
-            sessionStorage.setItem('queueUpdateInfo', JSON.stringify(data));
+            // ONLY store update info if NOT self-triggered (prevents banner on next page for own actions)
+            const isSelfTriggered = globalCurrentUserId && data.triggering_user_id &&
+                                   Number(data.triggering_user_id) === Number(globalCurrentUserId);
+            if (!isSelfTriggered) {
+                sessionStorage.setItem('queueUpdateInfo', JSON.stringify(data));
+            }
 
             // Dispatch custom event for pages that want to auto-reload
             const event = new CustomEvent('queueUpdate', { detail: data });
@@ -937,9 +941,10 @@
         });
 
         function showGlobalUpdateBanner(data) {
-            // Don't show banner if user is logged out or if current user triggered the update
-            if (!globalCurrentUserId ||
-                (data.triggering_user_id && Number(data.triggering_user_id) === Number(globalCurrentUserId))) {
+            // Don't show banner if current user triggered the update (even for logged-out users)
+            const isSelfTriggered = globalCurrentUserId && data.triggering_user_id &&
+                                   Number(data.triggering_user_id) === Number(globalCurrentUserId);
+            if (isSelfTriggered) {
                 return;
             }
 

@@ -952,8 +952,9 @@ def admin_queue(request):
             'display_status': machine.get_display_status(prefetch_running=machine.running_entries),
         })
 
-        # Build lookup dict for machines with running jobs
-        machines_with_running_jobs[machine.id] = bool(machine.running_entries)
+        # Build lookup dict for machines with running jobs (only include if has running jobs)
+        if machine.running_entries:
+            machines_with_running_jobs[machine.id] = True
 
     # Organize entries by machine (including machines with no entries)
     machine_queue_data = []
