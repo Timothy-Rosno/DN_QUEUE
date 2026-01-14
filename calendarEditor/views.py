@@ -1453,6 +1453,7 @@ def load_preset_ajax(request, preset_id):
         data = {
             'title': preset.title,
             'description': preset.description,
+            'requested_measurement_days': preset.requested_measurement_days,
             'required_min_temp': preset.required_min_temp,
             'required_max_temp': preset.required_max_temp,
             'required_b_field_x': preset.required_b_field_x,

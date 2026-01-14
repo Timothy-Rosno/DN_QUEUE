@@ -326,6 +326,16 @@ class QueuePresetForm(forms.ModelForm):
             label='B-field Z (Tesla) (optional)'
         )
 
+        # Override requested_measurement_days to add validation
+        self.fields['requested_measurement_days'] = forms.IntegerField(
+            required=False,
+            initial=2,
+            validators=[MinValueValidator(1), MaxValueValidator(7)],
+            widget=forms.NumberInput(attrs={'min': '1', 'max': '7', 'step': '1'}),
+            label='Requested Measurement Time on Machine (days) (optional)',
+            help_text='Requested time on machine for measurements (1-7 days)'
+        )
+
     class Meta:
         model = QueuePreset
         fields = ('name', 'is_public', 'title', 'description', 'requested_measurement_days',
@@ -338,7 +348,6 @@ class QueuePresetForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={'maxlength': '500', 'class': 'char-counter-input'}),
             'description': forms.Textarea(attrs={'rows': 3, 'maxlength': '500', 'class': 'char-counter-input'}),
-            'requested_measurement_days': forms.NumberInput(attrs={'min': '1', 'max': '7', 'step': '1'}),
         }
         labels = {
             'name': 'Preset Name',
