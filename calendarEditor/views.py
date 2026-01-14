@@ -251,8 +251,10 @@ def submit_queue_entry(request):
                     # User selected a specific optical machine - use it directly
                     try:
                         best_machine = Machine.objects.get(id=selected_machine_id)
-                        # Create a simple details dict for consistency with normal flow
+                        # Create a details dict for consistency with normal flow
                         details = {
+                            'field_compatible': [best_machine.name],  # Only the selected machine
+                            'rejected_reasons': [],  # No rejections for manually selected machine
                             'availability_times': {
                                 best_machine.name: {
                                     'wait_time': best_machine.get_estimated_wait_time()
