@@ -1747,29 +1747,3 @@
 </style>
 
 {% endblock %}
-
-<!--
-</div>
-<div class="card">
-    <h2>Available Machines</h2>
-    <p style="margin-bottom: 1rem;">The following machines are available. Your request will be matched to the most suitable one:</p>
-    
-    {% for machine in machines %}
-    <div style="border: 1px solid #ddd; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
-        <h3>{{ machine.name }} <span style="color: #7f8c8d; font-size: 0.9rem;">({{ machine.location }})</span></h3>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-top: 0.75rem;">
-            <div><strong>Temperature:</strong> {{ machine.min_temp }} K - {{ machine.max_temp }} K</div>
-            <div><strong>Cooldown:</strong> {{ machine.cooldown_hours }} hours</div>
-            <div><strong>B-field (X/Y/Z):</strong> {{ machine.b_field_x }}/{{ machine.b_field_y }}/{{ machine.b_field_z }} T</div>
-            <div><strong>B-field Direction:</strong> {{ machine.get_b_field_direction_display }}</div>
-            <div><strong>Connections:</strong> {{ machine.dc_lines }} DC / {{ machine.rf_lines }} RF lines</div>
-            <div><strong>Daughterboard:</strong> {{ machine.daughterboard_type }}</div>
-            <div><strong>Optical:</strong> {{ machine.get_optical_capabilities_display }}</div>
-            <div><strong>Status:</strong> {{ machine.get_current_status_display }}</div>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-{% endblock %}
-
--->

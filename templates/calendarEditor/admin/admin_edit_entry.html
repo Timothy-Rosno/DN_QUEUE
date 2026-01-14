@@ -263,14 +263,19 @@
 
         <!-- Optical Requirements -->
         <div style="margin-bottom: 1.5rem;">
-            <label for="{{ form.requires_optical.id_for_label }}" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
-                <span title="">{{ form.requires_optical }}</span>
-                <span style="margin-left: 0.5rem; font-weight: bold;">{{ form.requires_optical.label }}</span>
-            </label>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <label for="{{ form.requires_optical.id_for_label }}" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+                    <span title="">{{ form.requires_optical }}</span>
+                    <span style="margin-left: 0.5rem; font-weight: bold;">{{ form.requires_optical.label }}</span>
+                </label>
+                <button type="button" id="viewOpticalMachinesBtn" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                    View Compatible Machines
+                </button>
+            </div>
             {% if form.requires_optical.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.requires_optical.errors }}</div>
             {% endif %}
-            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.requires_optical.help_text }}</small>
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.requires_optical.help_text }} Click "View Compatible Machines" to see which machines match these requirements and have optical capabilities.</small>
         </div>
 
         <!-- Estimated Duration -->
@@ -421,6 +426,131 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Optical Capabilities Modal Logic (Informational Only)
+    const opticalCheckbox = document.getElementById('{{ form.requires_optical.id_for_label }}');
+    const opticalModal = document.getElementById('opticalCapabilitiesModal');
+    const cancelOpticalBtn = document.getElementById('cancelOpticalBtn');
+    const viewMachinesBtn = document.getElementById('viewOpticalMachinesBtn');
+
+    if (opticalCheckbox && opticalModal && viewMachinesBtn) {
+        // Show modal when "View Compatible Machines" button is clicked
+        viewMachinesBtn.addEventListener('click', function() {
+            showOpticalModal();
+        });
+
+        function showOpticalModal() {
+            // Collect form data for filtering machines
+            const formData = new FormData(editForm);
+            const params = new URLSearchParams();
+
+            // Add all requirements to query parameters
+            params.append('required_min_temp', formData.get('required_min_temp') || '0');
+            if (formData.get('required_max_temp')) {
+                params.append('required_max_temp', formData.get('required_max_temp'));
+            }
+            params.append('required_b_field_x', formData.get('required_b_field_x') || '0');
+            params.append('required_b_field_y', formData.get('required_b_field_y') || '0');
+            params.append('required_b_field_z', formData.get('required_b_field_z') || '0');
+            params.append('required_b_field_direction', formData.get('required_b_field_direction') || '');
+            params.append('required_dc_lines', formData.get('required_dc_lines') || '0');
+            params.append('required_rf_lines', formData.get('required_rf_lines') || '0');
+            params.append('required_daughterboard', formData.get('required_daughterboard') || '');
+
+            // Fetch filtered optical machines from API
+            fetch(`/schedule/api/optical-machines/?${params.toString()}`)
+                .then(r => r.json())
+                .then(data => {
+                    const machineListContainer = document.getElementById('opticalMachineList');
+                    if (!machineListContainer) {
+                        console.error('Machine list container not found');
+                        return;
+                    }
+
+                    // Clear existing content
+                    machineListContainer.innerHTML = '';
+
+                    if (data.machines && data.machines.length > 0) {
+                        // Build machine info cards dynamically
+                        data.machines.forEach(machine => {
+                            const card = document.createElement('div');
+                            card.style.cssText = 'padding: 1.5rem; border: 2px solid #3498db; border-radius: 8px; background-color: #ecf0f1;';
+
+                            card.innerHTML = `
+                                <div>
+                                    <h3 style="margin: 0 0 0.5rem 0; color: #2c3e50;">${machine.name}</h3>
+                                    <p style="margin: 0; color: #7f8c8d; font-size: 0.9rem;">${machine.optical_capabilities}</p>
+                                    <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: #16a085;">
+                                        Current queue: ${machine.queue_count} entries
+                                    </p>
+                                </div>
+                            `;
+
+                            machineListContainer.appendChild(card);
+                        });
+                    } else {
+                        // No machines match requirements
+                        machineListContainer.innerHTML = `
+                            <p style="color: #e74c3c; text-align: center; padding: 2rem;">
+                                No machines with optical capabilities match your requirements. Please adjust your requirements or contact an administrator.
+                            </p>
+                        `;
+                    }
+
+                    // Show modal
+                    opticalModal.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error loading optical machines:', error);
+                    // Show error in modal
+                    const machineListContainer = document.getElementById('opticalMachineList');
+                    if (machineListContainer) {
+                        machineListContainer.innerHTML = `
+                            <p style="color: #e74c3c; text-align: center; padding: 2rem;">
+                                Error loading machines. Please try again.
+                            </p>
+                        `;
+                    }
+                    opticalModal.style.display = 'block';
+                });
+        }
+
+        function closeOpticalModal() {
+            opticalModal.style.display = 'none';
+        }
+
+        // Cancel/Close button
+        if (cancelOpticalBtn) {
+            cancelOpticalBtn.addEventListener('click', closeOpticalModal);
+        }
+
+        // Close on backdrop click
+        opticalModal.addEventListener('click', function(e) {
+            if (e.target === opticalModal) {
+                closeOpticalModal();
+            }
+        });
+    }
 });
 </script>
+
+<!-- Optical Capabilities Info Modal -->
+<div id="opticalCapabilitiesModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); z-index: 1000; overflow: auto;">
+    <div style="background-color: #fefefe; margin: 10% auto; padding: 2rem; border: 1px solid #888; border-radius: 8px; width: 80%; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h2 style="margin-top: 0; color: #2c3e50;">Compatible Machines with Optical Capabilities</h2>
+        <p style="color: #7f8c8d; margin-bottom: 1.5rem;">
+            Based on your current requirements, these machines have optical capabilities and meet all specifications:
+        </p>
+
+        <div id="opticalMachineList" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
+            <!-- Machines will be loaded dynamically via JavaScript -->
+            <p style="text-align: center; padding: 2rem; color: #7f8c8d;">Loading available machines...</p>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+            <button type="button" id="cancelOpticalBtn" class="btn btn-secondary">Close</button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
