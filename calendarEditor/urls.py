@@ -123,6 +123,8 @@ urlpatterns = [
 
     # Machine status API
     path('api/machine-status/', views.machine_status_api, name='machine_status_api'),
+    path('api/machine-queue-count/', views.machine_queue_count_api, name='machine_queue_count_api'),
+    path('api/optical-machines/', views.optical_machines_api, name='optical_machines_api'),
 
     # Lightweight JSON endpoints for DOM updates (prevents full page reloads)
     path('api/check-in-out-data/', views.check_in_out_data_json, name='check_in_out_data_json'),

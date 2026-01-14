@@ -243,8 +243,49 @@ def submit_queue_entry(request):
             if queue_entry.is_rush_job:
                 queue_entry.rush_job_submitted_at = timezone.now()
 
-            # Find best matching machine with details
-            best_machine, details = find_best_machine(queue_entry, return_details=True)
+            # Handle optical capabilities machine selection
+            if queue_entry.requires_optical:
+                selected_machine_id = request.POST.get('selected_machine_id')
+
+                if selected_machine_id:
+                    # User selected a specific optical machine - use it directly
+                    try:
+                        best_machine = Machine.objects.get(id=selected_machine_id)
+                        # Create a simple details dict for consistency with normal flow
+                        details = {
+                            'availability_times': {
+                                best_machine.name: {
+                                    'wait_time': best_machine.get_estimated_wait_time()
+                                }
+                            }
+                        }
+                    except Machine.DoesNotExist:
+                        messages.error(request, 'Invalid machine selection. Please try again.')
+                        machines = Machine.objects.all()
+                        presets = _get_presets_for_user(request.user)
+                        next_url = request.POST.get('next', request.GET.get('next', ''))
+                        return render(request, 'calendarEditor/submit_queue.html', {
+                            'form': form,
+                            'machines': machines,
+                            'presets': presets,
+                            'next_url': next_url,
+                        })
+                else:
+                    # No machine selected yet - this shouldn't happen since JavaScript handles it
+                    # But just in case, show an error
+                    messages.error(request, 'Please select a machine for optical measurement.')
+                    machines = Machine.objects.all()
+                    presets = _get_presets_for_user(request.user)
+                    next_url = request.POST.get('next', request.GET.get('next', ''))
+                    return render(request, 'calendarEditor/submit_queue.html', {
+                        'form': form,
+                        'machines': machines,
+                        'presets': presets,
+                        'next_url': next_url,
+                    })
+            else:
+                # Normal flow: find best matching machine with details
+                best_machine, details = find_best_machine(queue_entry, return_details=True)
 
             if best_machine:
                 # Auto-calculate estimated duration as cooldown + warmup + requested measurement time
@@ -2605,6 +2646,131 @@ def machine_status_api(request):
         })
 
     return JsonResponse({'machines': data})
+
+
+@login_required
+def machine_queue_count_api(request):
+    """Return current queue count for a machine (for optical capabilities modal)"""
+    machine_id = request.GET.get('machine_id')
+
+    try:
+        machine = Machine.objects.get(id=machine_id)
+        count = QueueEntry.objects.filter(
+            assigned_machine=machine,
+            status='queued'
+        ).count()
+
+        return JsonResponse({
+            'machine_id': machine_id,
+            'machine_name': machine.name,
+            'count': count
+        })
+    except Machine.DoesNotExist:
+        return JsonResponse({'error': 'Machine not found'}, status=404)
+
+
+@login_required
+def optical_machines_api(request):
+    """
+    API endpoint to get optical machines filtered by user requirements.
+    Returns machines that have optical capabilities AND meet all user requirements.
+    """
+    try:
+        # Parse requirements from query parameters
+        required_min_temp = float(request.GET.get('required_min_temp', 0))
+        required_max_temp = request.GET.get('required_max_temp')
+        if required_max_temp:
+            required_max_temp = float(required_max_temp)
+
+        required_b_field_x = float(request.GET.get('required_b_field_x', 0))
+        required_b_field_y = float(request.GET.get('required_b_field_y', 0))
+        required_b_field_z = float(request.GET.get('required_b_field_z', 0))
+        required_b_field_direction = request.GET.get('required_b_field_direction', '')
+
+        required_dc_lines = int(request.GET.get('required_dc_lines', 0))
+        required_rf_lines = int(request.GET.get('required_rf_lines', 0))
+
+        required_daughterboard = request.GET.get('required_daughterboard', '')
+
+        # Start with available machines that have optical capabilities
+        available_machines = Machine.objects.filter(
+            is_available=True,
+            optical_capabilities__in=['available', 'optical_not_working', 'ice_mb_qb1']
+        ).exclude(current_status='maintenance')
+
+        # Filter by temperature requirements
+        temp_compatible = []
+        for machine in available_machines:
+            if machine.min_temp <= required_min_temp:
+                if required_max_temp:
+                    if machine.max_temp >= required_max_temp:
+                        temp_compatible.append(machine)
+                else:
+                    temp_compatible.append(machine)
+
+        # Filter by B-field requirements
+        field_compatible = []
+        for machine in temp_compatible:
+            if (machine.b_field_x >= required_b_field_x and
+                machine.b_field_y >= required_b_field_y and
+                machine.b_field_z >= required_b_field_z):
+                field_compatible.append(machine)
+
+        # Filter by B-field direction requirements
+        direction_compatible = []
+        for machine in field_compatible:
+            if required_b_field_direction and required_b_field_direction != '':
+                if required_b_field_direction == 'none':
+                    direction_compatible.append(machine)
+                elif required_b_field_direction == 'parallel_perpendicular':
+                    if machine.b_field_direction == 'parallel_perpendicular':
+                        direction_compatible.append(machine)
+                else:
+                    if (machine.b_field_direction == 'parallel_perpendicular' or
+                        machine.b_field_direction == required_b_field_direction):
+                        direction_compatible.append(machine)
+            else:
+                direction_compatible.append(machine)
+
+        # Filter by DC/RF line requirements
+        connection_compatible = []
+        for machine in direction_compatible:
+            if (machine.dc_lines >= required_dc_lines and
+                machine.rf_lines >= required_rf_lines):
+                connection_compatible.append(machine)
+
+        # Filter by daughterboard requirements
+        daughterboard_compatible = []
+        for machine in connection_compatible:
+            if required_daughterboard:
+                machine_boards = [b.strip() for b in machine.daughterboard_type.split('or')]
+                if any(required_daughterboard.lower() in board.lower() for board in machine_boards):
+                    daughterboard_compatible.append(machine)
+            else:
+                daughterboard_compatible.append(machine)
+
+        # Build response with machine details
+        machines_data = []
+        for machine in daughterboard_compatible:
+            queue_count = QueueEntry.objects.filter(
+                assigned_machine=machine,
+                status='queued'
+            ).count()
+
+            machines_data.append({
+                'id': machine.id,
+                'name': machine.name,
+                'optical_capabilities': machine.get_optical_capabilities_display(),
+                'queue_count': queue_count
+            })
+
+        return JsonResponse({
+            'machines': machines_data,
+            'count': len(machines_data)
+        })
+
+    except (ValueError, TypeError) as e:
+        return JsonResponse({'error': f'Invalid parameters: {str(e)}'}, status=400)
 
 
 def api_check_reminders(request):

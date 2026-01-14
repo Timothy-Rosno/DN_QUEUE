@@ -128,14 +128,14 @@ class QueueEntryForm(forms.ModelForm):
             'title': 'Device Name',
             'description': 'Measurement Description',
             'required_b_field_direction': 'B-field Direction',
-            'requires_optical': 'Requires Optical Capabilities (not yet used in matching)',
+            'requires_optical': 'Requires Optical Capabilities',
             'is_rush_job': 'Rush Job/Special Request Appeal',
         }
         help_texts = {
             'title': 'Name of the device being measured (minimum 3 characters)',
             'description': 'Detailed description of the measurement (minimum 50 characters). Things to include: Type of device (JJ, hall bar, etc.), Sweep information, Is this the first test of this device, Is this a crazy new test, etc.',
             'required_b_field_direction': 'Required B-field direction',
-            'requires_optical': 'Check if your experiment requires optical measurement capabilities (not yet implemented for machine matching)',
+            'requires_optical': 'Check if your experiment requires optical measurement capabilities. You will be asked to select from available machines with optical capabilities.',
             'is_rush_job': 'Check to request priority review and potential queue reordering by admins',
         }
 
