@@ -338,6 +338,7 @@ class QueuePresetForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={'maxlength': '500', 'class': 'char-counter-input'}),
             'description': forms.Textarea(attrs={'rows': 3, 'maxlength': '500', 'class': 'char-counter-input'}),
+            'requested_measurement_days': forms.NumberInput(attrs={'min': '1', 'max': '7', 'step': '1'}),
         }
         labels = {
             'name': 'Preset Name',

@@ -207,17 +207,31 @@
         <!-- Optical Requirements -->
         <div style="margin-bottom: 1.5rem;">
             <label for="{{ form.requires_optical.id_for_label }}" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
-                
+
                 <span title="">{{ form.requires_optical }}</span>
-                
+
                 <span style="margin-left: 0.5rem; font-weight: bold;">{{ form.requires_optical.label }}</span>
             </label>
-            
+
             {% if form.requires_optical.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.requires_optical.errors }}</div>
             {% endif %}
-            
+
             <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.requires_optical.help_text }}</small>
+
+            <!-- Selected machine display -->
+            <div id="selectedMachineDisplay" style="display: none; margin-top: 1rem; padding: 1rem; background-color: #e8f4f8; border-left: 4px solid #3498db; border-radius: 4px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: #2c3e50;">Selected Machine:</strong>
+                        <span id="selectedMachineName" style="margin-left: 0.5rem; color: #3498db; font-weight: bold;"></span>
+                        <span id="selectedMachineDetails" style="margin-left: 0.5rem; color: #7f8c8d; font-size: 0.9rem;"></span>
+                    </div>
+                    <button type="button" id="changeMachineBtn" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                        Change Machine
+                    </button>
+                </div>
+            </div>
         </div>
         <!-- Hidden field to store rush job explanation -->
         <div style="display: none;">
@@ -718,6 +732,7 @@
                     // Populate form fields
                     document.getElementById('{{ form.title.id_for_label }}').value = data.title || '';
                     document.getElementById('{{ form.description.id_for_label }}').value = data.description || '';
+                    document.getElementById('id_requested_measurement_days').value = data.requested_measurement_days || '';
                     document.getElementById('{{ form.required_min_temp.id_for_label }}').value = data.required_min_temp || '';
                     // document.getElementById('{{ form.required_max_temp.id_for_label }}').value = data.required_max_temp || '';  // DEPRECATED
                     document.getElementById('{{ form.required_b_field_x.id_for_label }}').value = data.required_b_field_x || 0;
@@ -1561,14 +1576,26 @@
                 return;
             }
 
-            // Override form submission to handle optical capabilities
+            // Show modal when checkbox is checked
+            opticalCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    // User checked optical - show machine selection modal
+                    showOpticalModal();
+                } else {
+                    // User unchecked optical - clear any previous machine selection
+                    clearMachineSelection();
+                }
+            });
+
+            // Override form submission to validate machine selection
             form.addEventListener('submit', function(e) {
                 const requiresOptical = opticalCheckbox.checked;
                 const selectedMachineInput = document.getElementById('selected_machine_id');
 
-                // If optical is required but no machine selected yet, show modal
+                // If optical is required but no machine selected yet, prevent submission and show modal
                 if (requiresOptical && !selectedMachineInput) {
                     e.preventDefault();
+                    alert('Please select a machine for optical measurement.');
                     showOpticalModal();
                 }
                 // Otherwise, allow normal form submission
@@ -1612,6 +1639,8 @@
                                 button.type = 'button';
                                 button.className = 'machine-option-btn';
                                 button.setAttribute('data-machine-id', machine.id);
+                                button.setAttribute('data-machine-name', machine.name);
+                                button.setAttribute('data-machine-details', `${machine.optical_capabilities} - ${machine.queue_count} in queue`);
                                 button.style.cssText = 'padding: 1.5rem; border: 2px solid #3498db; border-radius: 8px; background-color: #ecf0f1; cursor: pointer; text-align: left; transition: all 0.2s;';
 
                                 button.innerHTML = `
@@ -1659,11 +1688,15 @@
             function closeOpticalModal() {
                 modal.style.display = 'none';
 
-                // Uncheck the "Requires Optical Capabilities" checkbox when cancelled
-                opticalCheckbox.checked = false;
+                // Only uncheck and clear if no machine was selected
+                const selectedMachineInput = document.getElementById('selected_machine_id');
+                if (!selectedMachineInput) {
+                    // Uncheck the "Requires Optical Capabilities" checkbox when cancelled
+                    opticalCheckbox.checked = false;
+                }
             }
 
-            function submitWithMachine(machineId) {
+            function submitWithMachine(machineId, machineName, machineDetails) {
                 // Add hidden input for machine selection
                 let machineInput = document.getElementById('selected_machine_id');
                 if (!machineInput) {
@@ -1671,13 +1704,39 @@
                     machineInput.type = 'hidden';
                     machineInput.id = 'selected_machine_id';
                     machineInput.name = 'selected_machine_id';
+                    machineInput.dataset.machineName = '';
+                    machineInput.dataset.machineDetails = '';
                     form.appendChild(machineInput);
                 }
                 machineInput.value = machineId;
+                machineInput.dataset.machineName = machineName;
+                machineInput.dataset.machineDetails = machineDetails;
 
-                // Close modal and re-submit form
+                // Show selected machine display
+                const selectedMachineDisplay = document.getElementById('selectedMachineDisplay');
+                const selectedMachineNameSpan = document.getElementById('selectedMachineName');
+                const selectedMachineDetailsSpan = document.getElementById('selectedMachineDetails');
+
+                if (selectedMachineDisplay && selectedMachineNameSpan && selectedMachineDetailsSpan) {
+                    selectedMachineNameSpan.textContent = machineName;
+                    selectedMachineDetailsSpan.textContent = machineDetails;
+                    selectedMachineDisplay.style.display = 'block';
+                }
+
+                // Close modal
                 modal.style.display = 'none';
-                form.submit();
+            }
+
+            function clearMachineSelection() {
+                const machineInput = document.getElementById('selected_machine_id');
+                if (machineInput) {
+                    machineInput.remove();
+                }
+
+                const selectedMachineDisplay = document.getElementById('selectedMachineDisplay');
+                if (selectedMachineDisplay) {
+                    selectedMachineDisplay.style.display = 'none';
+                }
             }
 
             // Machine selection handlers (attach to dynamically generated buttons)
@@ -1685,9 +1744,19 @@
                 if (e.target.closest('.machine-option-btn')) {
                     const btn = e.target.closest('.machine-option-btn');
                     const machineId = btn.getAttribute('data-machine-id');
-                    submitWithMachine(machineId);
+                    const machineName = btn.getAttribute('data-machine-name');
+                    const machineDetails = btn.getAttribute('data-machine-details');
+                    submitWithMachine(machineId, machineName, machineDetails);
                 }
             });
+
+            // Change machine button handler
+            const changeMachineBtn = document.getElementById('changeMachineBtn');
+            if (changeMachineBtn) {
+                changeMachineBtn.addEventListener('click', function() {
+                    showOpticalModal();
+                });
+            }
 
             // Cancel button
             if (cancelBtn) {
@@ -1698,17 +1767,6 @@
             modal.addEventListener('click', function(e) {
                 if (e.target === modal) {
                     closeOpticalModal();
-                }
-            });
-
-            // Handle checkbox state changes - allow user to change machine selection
-            opticalCheckbox.addEventListener('change', function() {
-                if (!this.checked) {
-                    // User unchecked optical - clear any previous machine selection
-                    const machineInput = document.getElementById('selected_machine_id');
-                    if (machineInput) {
-                        machineInput.remove();
-                    }
                 }
             });
         })();
