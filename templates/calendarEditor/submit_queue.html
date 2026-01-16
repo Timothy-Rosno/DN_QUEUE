@@ -744,6 +744,43 @@
                     document.getElementById('{{ form.required_daughterboard.id_for_label }}').value = data.required_daughterboard || '';
                     document.getElementById('{{ form.requires_optical.id_for_label }}').checked = data.requires_optical || false;
 
+                    // Restore selected optical machine if preset has one
+                    if (data.requires_optical && data.selected_optical_machine_id) {
+                        // Add hidden input for machine selection
+                        let machineInput = document.getElementById('selected_machine_id');
+                        if (!machineInput) {
+                            machineInput = document.createElement('input');
+                            machineInput.type = 'hidden';
+                            machineInput.id = 'selected_machine_id';
+                            machineInput.name = 'selected_machine_id';
+                            document.getElementById('queueForm').appendChild(machineInput);
+                        }
+                        machineInput.value = data.selected_optical_machine_id;
+                        machineInput.dataset.machineName = data.selected_optical_machine_name || '';
+                        machineInput.dataset.machineDetails = data.selected_optical_machine_details || '';
+
+                        // Show selected machine display
+                        const selectedMachineDisplay = document.getElementById('selectedMachineDisplay');
+                        const selectedMachineNameSpan = document.getElementById('selectedMachineName');
+                        const selectedMachineDetailsSpan = document.getElementById('selectedMachineDetails');
+
+                        if (selectedMachineDisplay && selectedMachineNameSpan && selectedMachineDetailsSpan) {
+                            selectedMachineNameSpan.textContent = data.selected_optical_machine_name || '';
+                            selectedMachineDetailsSpan.textContent = data.selected_optical_machine_details || '';
+                            selectedMachineDisplay.style.display = 'block';
+                        }
+                    } else {
+                        // Clear any existing machine selection
+                        const machineInput = document.getElementById('selected_machine_id');
+                        if (machineInput) {
+                            machineInput.remove();
+                        }
+                        const selectedMachineDisplay = document.getElementById('selectedMachineDisplay');
+                        if (selectedMachineDisplay) {
+                            selectedMachineDisplay.style.display = 'none';
+                        }
+                    }
+
                     // Update B-field checkboxes
                     updateBFieldCheckboxes(data);
 

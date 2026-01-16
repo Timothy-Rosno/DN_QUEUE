@@ -292,6 +292,11 @@ def submit_queue_entry(request):
             if best_machine:
                 # Auto-calculate estimated duration as cooldown + warmup + requested measurement time
                 queue_entry.estimated_duration_hours = best_machine.cooldown_hours + best_machine.warmup_hours + (queue_entry.requested_measurement_days * 24)
+
+                # For optical capabilities, manually assign machine before calling assign_to_queue
+                if queue_entry.requires_optical and request.POST.get('selected_machine_id'):
+                    queue_entry.assigned_machine = best_machine
+
                 # Assign to queue
                 if assign_to_queue(queue_entry):
                     # Broadcast queue update to all connected users (gracefully fails if Redis unavailable)
@@ -1466,6 +1471,9 @@ def load_preset_ajax(request, preset_id):
             'required_rf_lines': preset.required_rf_lines,
             'required_daughterboard': preset.required_daughterboard,
             'requires_optical': preset.requires_optical,
+            'selected_optical_machine_id': preset.selected_optical_machine.id if preset.selected_optical_machine else None,
+            'selected_optical_machine_name': preset.selected_optical_machine.name if preset.selected_optical_machine else None,
+            'selected_optical_machine_details': f"{preset.selected_optical_machine.get_optical_capabilities_display()}" if preset.selected_optical_machine else None,
             'estimated_duration_hours': preset.estimated_duration_hours,
             'can_edit': preset.can_edit(request.user),
             'preset_id': preset.id,
@@ -1663,6 +1671,20 @@ def create_preset(request):
             preset = form.save(commit=False)
             preset.creator = request.user
             preset.last_edited_by = request.user
+
+            # Handle optical machine selection
+            if preset.requires_optical:
+                selected_machine_id = request.POST.get('selected_machine_id')
+                if selected_machine_id:
+                    try:
+                        preset.selected_optical_machine = Machine.objects.get(id=selected_machine_id)
+                    except Machine.DoesNotExist:
+                        preset.selected_optical_machine = None
+                else:
+                    preset.selected_optical_machine = None
+            else:
+                preset.selected_optical_machine = None
+
             preset.save()
 
             # Auto-follow own preset (for both public and private presets)
@@ -1798,6 +1820,20 @@ def edit_preset_view(request, preset_id):
 
             preset = form.save(commit=False)
             preset.last_edited_by = request.user
+
+            # Handle optical machine selection
+            if preset.requires_optical:
+                selected_machine_id = request.POST.get('selected_machine_id')
+                if selected_machine_id:
+                    try:
+                        preset.selected_optical_machine = Machine.objects.get(id=selected_machine_id)
+                    except Machine.DoesNotExist:
+                        preset.selected_optical_machine = None
+                else:
+                    preset.selected_optical_machine = None
+            else:
+                preset.selected_optical_machine = None
+
             preset.save()
 
             # Broadcast preset update to all connected users (gracefully fails if Redis unavailable)

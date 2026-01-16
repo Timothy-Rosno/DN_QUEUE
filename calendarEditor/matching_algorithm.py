@@ -309,19 +309,26 @@ def assign_to_queue(queue_entry):
     """
     Assign a queue entry to the best matching machine and set queue position.
 
+    If queue_entry.assigned_machine is already set (e.g., for optical capabilities),
+    it will use that machine instead of finding the best match.
+
     Args:
         queue_entry: QueueEntry instance to assign
 
     Returns:
         True if successfully assigned, False otherwise
     """
-    best_machine = find_best_machine(queue_entry)
+    # Check if machine is already assigned (e.g., manual selection for optical capabilities)
+    if queue_entry.assigned_machine:
+        best_machine = queue_entry.assigned_machine
+    else:
+        best_machine = find_best_machine(queue_entry)
 
-    if not best_machine:
-        return False
+        if not best_machine:
+            return False
 
-    # Assign to machine
-    queue_entry.assigned_machine = best_machine
+        # Assign to machine
+        queue_entry.assigned_machine = best_machine
 
     # Get current max queue position for this machine
     max_position = QueueEntry.objects.filter(
