@@ -1,17 +1,24 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.core.validators import RegexValidator
 from .models import UserProfile
 from calendarEditor.models import NotificationPreference
 
+# Validator to allow only ASCII characters (including spaces)
+ascii_username_validator = RegexValidator(
+    regex=r'^[\x20-\x7E]+$',
+    message='Username can only contain ASCII characters (letters, numbers, spaces, and standard punctuation).'
+)
+
 class UserRegistrationForm(UserCreationForm):
-    # Override username field to allow ANY characters (no validators)
+    # Override username field to allow ASCII characters (including spaces)
     username = forms.CharField(
         max_length=150,
         required=True,
         label='Username',
         help_text='Slack username preferred (Churchill Lab)',
-        validators=[],  # NO validators - allow ANY character
+        validators=[ascii_username_validator],
     )
     email = forms.EmailField(
         required=True,
@@ -33,7 +40,7 @@ class UserRegistrationForm(UserCreationForm):
         fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
 
     def clean_username(self):
-        """Allow any characters in username, including spaces."""
+        """Allow ASCII characters in username, including spaces."""
         username = self.cleaned_data.get('username')
         # Check if username already exists (case-insensitive to avoid duplicates)
         from django.contrib.auth.models import User
@@ -48,7 +55,7 @@ class UserRegistrationForm(UserCreationForm):
         user.last_name = self.cleaned_data['last_name']
 
         if commit:
-            # Bypass username validators to allow ANY character (including spaces, special chars, etc.)
+            # Bypass Django's default username validators to allow ASCII characters (including spaces)
             from django.contrib.auth.models import User
             User._meta.get_field('username').validators = []
             user.save()
@@ -373,7 +380,8 @@ class AdminEditUserForm(forms.Form):
     username = forms.CharField(
         max_length=150,
         required=True,
-        label='Username'
+        label='Username',
+        validators=[ascii_username_validator],
     )
     email = forms.EmailField(
         required=True,
