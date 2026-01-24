@@ -840,6 +840,20 @@
                 showOpticalModal();
             });
 
+            // Override form submission to validate machine selection
+            form.addEventListener('submit', function(e) {
+                const requiresOptical = opticalCheckbox.checked;
+                const selectedMachineInput = document.getElementById('selected_machine_id');
+
+                // If optical is required but no machine selected yet, prevent submission and show modal
+                if (requiresOptical && !selectedMachineInput) {
+                    e.preventDefault();
+                    alert('Please select a machine for optical measurement.');
+                    showOpticalModal();
+                }
+                // Otherwise, allow normal form submission
+            });
+
             function showOpticalModal() {
                 // Collect form data for filtering machines
                 const formData = new FormData(form);
@@ -926,6 +940,13 @@
 
             function closeOpticalModal() {
                 opticalModal.style.display = 'none';
+
+                // Only uncheck and clear if no machine was selected
+                const selectedMachineInput = document.getElementById('selected_machine_id');
+                if (!selectedMachineInput) {
+                    // Uncheck the "Requires Optical Capabilities" checkbox when cancelled
+                    opticalCheckbox.checked = false;
+                }
             }
 
             function selectMachine(machineId, machineName, machineDetails) {
@@ -990,9 +1011,11 @@
                 });
             }
 
-            // Handle checkbox change - clear selection if unchecked
+            // Handle checkbox change - show modal if checked, clear selection if unchecked
             opticalCheckbox.addEventListener('change', function() {
-                if (!this.checked) {
+                if (this.checked) {
+                    showOpticalModal();
+                } else {
                     clearMachineSelection();
                 }
             });
