@@ -212,21 +212,18 @@
 
         <!-- Optical Requirements -->
         <div style="margin-bottom: 1.5rem;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center;">
                 <label for="{{ form.requires_optical.id_for_label }}" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
                     <span title="">{{ form.requires_optical }}</span>
                     <span style="margin-left: 0.5rem; font-weight: bold;">{{ form.requires_optical.label }}</span>
                 </label>
-                <button type="button" id="viewOpticalMachinesBtn" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
-                    View Compatible Machines
-                </button>
             </div>
 
             {% if form.requires_optical.errors %}
                 <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.requires_optical.errors }}</div>
             {% endif %}
 
-            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.requires_optical.help_text }} Click "View Compatible Machines" to see and select which machine to use for optical measurements.</small>
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.requires_optical.help_text }}</small>
 
             <!-- Selected machine display -->
             <div id="selectedMachineDisplay" style="display: none; margin-top: 1rem; padding: 1rem; background-color: #e8f4f8; border-left: 4px solid #3498db; border-radius: 4px;">
@@ -799,9 +796,8 @@
             const opticalCheckbox = document.getElementById('{{ form.requires_optical.id_for_label }}');
             const opticalModal = document.getElementById('opticalCapabilitiesModal');
             const cancelOpticalBtn = document.getElementById('cancelOpticalBtn');
-            const viewMachinesBtn = document.getElementById('viewOpticalMachinesBtn');
 
-            if (!form || !opticalCheckbox || !opticalModal || !viewMachinesBtn) {
+            if (!form || !opticalCheckbox || !opticalModal) {
                 return;
             }
 
@@ -834,11 +830,6 @@
                 }
             })();
             {% endif %}
-
-            // Show modal when "View Compatible Machines" button is clicked
-            viewMachinesBtn.addEventListener('click', function() {
-                showOpticalModal();
-            });
 
             // Override form submission to validate machine selection
             form.addEventListener('submit', function(e) {
