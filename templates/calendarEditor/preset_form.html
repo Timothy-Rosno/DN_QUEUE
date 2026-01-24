@@ -791,13 +791,14 @@
         })();
 
         // Optical Capabilities Modal Logic
-        (function() {
+        document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('presetForm');
             const opticalCheckbox = document.getElementById('{{ form.requires_optical.id_for_label }}');
             const opticalModal = document.getElementById('opticalCapabilitiesModal');
             const cancelOpticalBtn = document.getElementById('cancelOpticalBtn');
 
             if (!form || !opticalCheckbox || !opticalModal) {
+                console.error('Optical modal elements not found:', {form: !!form, checkbox: !!opticalCheckbox, modal: !!opticalModal});
                 return;
             }
 
@@ -1022,7 +1023,7 @@
                     closeOpticalModal();
                 }
             });
-        })();
+        });
     </script>
 
     <!-- Optical Capabilities Info Modal -->
