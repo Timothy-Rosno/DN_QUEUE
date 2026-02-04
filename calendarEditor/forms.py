@@ -118,7 +118,8 @@ class QueueEntryForm(forms.ModelForm):
                   'required_daughterboard',
                   'requires_optical',
                   'special_requirements',
-                  'is_rush_job')
+                  'is_rush_job',
+                  'requested_measurement_days')
         widgets = {
             'title': forms.TextInput(attrs={'maxlength': '500', 'class': 'char-counter-input'}),
             'description': forms.Textarea(attrs={'rows': 3, 'minlength': '50', 'maxlength': '500', 'class': 'char-counter-input'}),
