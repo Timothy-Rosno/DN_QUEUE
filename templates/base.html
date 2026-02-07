@@ -944,40 +944,65 @@
 
     <!-- Temperature Update WebSocket Handler -->
     <script>
+        // Track last update time for each machine to detect stale data
+        const machineLastUpdate = {};
+        const STALE_THRESHOLD_MS = 60000; // 60 seconds
+
         // Register temperature update handler with SharedWebSocketManager
         SharedWebSocketManager.registerHandler('temperature_update', function(data) {
             if (!data.machines || !Array.isArray(data.machines)) return;
 
             data.machines.forEach(function(machine) {
+                // Track last update time
+                machineLastUpdate[machine.id] = Date.now();
+
                 // Find machine card by data-machine-id attribute
                 const machineCard = document.querySelector(`[data-machine-id="${machine.id}"]`);
                 if (!machineCard) return;
 
-                // Update temperature display
-                const tempSpan = machineCard.querySelector('.machine-temp');
-                if (tempSpan) {
-                    if (machine.temperature !== null && machine.temperature !== undefined) {
-                        tempSpan.innerHTML = machine.temperature.toFixed(2) + ' K';
-                        tempSpan.style.color = '';
-                    } else {
-                        tempSpan.innerHTML = '<span style="color: #999;">N/A</span>';
-                    }
-                }
-
-                // Update status badge based on online status
-                const statusBadge = machineCard.querySelector('.machine-status');
-                if (statusBadge && machine.online !== undefined) {
-                    // Update badge class for connected/disconnected styling
-                    if (machine.online) {
-                        statusBadge.classList.remove('status-disconnected');
-                        statusBadge.textContent = statusBadge.textContent.replace('Disconnected', 'Connected');
-                    } else {
-                        statusBadge.classList.add('status-disconnected');
-                        statusBadge.textContent = statusBadge.textContent.replace('Connected', 'Disconnected');
-                    }
-                }
+                updateMachineDisplay(machineCard, machine.temperature, machine.online);
             });
         });
+
+        // Helper function to update machine display
+        function updateMachineDisplay(machineCard, temperature, online) {
+            // Update temperature display
+            const tempSpan = machineCard.querySelector('.machine-temp');
+            if (tempSpan) {
+                if (temperature !== null && temperature !== undefined) {
+                    tempSpan.innerHTML = temperature.toFixed(2) + ' K';
+                    tempSpan.style.color = '';
+                } else {
+                    tempSpan.innerHTML = '<span style="color: #999;">N/A</span>';
+                }
+            }
+
+            // Update status badge based on online status
+            const statusBadge = machineCard.querySelector('.machine-status');
+            if (statusBadge && online !== undefined) {
+                if (online) {
+                    statusBadge.classList.remove('status-disconnected');
+                    statusBadge.textContent = statusBadge.textContent.replace('Disconnected', 'Connected');
+                } else {
+                    statusBadge.classList.add('status-disconnected');
+                    statusBadge.textContent = statusBadge.textContent.replace('Connected', 'Disconnected');
+                }
+            }
+        }
+
+        // Periodically check for stale temperature data
+        setInterval(function() {
+            const now = Date.now();
+            document.querySelectorAll('[data-machine-id]').forEach(function(machineCard) {
+                const machineId = machineCard.getAttribute('data-machine-id');
+                const lastUpdate = machineLastUpdate[machineId];
+
+                // If we've received at least one update and it's now stale, mark as disconnected
+                if (lastUpdate && (now - lastUpdate) > STALE_THRESHOLD_MS) {
+                    updateMachineDisplay(machineCard, null, false);
+                }
+            });
+        }, 15000); // Check every 15 seconds
     </script>
 
     <!-- Global Queue Update WebSocket -->
