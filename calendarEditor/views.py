@@ -2962,6 +2962,20 @@ def update_machine_temperatures(request):
         except Exception as e:
             errors.append(f"Error updating machine {machine_data.get('id', 'unknown')}: {str(e)}")
     
+    # Broadcast temperature updates to all connected WebSocket clients
+    if updated_count > 0:
+        try:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                'queue_updates',
+                {
+                    'type': 'temperature_update',
+                    'machines': machines_data,
+                }
+            )
+        except Exception as e:
+            print(f"WebSocket temperature broadcast failed: {e}")
+
     return JsonResponse({
         'success': True,
         'updated': updated_count,

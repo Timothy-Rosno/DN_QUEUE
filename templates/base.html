@@ -942,9 +942,43 @@
         });
     </script>
 
-    <!-- Machine status polling removed to reduce server load -->
-    <!-- Temperature updates happen server-side via background thread -->
-    <!-- Users can refresh page to see latest status/temperatures -->
+    <!-- Temperature Update WebSocket Handler -->
+    <script>
+        // Register temperature update handler with SharedWebSocketManager
+        SharedWebSocketManager.registerHandler('temperature_update', function(data) {
+            if (!data.machines || !Array.isArray(data.machines)) return;
+
+            data.machines.forEach(function(machine) {
+                // Find machine card by data-machine-id attribute
+                const machineCard = document.querySelector(`[data-machine-id="${machine.id}"]`);
+                if (!machineCard) return;
+
+                // Update temperature display
+                const tempSpan = machineCard.querySelector('.machine-temp');
+                if (tempSpan) {
+                    if (machine.temperature !== null && machine.temperature !== undefined) {
+                        tempSpan.innerHTML = machine.temperature.toFixed(2) + ' K';
+                        tempSpan.style.color = '';
+                    } else {
+                        tempSpan.innerHTML = '<span style="color: #999;">N/A</span>';
+                    }
+                }
+
+                // Update status badge based on online status
+                const statusBadge = machineCard.querySelector('.machine-status');
+                if (statusBadge && machine.online !== undefined) {
+                    // Update badge class for connected/disconnected styling
+                    if (machine.online) {
+                        statusBadge.classList.remove('status-disconnected');
+                        statusBadge.textContent = statusBadge.textContent.replace('Disconnected', 'Connected');
+                    } else {
+                        statusBadge.classList.add('status-disconnected');
+                        statusBadge.textContent = statusBadge.textContent.replace('Connected', 'Disconnected');
+                    }
+                }
+            });
+        });
+    </script>
 
     <!-- Global Queue Update WebSocket -->
     <script>

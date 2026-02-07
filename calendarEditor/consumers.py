@@ -129,3 +129,16 @@ class QueueUpdatesConsumer(AsyncWebsocketConsumer):
             'message': event.get('message'),
             'created_at': event.get('created_at'),
         }))
+
+    async def temperature_update(self, event):
+        """
+        Handler for temperature update events.
+        Sends temperature data to all connected WebSocket clients.
+
+        Event data should include:
+        - machines: List of machine temperature updates with id, temperature, online status
+        """
+        await self.send(text_data=json.dumps({
+            'message_type': 'temperature_update',
+            'machines': event.get('machines', []),
+        }))
