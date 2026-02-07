@@ -982,9 +982,11 @@
             if (statusBadge && online !== undefined) {
                 if (online) {
                     statusBadge.classList.remove('status-disconnected');
+                    statusBadge.style.backgroundColor = '#27ae60';
                     statusBadge.textContent = statusBadge.textContent.replace('Disconnected', 'Connected');
                 } else {
                     statusBadge.classList.add('status-disconnected');
+                    statusBadge.style.backgroundColor = '#e74c3c';
                     statusBadge.textContent = statusBadge.textContent.replace('Connected', 'Disconnected');
                 }
             }

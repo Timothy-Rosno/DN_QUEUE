@@ -22,8 +22,70 @@ import json
 import time
 import requests
 import sys
+import os
+import signal
+import atexit
 from datetime import datetime
 from pathlib import Path
+
+# PID file for single instance management
+PID_FILE = "/tmp/qhog_gateway.pid"
+
+def cleanup_pid():
+    """Remove PID file on exit."""
+    try:
+        if os.path.exists(PID_FILE):
+            os.remove(PID_FILE)
+    except:
+        pass
+
+def signal_handler(signum, frame):
+    """Handle termination signals."""
+    cleanup_pid()
+    sys.exit(0)
+
+def setup_pid():
+    """Write PID file and register cleanup handlers."""
+    # Check if already running
+    if os.path.exists(PID_FILE):
+        try:
+            with open(PID_FILE, 'r') as f:
+                old_pid = int(f.read().strip())
+            # Check if process is still running
+            os.kill(old_pid, 0)
+            print(f"❌ Gateway already running (PID: {old_pid})")
+            sys.exit(1)
+        except (ProcessLookupError, ValueError):
+            # Process not running, clean up stale PID
+            os.remove(PID_FILE)
+        except PermissionError:
+            # Process running as different user
+            print(f"❌ Gateway already running (PID: {old_pid})")
+            sys.exit(1)
+
+    # Write our PID
+    with open(PID_FILE, 'w') as f:
+        f.write(str(os.getpid()))
+
+    # Register cleanup
+    atexit.register(cleanup_pid)
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGHUP, signal_handler)
+
+    # Monitor parent process - exit if parent dies (for Automator)
+    import threading
+    parent_pid = os.getppid()
+    def watch_parent():
+        while True:
+            try:
+                os.kill(parent_pid, 0)
+            except ProcessLookupError:
+                cleanup_pid()
+                os._exit(0)
+            time.sleep(1)
+    t = threading.Thread(target=watch_parent, daemon=True)
+    t.start()
 
 
 class TemperatureGateway:
@@ -254,5 +316,6 @@ class TemperatureGateway:
 
 
 if __name__ == '__main__':
+    setup_pid()
     gateway = TemperatureGateway()
     gateway.run()
