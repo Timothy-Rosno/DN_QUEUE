@@ -240,6 +240,18 @@
             </div>
         </div>
 
+        <!-- Temperature Dependence Requirements -->
+        <div style="margin-bottom: 1.5rem;">
+            <label for="{{ form.requires_temp_dependence.id_for_label }}" style="display: flex; align-items: center; cursor: pointer; padding: 12px; margin: -12px;">
+                <span title="">{{ form.requires_temp_dependence }}</span>
+                <span style="margin-left: 0.5rem; font-weight: bold;">{{ form.requires_temp_dependence.label }}</span>
+            </label>
+            {% if form.requires_temp_dependence.errors %}
+                <div style="color: #e74c3c; margin-top: 0.25rem;">{{ form.requires_temp_dependence.errors }}</div>
+            {% endif %}
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">{{ form.requires_temp_dependence.help_text }}</small>
+        </div>
+
         <!-- Bottom Submit Buttons -->
         <div style="margin-top: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
             {% if mode == 'create' %}

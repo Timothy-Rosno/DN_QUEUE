@@ -118,6 +118,7 @@ class QueueEntryForm(forms.ModelForm):
                   'required_dc_lines', 'required_rf_lines',
                   'required_daughterboard',
                   'requires_optical',
+                  'requires_temp_dependence',
                   'special_requirements',
                   'is_rush_job',
                   'requested_measurement_days')
@@ -131,6 +132,7 @@ class QueueEntryForm(forms.ModelForm):
             'description': 'Measurement Description',
             'required_b_field_direction': 'B-field Direction',
             'requires_optical': 'Requires Optical Capabilities',
+            'requires_temp_dependence': 'Requires Temperature Dependence',
             'is_rush_job': 'Rush Job/Special Request Appeal',
         }
         help_texts = {
@@ -138,6 +140,7 @@ class QueueEntryForm(forms.ModelForm):
             'description': 'Detailed description of the measurement (minimum 50 characters). Things to include: Type of device (JJ, hall bar, etc.), Sweep information, Is this the first test of this device, Is this a crazy new test, etc.',
             'required_b_field_direction': 'Required B-field direction',
             'requires_optical': 'Check if your experiment requires optical measurement capabilities. You will be asked to select from available machines with optical capabilities.',
+            'requires_temp_dependence': 'Check if your experiment requires temperature dependent measurements above dilution fridge capability.',
             'is_rush_job': 'Check to request priority review and potential queue reordering by admins',
         }
 
@@ -347,7 +350,8 @@ class QueuePresetForm(forms.ModelForm):
                   'required_b_field_direction',
                   'required_dc_lines', 'required_rf_lines',
                   'required_daughterboard',
-                  'requires_optical')
+                  'requires_optical',
+                  'requires_temp_dependence')
         widgets = {
             'name': forms.TextInput(attrs={'maxlength': '500', 'class': 'char-counter-input'}),
             'description': forms.Textarea(attrs={'rows': 3, 'maxlength': '500', 'class': 'char-counter-input'}),
@@ -358,6 +362,7 @@ class QueuePresetForm(forms.ModelForm):
             'description': 'Measurement Description (optional)',
             'required_b_field_direction': 'B-field Direction (optional)',
             'requires_optical': 'Requires Optical Capabilities (optional)',
+            'requires_temp_dependence': 'Requires Temperature Dependence (optional)',
         }
         help_texts = {
             'name': 'A short name to identify this preset (required)',
@@ -365,6 +370,7 @@ class QueuePresetForm(forms.ModelForm):
             'description': 'Detailed description of the measurement (optional)',
             'required_b_field_direction': 'Required B-field direction',
             'requires_optical': 'Check if your experiment requires optical measurement capabilities',
+            'requires_temp_dependence': 'Check if your experiment requires temperature dependent measurements above dilution fridge capability.',
         }
 
     def clean(self):

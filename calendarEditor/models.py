@@ -294,6 +294,7 @@ class QueueEntry(models.Model):
 
     # Optical requirements
     requires_optical = models.BooleanField(default=False, help_text="Does this experiment require optical capabilities?")
+    requires_temp_dependence = models.BooleanField(default=False, help_text="Does this experiment require temperature dependent measurements above dilution fridge capability?")
 
     # Scheduling info
     estimated_duration_hours = models.FloatField(help_text="Estimated duration in hours")
@@ -443,6 +444,7 @@ class QueuePreset(models.Model):
     # Optical requirements
     requires_optical = models.BooleanField(default=False, help_text="Does this experiment require optical capabilities?")
     selected_optical_machine = models.ForeignKey('Machine', on_delete=models.SET_NULL, null=True, blank=True, related_name='preset_optical_selections', help_text="Machine selected for optical measurements (if requires_optical is True)")
+    requires_temp_dependence = models.BooleanField(default=False, help_text="Does this experiment require temperature dependent measurements above dilution fridge capability?")
 
     # Estimated duration (optional, will be auto-calculated if not provided)
     estimated_duration_hours = models.FloatField(null=True, blank=True, help_text="Estimated duration in hours (optional)")

@@ -181,12 +181,30 @@ def find_best_machine(queue_entry, return_details=False):
             return None, matching_details
         return None
 
+    # Filter by temperature dependence requirements
+    temp_dep_compatible = []
+    for machine in optical_compatible:
+        if queue_entry.requires_temp_dependence:
+            if machine.name not in ('Griffin', 'Hidalgo'):
+                temp_dep_compatible.append(machine)
+            else:
+                matching_details['rejected_reasons'].append(
+                    f"{machine.name}: Not compatible with temperature dependent measurements"
+                )
+        else:
+            temp_dep_compatible.append(machine)
+
+    if not temp_dep_compatible:
+        if return_details:
+            return None, matching_details
+        return None
+
     # Among compatible machines, find the one that will be available SOONEST
     # This is the machine with the earliest predicted open time
     best_machine = None
     earliest_available_time = None
 
-    for machine in optical_compatible:
+    for machine in temp_dep_compatible:
         wait_time = machine.get_estimated_wait_time()
         available_at = timezone.now() + wait_time
 
@@ -291,9 +309,21 @@ def get_compatible_machines(queue_entry):
     # Optical requirements (currently disabled - all pass)
     optical_compatible = daughterboard_compatible
 
+    # Filter by temperature dependence requirements
+    temp_dep_compatible = []
+    for machine in optical_compatible:
+        if queue_entry.requires_temp_dependence:
+            if machine.name not in ('Griffin', 'Hidalgo'):
+                temp_dep_compatible.append(machine)
+        else:
+            temp_dep_compatible.append(machine)
+
+    if not temp_dep_compatible:
+        return []
+
     # Sort by availability (earliest available first)
     machines_with_times = []
-    for machine in optical_compatible:
+    for machine in temp_dep_compatible:
         wait_time = machine.get_estimated_wait_time()
         available_at = timezone.now() + wait_time
         machines_with_times.append((machine, available_at))

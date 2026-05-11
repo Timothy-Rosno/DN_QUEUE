@@ -2001,6 +2001,7 @@ def admin_edit_entry(request, entry_id):
         'required_rf_lines': queue_entry.required_rf_lines,
         'required_daughterboard': queue_entry.required_daughterboard,
         'requires_optical': queue_entry.requires_optical,
+        'requires_temp_dependence': queue_entry.requires_temp_dependence,
         'estimated_duration_hours': queue_entry.estimated_duration_hours,
         'special_requirements': queue_entry.special_requirements,
         'is_rush_job': queue_entry.is_rush_job,
@@ -2199,6 +2200,8 @@ def admin_edit_entry(request, entry_id):
                 changes.append('daughterboard')
             if original_values['requires_optical'] != edited_entry.requires_optical:
                 changes.append('optical requirements')
+            if original_values['requires_temp_dependence'] != edited_entry.requires_temp_dependence:
+                changes.append('temperature dependence requirements')
             if original_values['estimated_duration_hours'] != edited_entry.estimated_duration_hours:
                 changes.append('duration')
             if original_values['special_requirements'] != edited_entry.special_requirements:

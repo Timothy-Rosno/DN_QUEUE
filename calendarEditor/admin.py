@@ -67,6 +67,9 @@ class QueueEntryAdmin(admin.ModelAdmin):
         ('Optical Requirements', {
             'fields': ('requires_optical',)
         }),
+        ('Temperature Dependence', {
+            'fields': ('requires_temp_dependence',)
+        }),
         ('Duration', {
             'fields': ('estimated_duration_hours',)
         }),
@@ -249,6 +252,9 @@ class QueuePresetAdmin(admin.ModelAdmin):
         }),
         ('Optical Requirements', {
             'fields': ('requires_optical',)
+        }),
+        ('Temperature Dependence', {
+            'fields': ('requires_temp_dependence',)
         }),
         ('Duration', {
             'fields': ('estimated_duration_hours',)

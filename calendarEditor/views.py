@@ -1471,6 +1471,7 @@ def load_preset_ajax(request, preset_id):
             'required_rf_lines': preset.required_rf_lines,
             'required_daughterboard': preset.required_daughterboard,
             'requires_optical': preset.requires_optical,
+            'requires_temp_dependence': preset.requires_temp_dependence,
             'selected_optical_machine_id': preset.selected_optical_machine.id if preset.selected_optical_machine else None,
             'selected_optical_machine_name': preset.selected_optical_machine.name if preset.selected_optical_machine else None,
             'selected_optical_machine_details': f"{preset.selected_optical_machine.get_optical_capabilities_display()}" if preset.selected_optical_machine else None,
