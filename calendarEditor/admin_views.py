@@ -1285,13 +1285,6 @@ def queue_next(request, entry_id):
             machine = entry.assigned_machine
             old_position = entry.queue_position if entry.queue_position is not None else "unknown"
 
-            # Find who is currently at position #1 (they will be bumped)
-            current_on_deck = QueueEntry.objects.filter(
-                assigned_machine=machine,
-                status='queued',
-                queue_position=1
-            ).exclude(id=entry.id).first()
-
             queued_entries = QueueEntry.objects.filter(
                 assigned_machine=machine,
                 status='queued'
@@ -1335,13 +1328,12 @@ def queue_next(request, entry_id):
                 # Don't fail the operation if WebSocket broadcast fails
                 print(f"WebSocket broadcast error in queue_next: {e}")
 
-            # Notify the person who was bumped from position #1
-            if current_on_deck:
-                current_on_deck.refresh_from_db()
-                notifications.notify_bumped_from_on_deck(current_on_deck, reason='priority request')
-
             # Notify the moved entry with admin-specific notification
             notifications.notify_admin_moved_entry(entry, request.user, old_position, 1)
+
+            # Handle ON Deck transition: clear old notifications/reminders for displaced
+            # entry, set up notifications and check-in reminders for new position #1 entry
+            notifications.check_and_notify_on_deck_status(machine)
 
             messages.success(request, f'"{entry.title}" moved to position 1.')
         else:

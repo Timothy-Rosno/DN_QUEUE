@@ -888,6 +888,18 @@ def check_and_notify_on_deck_status(machine):
                         related_machine=entry.assigned_machine,
                     )
 
+            # Clear check-in reminder state for any non-position-1 entry that still has it
+            # (catches cases where on_deck/ready_for_check_in notification was already read)
+            if entry.checkin_reminder_due_at is not None:
+                auto_clear_notifications(
+                    related_queue_entry=entry,
+                    notification_type='checkin_reminder'
+                )
+                entry.checkin_reminder_due_at = None
+                entry.last_checkin_reminder_sent_at = None
+                entry.checkin_reminder_snoozed_until = None
+                entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
+
         if on_deck_entry:
             # Simple logic: if machine is idle, user can check in. Otherwise, they're on deck.
             # (If machine is unavailable, nothing should be assigned to it anyway)
