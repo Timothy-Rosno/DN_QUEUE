@@ -419,8 +419,9 @@
             return;
         }
 
-        // Other user's update - reload to show changes
+        // Other user's update - save scroll position and reload to show changes
         console.log('Queue page: Update from other user, reloading...');
+        sessionStorage.setItem('scrollPosition', window.scrollY);
         location.reload();
     });
 

@@ -484,6 +484,17 @@
     });
 
     // ===============================
+    // Restore scroll position after reload
+    // ===============================
+    window.addEventListener('load', function() {
+        var saved = sessionStorage.getItem('myQueueScrollPosition');
+        if (saved) {
+            window.scrollTo(0, parseInt(saved));
+            sessionStorage.removeItem('myQueueScrollPosition');
+        }
+    });
+
+    // ===============================
     // Smart Update on Queue Updates
     // ===============================
 
@@ -495,6 +506,7 @@
         // Only reload if current user's entries are affected
         if (data.user_id && Number(data.user_id) === Number(globalCurrentUserId)) {
             console.log('My queue: Current user affected, reloading...');
+            sessionStorage.setItem('myQueueScrollPosition', window.scrollY);
             location.reload();
         } else {
             // Other user's update - banner is shown by base.html, no reload needed

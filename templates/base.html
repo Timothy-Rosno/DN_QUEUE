@@ -1142,7 +1142,7 @@
             </div>
             <div id="trainingRequestMessage" style="display:none; margin:1rem 0; padding:0.75rem; border-radius:4px; font-size:0.9rem;"></div>
             <div style="display:flex; justify-content:center; gap:1rem; margin-top:1.5rem;">
-                <button type="button" onclick="submitTrainingRequest()" id="trainingNotifyBtn" class="btn" style="display:none; background-color:#80c28f; color:white; padding:0.5rem 1.5rem; border:none; border-radius:4px; cursor:pointer;">Notify</button>
+                <button type="button" onclick="submitTrainingRequest()" id="trainingNotifyBtn" class="btn" style="display:none; background-color:#80c28f; color:white; padding:0.5rem 1.5rem; border:none; border-radius:4px; cursor:pointer;">Request</button>
                 <button type="button" onclick="closeTrainingRequestDialog()" class="btn btn-secondary" style="padding:0.5rem 1.5rem;">Cancel</button>
             </div>
         </div>
@@ -1200,7 +1200,7 @@
         var btn = document.getElementById('trainingNotifyBtn');
         btn.style.display = checked.length > 0 ? '' : 'none';
         btn.disabled = false;
-        btn.textContent = 'Notify';
+        btn.textContent = 'Request';
     }
 
     function closeTrainingRequestDialog() {
@@ -1241,12 +1241,12 @@
                 msgDiv.style.color = '#721c24';
                 msgDiv.textContent = data.error || 'An error occurred.';
                 btn.disabled = false;
-                btn.textContent = 'Notify';
+                btn.textContent = 'Request';
             }
         })
         .catch(function() {
             btn.disabled = false;
-            btn.textContent = 'Notify';
+            btn.textContent = 'Request';
             var msgDiv = document.getElementById('trainingRequestMessage');
             msgDiv.style.display = 'block';
             msgDiv.style.backgroundColor = '#f8d7da';
