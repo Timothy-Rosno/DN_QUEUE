@@ -11,6 +11,7 @@ class QueueEntryForm(forms.ModelForm):
         ('QBoard I', 'QBoard I'),
         ('QBoard II', 'QBoard II'),
         ('Montana Puck', 'Montana Puck'),
+        ('DIP', 'DIP'),
     ]
 
     required_daughterboard = forms.ChoiceField(
@@ -222,6 +223,7 @@ class QueuePresetForm(forms.ModelForm):
         ('QBoard I', 'QBoard I'),
         ('QBoard II', 'QBoard II'),
         ('Montana Puck', 'Montana Puck'),
+        ('DIP', 'DIP'),
     ]
 
     required_daughterboard = forms.ChoiceField(

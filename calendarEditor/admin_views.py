@@ -1141,6 +1141,9 @@ def approve_rush_job(request, entry_id):
         # Notify all admins on Slack
         notifications.notify_admins_rush_job_approved(entry, request.user)
 
+        # Check on-deck status to initialize check-in reminders and notifications
+        notifications.check_on_deck(machine)
+
         # Broadcast queue update to all connected users via WebSocket
         try:
             channel_layer = get_channel_layer()

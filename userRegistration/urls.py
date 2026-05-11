@@ -15,4 +15,4 @@ urlpatterns = [
 
     # Security question management
     path('change-security-question/', views.change_security_question, name='change_security_question'),
-]
+] #tes

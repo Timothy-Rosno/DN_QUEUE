@@ -67,7 +67,7 @@ class Machine(models.Model):
     # Connection specifications
     dc_lines = models.IntegerField(default=0, help_text="Number of DC lines available")
     rf_lines = models.IntegerField(default=0, help_text="Number of RF lines available")
-    daughterboard_type = models.CharField(max_length=100, blank=True, help_text="Daughterboard type (e.g., QBoard I, QBoard II, Montana Puck)")
+    daughterboard_type = models.CharField(max_length=100, blank=True, help_text="Daughterboard type (e.g., QBoard I, QBoard II, Montana Puck, DIP)")
 
     # Optical capabilities
     optical_capabilities = models.CharField(
