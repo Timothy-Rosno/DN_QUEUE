@@ -1081,6 +1081,10 @@ def approve_rush_job(request, entry_id):
 
         # If changing machines, use reassignment logic
         if old_machine and machine != old_machine:
+            # First, clear entry's position to avoid UNIQUE constraint violations during reorder
+            entry.queue_position = None
+            entry.save(update_fields=['queue_position'])
+
             # Remove from old machine queue
             old_queued = QueueEntry.objects.filter(
                 assigned_machine=old_machine,
