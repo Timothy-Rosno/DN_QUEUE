@@ -3,6 +3,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.models import User
+from datetime import timedelta
 from django.utils import timezone
 from django.urls import reverse
 from django.db.models import Count, Q
@@ -1090,6 +1091,15 @@ def approve_rush_job(request, entry_id):
                 other_entry.queue_position = idx
                 other_entry.save()
 
+        # Find who is currently at position #1 before we shift (if appeal is going to pos 1)
+        current_on_deck = None
+        if queue_position == 1:
+            current_on_deck = QueueEntry.objects.filter(
+                assigned_machine=machine,
+                status='queued',
+                queue_position=1
+            ).exclude(id=entry.id).first()
+
         # Insert into new machine queue at specified position
         # Get all queued entries for the target machine
         queued_entries = QueueEntry.objects.filter(
@@ -1142,8 +1152,30 @@ def approve_rush_job(request, entry_id):
         # Notify all admins on Slack
         notifications.notify_admins_rush_job_approved(entry, request.user)
 
-        # Check on-deck status to initialize check-in reminders and notifications
-        notifications.check_and_notify_on_deck_status(machine)
+        # Directly clean up the displaced entry if appeal went to position #1
+        if current_on_deck:
+            current_on_deck.refresh_from_db()
+            Notification.objects.filter(
+                related_queue_entry=current_on_deck,
+                notification_type__in=['on_deck', 'ready_for_check_in', 'admin_moved_entry', 'admin_action', 'checkin_reminder']
+            ).delete()
+            current_on_deck.checkin_reminder_due_at = None
+            current_on_deck.last_checkin_reminder_sent_at = None
+            current_on_deck.checkin_reminder_snoozed_until = None
+            current_on_deck.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
+            notifications.notify_bumped_from_on_deck(current_on_deck, reason='queue appeal')
+
+        # Initialize check-in reminders for the new position #1 entry directly
+        # (don't call check_and_notify_on_deck_status - it sends duplicate notifications)
+        if queue_position == 1:
+            entry.refresh_from_db()
+            if machine.current_status == 'idle':
+                entry.checkin_reminder_due_at = timezone.now() + timedelta(hours=12)
+            else:
+                entry.checkin_reminder_due_at = None
+            entry.last_checkin_reminder_sent_at = None
+            entry.checkin_reminder_snoozed_until = None
+            entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
 
         # Broadcast queue update to all connected users via WebSocket
         try:
@@ -1341,7 +1373,6 @@ def queue_next(request, entry_id):
             # Directly clean up the displaced entry (was at position #1)
             if current_on_deck:
                 current_on_deck.refresh_from_db()
-                # Delete stale position-1 notifications (not just mark read - they show on the page)
                 Notification.objects.filter(
                     related_queue_entry=current_on_deck,
                     notification_type__in=['on_deck', 'ready_for_check_in', 'admin_moved_entry', 'checkin_reminder']
@@ -1352,8 +1383,15 @@ def queue_next(request, entry_id):
                 current_on_deck.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
                 notifications.notify_bumped_from_on_deck(current_on_deck, reason='priority request')
 
-            # Set up notifications and check-in reminders for new position #1 entry
-            notifications.check_and_notify_on_deck_status(machine)
+            # Initialize check-in reminders for the new position #1 entry directly
+            # (don't call check_and_notify_on_deck_status - it sends duplicate notifications)
+            if machine.current_status == 'idle':
+                entry.checkin_reminder_due_at = timezone.now() + timedelta(hours=12)
+            else:
+                entry.checkin_reminder_due_at = None
+            entry.last_checkin_reminder_sent_at = None
+            entry.checkin_reminder_snoozed_until = None
+            entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
 
             messages.success(request, f'"{entry.title}" moved to position 1.')
         else:
@@ -1437,8 +1475,16 @@ def move_queue_up(request, entry_id):
                     entry_above.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
                     notifications.notify_bumped_from_on_deck(entry_above, reason='queue reordering')
 
-                    # Set up notifications and check-in reminders for new position #1 entry
-                    notifications.check_and_notify_on_deck_status(machine)
+                    # Initialize check-in reminders for the new position #1 entry directly
+                    # (don't call check_and_notify_on_deck_status - it sends duplicate notifications)
+                    entry.refresh_from_db()
+                    if machine.current_status == 'idle':
+                        entry.checkin_reminder_due_at = timezone.now() + timedelta(hours=12)
+                    else:
+                        entry.checkin_reminder_due_at = None
+                    entry.last_checkin_reminder_sent_at = None
+                    entry.checkin_reminder_snoozed_until = None
+                    entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
 
                 messages.success(request, f'"{entry.title}" moved up.')
             else:
@@ -1523,8 +1569,16 @@ def move_queue_down(request, entry_id):
                     entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
                     notifications.notify_bumped_from_on_deck(entry, reason='queue reordering')
 
-                    # Set up notifications and check-in reminders for new position #1 entry (entry_below)
-                    notifications.check_and_notify_on_deck_status(machine)
+                    # Initialize check-in reminders for the new position #1 entry (entry_below) directly
+                    # (don't call check_and_notify_on_deck_status - it sends duplicate notifications)
+                    entry_below.refresh_from_db()
+                    if machine.current_status == 'idle':
+                        entry_below.checkin_reminder_due_at = timezone.now() + timedelta(hours=12)
+                    else:
+                        entry_below.checkin_reminder_due_at = None
+                    entry_below.last_checkin_reminder_sent_at = None
+                    entry_below.checkin_reminder_snoozed_until = None
+                    entry_below.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
 
                 messages.success(request, f'"{entry.title}" moved down.')
             else:
