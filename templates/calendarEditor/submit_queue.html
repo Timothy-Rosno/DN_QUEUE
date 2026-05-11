@@ -1548,25 +1548,23 @@
             }
 
             function updateSubmitButtons() {
+                if (!submitBtnTop && !submitBtnBottom) return;
+
                 const errors = validateForm();
                 const isValid = errors.length === 0;
 
                 // Update button states
-                submitBtnTop.disabled = !isValid;
-                submitBtnBottom.disabled = !isValid;
+                if (submitBtnTop) submitBtnTop.disabled = !isValid;
+                if (submitBtnBottom) submitBtnBottom.disabled = !isValid;
 
                 // Update tooltips
                 if (errors.length > 0) {
                     const tooltipContent = '<ul>' + errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
-                    tooltipTop.innerHTML = tooltipContent;
-                    tooltipBottom.innerHTML = tooltipContent;
-                    tooltipTop.style.display = '';  // Reset to default (CSS will control visibility)
-                    tooltipBottom.style.display = '';
+                    if (tooltipTop) { tooltipTop.innerHTML = tooltipContent; tooltipTop.style.display = ''; }
+                    if (tooltipBottom) { tooltipBottom.innerHTML = tooltipContent; tooltipBottom.style.display = ''; }
                 } else {
-                    tooltipTop.innerHTML = '';
-                    tooltipBottom.innerHTML = '';
-                    tooltipTop.style.display = 'none';  // Explicitly hide when valid
-                    tooltipBottom.style.display = 'none';
+                    if (tooltipTop) { tooltipTop.innerHTML = ''; tooltipTop.style.display = 'none'; }
+                    if (tooltipBottom) { tooltipBottom.innerHTML = ''; tooltipBottom.style.display = 'none'; }
                 }
             }
 

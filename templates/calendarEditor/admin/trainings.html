@@ -75,48 +75,48 @@
                         <td style="padding: 0.5rem 0.75rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 {% if profile.ln2_trained %}
-                                    <span style="color: #27ae60; font-weight: bold;">Trained</span>
-                                    {% if profile.ln2_training_date %}
-                                        <span style="font-size: 0.8rem; color: #7f8c8d;">{{ profile.ln2_training_date|date:"M d, Y" }}</span>
-                                    {% endif %}
-                                    <form method="post" action="{% url 'toggle_training_status' profile.user.id %}" style="margin: 0; margin-left: auto;">
+                                    <form method="post" action="{% url 'toggle_training_status' profile.user.id %}" style="margin: 0;">
                                         {% csrf_token %}
                                         <input type="hidden" name="training_type" value="ln2">
                                         <input type="hidden" name="action" value="untrain">
                                         <button type="submit" class="btn" style="background-color: #e74c3c; color: white; padding: 0.2rem 0.5rem; font-size: 0.75rem;">Untrain</button>
                                     </form>
+                                    <span style="color: #27ae60; font-weight: bold;">Trained</span>
+                                    {% if profile.ln2_training_date %}
+                                        <span style="font-size: 0.8rem; color: #7f8c8d;">{{ profile.ln2_training_date|date:"M d, Y" }}</span>
+                                    {% endif %}
                                 {% else %}
-                                    <span style="color: #e74c3c; font-weight: bold;">Untrained</span>
-                                    <form method="post" action="{% url 'toggle_training_status' profile.user.id %}" style="margin: 0; margin-left: auto;">
+                                    <form method="post" action="{% url 'toggle_training_status' profile.user.id %}" style="margin: 0;">
                                         {% csrf_token %}
                                         <input type="hidden" name="training_type" value="ln2">
                                         <input type="hidden" name="action" value="train">
                                         <button type="submit" class="btn" style="background-color: #27ae60; color: white; padding: 0.2rem 0.5rem; font-size: 0.75rem;">Train</button>
                                     </form>
+                                    <span style="color: #e74c3c; font-weight: bold;">Untrained</span>
                                 {% endif %}
                             </div>
                         </td>
                         <td style="padding: 0.5rem 0.75rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 {% if profile.quantify_trained %}
-                                    <span style="color: #27ae60; font-weight: bold;">Trained</span>
-                                    {% if profile.quantify_training_date %}
-                                        <span style="font-size: 0.8rem; color: #7f8c8d;">{{ profile.quantify_training_date|date:"M d, Y" }}</span>
-                                    {% endif %}
-                                    <form method="post" action="{% url 'toggle_training_status' profile.user.id %}" style="margin: 0; margin-left: auto;">
+                                    <form method="post" action="{% url 'toggle_training_status' profile.user.id %}" style="margin: 0;">
                                         {% csrf_token %}
                                         <input type="hidden" name="training_type" value="quantify">
                                         <input type="hidden" name="action" value="untrain">
                                         <button type="submit" class="btn" style="background-color: #e74c3c; color: white; padding: 0.2rem 0.5rem; font-size: 0.75rem;">Untrain</button>
                                     </form>
+                                    <span style="color: #27ae60; font-weight: bold;">Trained</span>
+                                    {% if profile.quantify_training_date %}
+                                        <span style="font-size: 0.8rem; color: #7f8c8d;">{{ profile.quantify_training_date|date:"M d, Y" }}</span>
+                                    {% endif %}
                                 {% else %}
-                                    <span style="color: #e74c3c; font-weight: bold;">Untrained</span>
-                                    <form method="post" action="{% url 'toggle_training_status' profile.user.id %}" style="margin: 0; margin-left: auto;">
+                                    <form method="post" action="{% url 'toggle_training_status' profile.user.id %}" style="margin: 0;">
                                         {% csrf_token %}
                                         <input type="hidden" name="training_type" value="quantify">
                                         <input type="hidden" name="action" value="train">
                                         <button type="submit" class="btn" style="background-color: #27ae60; color: white; padding: 0.2rem 0.5rem; font-size: 0.75rem;">Train</button>
                                     </form>
+                                    <span style="color: #e74c3c; font-weight: bold;">Untrained</span>
                                 {% endif %}
                             </div>
                         </td>

@@ -1142,7 +1142,7 @@
             </div>
             <div id="trainingRequestMessage" style="display:none; margin:1rem 0; padding:0.75rem; border-radius:4px; font-size:0.9rem;"></div>
             <div style="display:flex; justify-content:center; gap:1rem; margin-top:1.5rem;">
-                <button type="button" onclick="submitTrainingRequest()" id="trainingNotifyBtn" class="btn" style="background-color:#80c28f; color:white; padding:0.5rem 1.5rem; border:none; border-radius:4px; cursor:pointer;">Notify</button>
+                <button type="button" onclick="submitTrainingRequest()" id="trainingNotifyBtn" class="btn" style="display:none; background-color:#80c28f; color:white; padding:0.5rem 1.5rem; border:none; border-radius:4px; cursor:pointer;">Notify</button>
                 <button type="button" onclick="closeTrainingRequestDialog()" class="btn btn-secondary" style="padding:0.5rem 1.5rem;">Cancel</button>
             </div>
         </div>
@@ -1165,15 +1165,17 @@
                 if (!data.ln2_trained) {
                     var disabled = data.ln2_pending ? ' disabled' : '';
                     var checked = data.ln2_pending ? '' : ' checked';
+                    var cursor = data.ln2_pending ? 'default' : 'pointer';
                     var label = data.ln2_pending ? 'Liquid Nitrogen (LN2) <span style="color:#f39c12; font-size:0.85rem;">(Request Pending)</span>' : 'Liquid Nitrogen (LN2)';
-                    html += '<label style="display:block; margin:0.5rem 0; cursor:pointer;"><input type="checkbox" name="training" value="ln2"' + checked + disabled + ' style="margin-right:0.5rem;"> ' + label + '</label>';
+                    html += '<label style="display:block; margin:0.5rem 0; cursor:' + cursor + ';"><input type="checkbox" name="training" value="ln2"' + checked + disabled + ' style="margin-right:0.5rem; cursor:' + cursor + ';"> ' + label + '</label>';
                     if (!data.ln2_pending) anyCheckable = true;
                 }
                 if (!data.quantify_trained) {
                     var disabled = data.quantify_pending ? ' disabled' : '';
                     var checked = data.quantify_pending ? '' : ' checked';
+                    var cursor = data.quantify_pending ? 'default' : 'pointer';
                     var label = data.quantify_pending ? 'Quantify <span style="color:#f39c12; font-size:0.85rem;">(Request Pending)</span>' : 'Quantify';
-                    html += '<label style="display:block; margin:0.5rem 0; cursor:pointer;"><input type="checkbox" name="training" value="quantify"' + checked + disabled + ' style="margin-right:0.5rem;"> ' + label + '</label>';
+                    html += '<label style="display:block; margin:0.5rem 0; cursor:' + cursor + ';"><input type="checkbox" name="training" value="quantify"' + checked + disabled + ' style="margin-right:0.5rem; cursor:' + cursor + ';"> ' + label + '</label>';
                     if (!data.quantify_pending) anyCheckable = true;
                 }
 
@@ -1182,11 +1184,23 @@
                 }
 
                 checkboxes.innerHTML = html;
-                document.getElementById('trainingNotifyBtn').disabled = !anyCheckable;
+                updateTrainingNotifyBtn();
+
+                // Add change listeners to toggle Notify button visibility
+                var cbs = checkboxes.querySelectorAll('input[name="training"]:not(:disabled)');
+                cbs.forEach(function(cb) { cb.addEventListener('change', updateTrainingNotifyBtn); });
             })
             .catch(function() {
                 checkboxes.innerHTML = '<p style="color:#e74c3c;">Error loading training status.</p>';
             });
+    }
+
+    function updateTrainingNotifyBtn() {
+        var checked = document.querySelectorAll('#trainingCheckboxes input[name="training"]:checked:not(:disabled)');
+        var btn = document.getElementById('trainingNotifyBtn');
+        btn.style.display = checked.length > 0 ? '' : 'none';
+        btn.disabled = false;
+        btn.textContent = 'Notify';
     }
 
     function closeTrainingRequestDialog() {
