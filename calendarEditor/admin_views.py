@@ -3829,8 +3829,8 @@ def demote_from_lab_manager(request, user_id):
 @login_required
 @never_cache
 def lab_manager_trainings(request):
-    """Training management page for lab managers only."""
-    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager):
+    """Training management page for lab managers and superusers."""
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager)):
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('home')
 
@@ -3862,7 +3862,7 @@ def lab_manager_trainings(request):
 @login_required
 def approve_training_request(request, request_id):
     """Approve a training update request."""
-    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager):
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager)):
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('home')
 
@@ -3900,7 +3900,7 @@ def approve_training_request(request, request_id):
 @login_required
 def reject_training_request(request, request_id):
     """Reject a training update request."""
-    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager):
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager)):
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('home')
 
@@ -3928,7 +3928,7 @@ def reject_training_request(request, request_id):
 @login_required
 def toggle_training_status(request, user_id):
     """Toggle a user's training status (lab manager or superuser only)."""
-    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager):
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager)):
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('home')
 

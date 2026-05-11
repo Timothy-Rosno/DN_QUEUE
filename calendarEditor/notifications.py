@@ -902,13 +902,11 @@ def check_and_notify_on_deck_status(machine):
 
         if on_deck_entry:
             # Simple logic: if machine is idle, user can check in. Otherwise, they're on deck.
-            # (If machine is unavailable, nothing should be assigned to it anyway)
-            # print(f"[CHECK_ON_DECK] Machine status: {machine.current_status}")
+            from django.utils import timezone
+            from datetime import timedelta
 
             machine_is_ready = (machine.current_status == 'idle')
-
             correct_notif_type = 'ready_for_check_in' if machine_is_ready else 'on_deck'
-            # print(f"[CHECK_ON_DECK] machine_is_ready={machine_is_ready}, will send: {correct_notif_type}")
 
             # Determine reason for not being ready (for on_deck notification message)
             on_deck_reason = None
@@ -919,58 +917,54 @@ def check_and_notify_on_deck_status(machine):
                     on_deck_reason = 'running'
                 elif machine.current_status == 'cooldown':
                     on_deck_reason = 'cooldown'
-                # print(f"[CHECK_ON_DECK] Not ready reason: {on_deck_reason}")
 
-            # Check what notification the user currently has (check for any unread position 1 notifications)
+            # Decide whether to send a notification
+            should_notify = True
+
+            # Check for existing on_deck/ready_for_check_in notification
             existing_notif = Notification.objects.filter(
                 recipient=on_deck_entry.user,
                 related_queue_entry=on_deck_entry,
                 notification_type__in=['on_deck', 'ready_for_check_in'],
-                is_read=False  # Only check unread notifications
+                is_read=False
             ).first()
 
             if existing_notif:
-                # print(f"[CHECK_ON_DECK] Found existing notification: {existing_notif.notification_type}")
-                # User already has a position 1 notification
                 if existing_notif.notification_type == correct_notif_type:
-                    # Same notification type - don't send duplicate
-                    # print(f"[CHECK_ON_DECK] Same type as existing, skipping duplicate")
-                    return
+                    # Already has the correct notification type - don't duplicate
+                    should_notify = False
                 else:
-                    # Machine status changed! Clear old notification and send new one
-                    # Example: had "on_deck", now machine is ready → send "ready_for_check_in"
-                    # print(f"[CHECK_ON_DECK] Deleting old notification and sending new one")
+                    # Machine status changed - clear old notification so we can send updated one
                     existing_notif.delete()
-            # else:
-                # print(f"[CHECK_ON_DECK] No existing notification found")
 
-            # Send the appropriate notification based on machine status
+            # Skip notification if admin already notified them about this move
+            # (admin_moved_entry from arrow/queue_next, admin_action from appeal approval)
+            if Notification.objects.filter(
+                recipient=on_deck_entry.user,
+                related_queue_entry=on_deck_entry,
+                notification_type__in=['admin_moved_entry', 'admin_action'],
+                is_read=False
+            ).exists():
+                should_notify = False
+
+            # Send notification only if needed
+            if should_notify:
+                if machine_is_ready:
+                    notify_ready_for_check_in(on_deck_entry)
+                else:
+                    notify_on_deck(on_deck_entry, reason=on_deck_reason)
+
+            # Always initialize/update check-in reminders regardless of notification
             if machine_is_ready:
-                # Machine is fully ready - user can check in immediately
-                # print(f"[CHECK_ON_DECK] Calling notify_ready_for_check_in")
-                notify_ready_for_check_in(on_deck_entry)
-                # print(f"[CHECK_ON_DECK] notify_ready_for_check_in completed")
-
-                # Initialize check-in reminder (send first reminder after 12 hours, then every 12 hours)
-                from django.utils import timezone
-                from datetime import timedelta
-                on_deck_entry.checkin_reminder_due_at = timezone.now() + timedelta(hours=12)  # First reminder after 12 hours
-                on_deck_entry.last_checkin_reminder_sent_at = None  # Reset counter
-                on_deck_entry.checkin_reminder_snoozed_until = None  # Clear any snooze
+                on_deck_entry.checkin_reminder_due_at = timezone.now() + timedelta(hours=12)
+                on_deck_entry.last_checkin_reminder_sent_at = None
+                on_deck_entry.checkin_reminder_snoozed_until = None
                 on_deck_entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
-                # print(f"[CHECK_ON_DECK] Initialized check-in reminder for {on_deck_entry.title} (due in 6 hours)")
             else:
-                # Machine is busy, unavailable, offline, in maintenance, or cooling down - user is on deck but must wait
-                # print(f"[CHECK_ON_DECK] Calling notify_on_deck with reason={on_deck_reason}")
-                notify_on_deck(on_deck_entry, reason=on_deck_reason)
-                # print(f"[CHECK_ON_DECK] notify_on_deck completed")
-
-                # Clear check-in reminder since machine isn't ready yet
                 on_deck_entry.checkin_reminder_due_at = None
                 on_deck_entry.last_checkin_reminder_sent_at = None
                 on_deck_entry.checkin_reminder_snoozed_until = None
                 on_deck_entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
-                # print(f"[CHECK_ON_DECK] Cleared check-in reminder for {on_deck_entry.title} (machine not ready)")
     except Exception as e:
         print(f"[CHECK_ON_DECK] ERROR: {e}")
         import traceback

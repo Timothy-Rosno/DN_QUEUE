@@ -501,7 +501,7 @@
                             </a>
                         </li>
                     {% endif %}
-                    {% if user.profile.is_lab_manager %}
+                    {% if user.is_superuser or user.profile.is_lab_manager %}
                         <li style="position: relative;">
                             <a href="{% url 'lab_manager_trainings' %}" style="color: #80c28f; font-weight: bold; position: relative; display: inline-block; padding: 0.5rem 1rem;">
                                 Trainings
