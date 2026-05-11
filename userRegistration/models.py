@@ -103,10 +103,11 @@ class UserProfile(models.Model):
 
     def save(self, *args, **kwargs):
         """Override save to ensure superusers are always approved."""
-        # Superusers should always be approved
+        # Superusers should always be approved and have lab manager access
         if self.user.is_superuser:
             self.status = 'approved'
             self.is_approved = True
+            self.is_lab_manager = True
         super().save(*args, **kwargs)
 
     def __str__(self):

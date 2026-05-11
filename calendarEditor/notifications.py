@@ -853,18 +853,22 @@ def check_and_notify_on_deck_status(machine):
             queue_position__gt=1
         )
 
-        # Clear position 1 notifications for anyone who is no longer at position 1
+        # Clear position 1 state for anyone who is no longer at position 1
         for entry in all_queued:
-            # Check if they have active on_deck or ready_for_check_in notifications
-            has_position_1_notif = Notification.objects.filter(
+            # Detect if this entry was previously at position #1 via any signal:
+            # - Has on_deck/ready_for_check_in notifications (natural queue progression)
+            # - Has admin_moved_entry notification (admin arrow/queue_next move)
+            # - Has admin_action notification (appeal approval)
+            # - Has check-in reminder fields set (was at #1 with idle machine)
+            was_on_deck = Notification.objects.filter(
                 recipient=entry.user,
                 related_queue_entry=entry,
-                notification_type__in=['on_deck', 'ready_for_check_in'],
+                notification_type__in=['on_deck', 'ready_for_check_in', 'admin_moved_entry', 'admin_action'],
                 is_read=False
-            ).exists()
+            ).exists() or entry.checkin_reminder_due_at is not None
 
-            if has_position_1_notif:
-                # They were bumped out of position 1 - clear their notifications and notify them
+            if was_on_deck:
+                # Clear all position-1-related notifications
                 auto_clear_notifications(
                     related_queue_entry=entry,
                     notification_type='on_deck'
@@ -873,8 +877,27 @@ def check_and_notify_on_deck_status(machine):
                     related_queue_entry=entry,
                     notification_type='ready_for_check_in'
                 )
+                auto_clear_notifications(
+                    related_queue_entry=entry,
+                    notification_type='admin_moved_entry'
+                )
+                auto_clear_notifications(
+                    related_queue_entry=entry,
+                    notification_type='admin_action'
+                )
+                auto_clear_notifications(
+                    related_queue_entry=entry,
+                    notification_type='checkin_reminder'
+                )
 
-                # Send notification about being bumped out of first position
+                # Clear check-in reminder fields
+                if entry.checkin_reminder_due_at is not None:
+                    entry.checkin_reminder_due_at = None
+                    entry.last_checkin_reminder_sent_at = None
+                    entry.checkin_reminder_snoozed_until = None
+                    entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
+
+                # Notify user they were bumped from position #1
                 user = entry.user
                 prefs = NotificationPreference.get_or_create_for_user(user)
 
@@ -887,18 +910,6 @@ def check_and_notify_on_deck_status(machine):
                         related_queue_entry=entry,
                         related_machine=entry.assigned_machine,
                     )
-
-            # Clear check-in reminder state for any non-position-1 entry that still has it
-            # (catches cases where on_deck/ready_for_check_in notification was already read)
-            if entry.checkin_reminder_due_at is not None:
-                auto_clear_notifications(
-                    related_queue_entry=entry,
-                    notification_type='checkin_reminder'
-                )
-                entry.checkin_reminder_due_at = None
-                entry.last_checkin_reminder_sent_at = None
-                entry.checkin_reminder_snoozed_until = None
-                entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
 
         if on_deck_entry:
             # Simple logic: if machine is idle, user can check in. Otherwise, they're on deck.
