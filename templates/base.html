@@ -446,11 +446,7 @@
             <ul>
                 <li><a href="{% url 'home' %}">Home</a></li>
                 {% if user.is_authenticated %}
-                    {% if user.profile.ln2_trained and user.profile.quantify_trained %}
-                        <li><a href="{% url 'submit_queue' %}">Submit Request</a></li>
-                    {% else %}
-                        <li><a href="#" onclick="openTrainingRequestDialog(); return false;" style="color: #e67e22;">Request Training Update</a></li>
-                    {% endif %}
+                    <li><a href="{% url 'submit_queue' %}">Submit Request</a></li>
                     <li><a href="{% url 'public_queue' %}">Public Queue</a></li>
                     <li><a href="{% url 'my_queue' %}">My Queue</a></li>
                     <li style="position: relative;">
@@ -505,7 +501,7 @@
                             </a>
                         </li>
                     {% endif %}
-                    {% if user.profile.is_lab_manager or user.is_superuser %}
+                    {% if user.profile.is_lab_manager %}
                         <li style="position: relative;">
                             <a href="{% url 'lab_manager_trainings' %}" style="color: #80c28f; font-weight: bold; position: relative; display: inline-block; padding: 0.5rem 1rem;">
                                 Trainings

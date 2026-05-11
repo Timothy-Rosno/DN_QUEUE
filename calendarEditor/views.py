@@ -233,12 +233,13 @@ def public_queue(request):
 @login_required
 def submit_queue_entry(request):
     """Submit a new queue entry."""
-    # Training guard: user must be trained in both LN2 and Quantify
-    if hasattr(request.user, 'profile') and not (request.user.profile.ln2_trained and request.user.profile.quantify_trained):
-        messages.error(request, 'You must complete all required trainings before submitting a queue request.')
-        return redirect('home')
-
     if request.method == 'POST':
+        # Training guard: user must be trained in both LN2 and Quantify to submit
+        if hasattr(request.user, 'profile') and not (request.user.profile.ln2_trained and request.user.profile.quantify_trained):
+            messages.error(request, 'You must complete all required trainings before submitting a queue request.')
+            return redirect('submit_queue')
+
+
         form = QueueEntryForm(request.POST)
         if form.is_valid():
             queue_entry = form.save(commit=False)

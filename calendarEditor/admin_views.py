@@ -3762,6 +3762,15 @@ def promote_to_lab_manager(request, user_id):
                 profile.is_lab_manager = True
                 profile.lab_manager_promoted_by = request.user
                 profile.lab_manager_promoted_at = timezone.now()
+
+                # Auto-grant trainings on lab manager promotion
+                if not profile.ln2_trained:
+                    profile.ln2_trained = True
+                    profile.ln2_training_date = timezone.now()
+                if not profile.quantify_trained:
+                    profile.quantify_trained = True
+                    profile.quantify_training_date = timezone.now()
+
                 profile.save()
 
                 notifications.create_notification(
@@ -3819,8 +3828,8 @@ def demote_from_lab_manager(request, user_id):
 @login_required
 @never_cache
 def lab_manager_trainings(request):
-    """Training management page for lab managers."""
-    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager) and not request.user.is_superuser:
+    """Training management page for lab managers only."""
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager):
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('home')
 
@@ -3830,16 +3839,19 @@ def lab_manager_trainings(request):
         status='pending'
     ).select_related('user', 'user__profile')
 
+    all_users = UserProfile.objects.select_related('user').order_by('user__username')
+
     trained_users = UserProfile.objects.filter(
         ln2_trained=True, quantify_trained=True
-    ).select_related('user')
+    ).select_related('user').order_by('user__username')
 
     untrained_users = UserProfile.objects.filter(
         Q(ln2_trained=False) | Q(quantify_trained=False)
-    ).select_related('user')
+    ).select_related('user').order_by('user__username')
 
     context = {
         'pending_requests': pending_requests,
+        'all_users': all_users,
         'trained_users': trained_users,
         'untrained_users': untrained_users,
     }
@@ -3849,7 +3861,7 @@ def lab_manager_trainings(request):
 @login_required
 def approve_training_request(request, request_id):
     """Approve a training update request."""
-    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager) and not request.user.is_superuser:
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager):
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('home')
 
@@ -3887,7 +3899,7 @@ def approve_training_request(request, request_id):
 @login_required
 def reject_training_request(request, request_id):
     """Reject a training update request."""
-    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager) and not request.user.is_superuser:
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager):
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('home')
 
@@ -3915,7 +3927,7 @@ def reject_training_request(request, request_id):
 @login_required
 def toggle_training_status(request, user_id):
     """Toggle a user's training status (lab manager or superuser only)."""
-    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager) and not request.user.is_superuser:
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager):
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('home')
 
@@ -3947,6 +3959,18 @@ def toggle_training_status(request, user_id):
             training_name = 'Liquid Nitrogen' if training_type == 'ln2' else 'Quantify'
             action_text = 'trained' if action == 'train' else 'untrained'
             messages.success(request, f'{user.username} marked as {action_text} for {training_name}.')
+
+            # Notify the user about training status change
+            if action == 'train':
+                notifications.notify_training_approved(user, training_name, request.user)
+            elif action == 'untrain':
+                notifications.create_notification(
+                    recipient=user,
+                    notification_type='training_rejected',
+                    title='Training Status Changed',
+                    message=f'Your {training_name} training status has been set to untrained by {request.user.username}.',
+                    triggering_user=request.user,
+                )
         except UserProfile.DoesNotExist:
             messages.error(request, f'{user.username} does not have a profile.')
 

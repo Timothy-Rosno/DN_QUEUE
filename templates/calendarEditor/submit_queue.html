@@ -7,6 +7,13 @@
     <div id="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h1 style="margin: 0;">Submit Queue Request</h1>
     </div>
+    {% if not user.profile.ln2_trained or not user.profile.quantify_trained %}
+    <div style="margin: 1rem 0; padding: 0.75rem 1rem; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+        <p style="margin: 0; color: #856404; font-size: 0.9rem;">
+            <strong>Training Required:</strong> You must complete all required trainings (Liquid Nitrogen and Quantify) before submitting a queue request. Use the "Request Training Update" button below to notify a lab manager.
+        </p>
+    </div>
+    {% endif %}
     <p style="margin: 1rem 0;">Fill out your experiment requirements below. The system will automatically assign you to the best matching machine.</p>
     <p style="margin: 0.5rem 0; font-size: 0.95rem;">
         Check <a href="{% url 'fridge_list' %}" style="color: #3498db; text-decoration: underline;">here</a> for the most up-to-date fridge specifications.
@@ -58,10 +65,14 @@
         </div>
 
         <div style="margin-top: 1.5rem;">
-            <span class="submit-btn-wrapper">
-                <button type="submit" class="btn" id="submitBtnTop" disabled>Submit Request</button>
-                <div class="validation-tooltip" id="validationTooltipTop"></div>
-            </span>
+            {% if user.profile.ln2_trained and user.profile.quantify_trained %}
+                <span class="submit-btn-wrapper">
+                    <button type="submit" class="btn" id="submitBtnTop" disabled>Submit Request</button>
+                    <div class="validation-tooltip" id="validationTooltipTop"></div>
+                </span>
+            {% else %}
+                <button type="button" class="btn" style="background-color: #e67e22; color: white;" onclick="openTrainingRequestDialog()">Request Training Update</button>
+            {% endif %}
             <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Home</a>
         </div>
 
@@ -347,10 +358,14 @@
         </div>
 
         <div style="margin-top: 1.5rem;">
-            <span class="submit-btn-wrapper">
-                <button type="submit" class="btn" id="submitBtnBottom" disabled>Submit Request</button>
-                <div class="validation-tooltip" id="validationTooltipBottom"></div>
-            </span>
+            {% if user.profile.ln2_trained and user.profile.quantify_trained %}
+                <span class="submit-btn-wrapper">
+                    <button type="submit" class="btn" id="submitBtnBottom" disabled>Submit Request</button>
+                    <div class="validation-tooltip" id="validationTooltipBottom"></div>
+                </span>
+            {% else %}
+                <button type="button" class="btn" style="background-color: #e67e22; color: white;" onclick="openTrainingRequestDialog()">Request Training Update</button>
+            {% endif %}
             <a href="{% url 'home' %}" class="btn btn-secondary" style="margin-left: 1rem;">Home</a>
         </div>
     </form>
