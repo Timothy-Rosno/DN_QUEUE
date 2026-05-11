@@ -1341,10 +1341,11 @@ def queue_next(request, entry_id):
             # Directly clean up the displaced entry (was at position #1)
             if current_on_deck:
                 current_on_deck.refresh_from_db()
-                auto_clear_notifications(related_queue_entry=current_on_deck, notification_type='on_deck')
-                auto_clear_notifications(related_queue_entry=current_on_deck, notification_type='ready_for_check_in')
-                auto_clear_notifications(related_queue_entry=current_on_deck, notification_type='admin_moved_entry')
-                auto_clear_notifications(related_queue_entry=current_on_deck, notification_type='checkin_reminder')
+                # Delete stale position-1 notifications (not just mark read - they show on the page)
+                Notification.objects.filter(
+                    related_queue_entry=current_on_deck,
+                    notification_type__in=['on_deck', 'ready_for_check_in', 'admin_moved_entry', 'checkin_reminder']
+                ).delete()
                 current_on_deck.checkin_reminder_due_at = None
                 current_on_deck.last_checkin_reminder_sent_at = None
                 current_on_deck.checkin_reminder_snoozed_until = None
@@ -1425,10 +1426,11 @@ def move_queue_up(request, entry_id):
                 if new_pos == 1:
                     # entry_above was displaced from position #1 - clean up directly
                     entry_above.refresh_from_db()
-                    auto_clear_notifications(related_queue_entry=entry_above, notification_type='on_deck')
-                    auto_clear_notifications(related_queue_entry=entry_above, notification_type='ready_for_check_in')
-                    auto_clear_notifications(related_queue_entry=entry_above, notification_type='admin_moved_entry')
-                    auto_clear_notifications(related_queue_entry=entry_above, notification_type='checkin_reminder')
+                    # Delete stale position-1 notifications (not just mark read - they show on the page)
+                    Notification.objects.filter(
+                        related_queue_entry=entry_above,
+                        notification_type__in=['on_deck', 'ready_for_check_in', 'admin_moved_entry', 'checkin_reminder']
+                    ).delete()
                     entry_above.checkin_reminder_due_at = None
                     entry_above.last_checkin_reminder_sent_at = None
                     entry_above.checkin_reminder_snoozed_until = None
@@ -1510,10 +1512,11 @@ def move_queue_down(request, entry_id):
                 # If position 1 is involved, handle displaced entry and new ON Deck
                 if current_pos == 1:
                     # entry itself was displaced from position #1 - clean up directly
-                    auto_clear_notifications(related_queue_entry=entry, notification_type='on_deck')
-                    auto_clear_notifications(related_queue_entry=entry, notification_type='ready_for_check_in')
-                    auto_clear_notifications(related_queue_entry=entry, notification_type='admin_moved_entry')
-                    auto_clear_notifications(related_queue_entry=entry, notification_type='checkin_reminder')
+                    # Delete stale position-1 notifications (not just mark read - they show on the page)
+                    Notification.objects.filter(
+                        related_queue_entry=entry,
+                        notification_type__in=['on_deck', 'ready_for_check_in', 'admin_moved_entry', 'checkin_reminder']
+                    ).delete()
                     entry.checkin_reminder_due_at = None
                     entry.last_checkin_reminder_sent_at = None
                     entry.checkin_reminder_snoozed_until = None

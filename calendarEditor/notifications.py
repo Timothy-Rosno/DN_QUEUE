@@ -868,27 +868,11 @@ def check_and_notify_on_deck_status(machine):
             ).exists() or entry.checkin_reminder_due_at is not None
 
             if was_on_deck:
-                # Clear all position-1-related notifications
-                auto_clear_notifications(
+                # Delete all position-1-related notifications (delete, not mark read - they show on the page)
+                Notification.objects.filter(
                     related_queue_entry=entry,
-                    notification_type='on_deck'
-                )
-                auto_clear_notifications(
-                    related_queue_entry=entry,
-                    notification_type='ready_for_check_in'
-                )
-                auto_clear_notifications(
-                    related_queue_entry=entry,
-                    notification_type='admin_moved_entry'
-                )
-                auto_clear_notifications(
-                    related_queue_entry=entry,
-                    notification_type='admin_action'
-                )
-                auto_clear_notifications(
-                    related_queue_entry=entry,
-                    notification_type='checkin_reminder'
-                )
+                    notification_type__in=['on_deck', 'ready_for_check_in', 'admin_moved_entry', 'admin_action', 'checkin_reminder']
+                ).delete()
 
                 # Clear check-in reminder fields
                 if entry.checkin_reminder_due_at is not None:
