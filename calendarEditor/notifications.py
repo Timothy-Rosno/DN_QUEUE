@@ -7,7 +7,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.conf import settings
 import requests
-from .models import Notification, NotificationPreference, QueueEntry, QueuePreset, Machine
+from .models import Notification, NotificationPreference, QueueEntry, QueuePreset, Machine, TrainingUpdateRequest
 
 
 def lookup_slack_member_id(user):
@@ -1251,3 +1251,69 @@ def auto_clear_notifications(notification_type=None, related_queue_entry=None,
     count = notifications.update(is_read=True)
 
     return count
+
+
+def notify_training_request(user, training_names):
+    """
+    Notify all lab managers when a user requests a training status update.
+
+    Args:
+        user: The User requesting training update
+        training_names: Comma-separated string of training names requested
+    """
+    from userRegistration.models import UserProfile
+
+    # Get all lab managers (exclude superusers per existing rule)
+    lab_managers = User.objects.filter(
+        profile__is_lab_manager=True
+    ).exclude(is_superuser=True)
+
+    title = f"User {user.username} has requested training status update"
+    message = f"{user.first_name} {user.last_name} ({user.username}) has requested training status update: {training_names}"
+
+    for manager in lab_managers:
+        prefs = NotificationPreference.get_or_create_for_user(manager)
+        if prefs.notify_training_request and prefs.in_app_notifications:
+            create_notification(
+                recipient=manager,
+                notification_type='training_request',
+                title=title,
+                message=message,
+                triggering_user=user,
+            )
+
+
+def notify_training_approved(user, training_name, resolved_by):
+    """
+    Notify user when their training request is approved.
+
+    Args:
+        user: The User whose training was approved
+        training_name: Display name of the training (e.g., "Liquid Nitrogen")
+        resolved_by: The User (lab manager) who approved it
+    """
+    create_notification(
+        recipient=user,
+        notification_type='training_approved',
+        title='Training Request Approved',
+        message=f'Your {training_name} training has been verified by {resolved_by.username}.',
+        triggering_user=resolved_by,
+    )
+
+
+def notify_training_rejected(user, training_name, resolved_by):
+    """
+    Notify user when their training request is rejected.
+
+    Args:
+        user: The User whose training was rejected
+        training_name: Display name of the training (e.g., "Liquid Nitrogen")
+        resolved_by: The User (lab manager) who rejected it
+    """
+    create_notification(
+        recipient=user,
+        notification_type='training_rejected',
+        title='Training Request Rejected',
+        message=f'Your {training_name} training update request has been rejected by {resolved_by.username}. You may submit a new request.',
+        triggering_user=resolved_by,
+    )

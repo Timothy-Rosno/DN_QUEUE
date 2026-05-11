@@ -159,6 +159,20 @@ urlpatterns = [
     path('admin-users/promote-developer/<int:user_id>/', admin_views.promote_to_developer, name='promote_to_developer'),
     path('admin-users/demote-developer/<int:user_id>/', admin_views.demote_from_developer, name='demote_from_developer'),
 
+    # Lab Manager role promotions (superuser only)
+    path('admin-users/promote-lab-manager/<int:user_id>/', admin_views.promote_to_lab_manager, name='promote_to_lab_manager'),
+    path('admin-users/demote-lab-manager/<int:user_id>/', admin_views.demote_from_lab_manager, name='demote_from_lab_manager'),
+
+    # Trainings page (Lab Manager)
+    path('trainings/', admin_views.lab_manager_trainings, name='lab_manager_trainings'),
+    path('trainings/approve/<int:request_id>/', admin_views.approve_training_request, name='approve_training_request'),
+    path('trainings/reject/<int:request_id>/', admin_views.reject_training_request, name='reject_training_request'),
+    path('trainings/toggle/<int:user_id>/', admin_views.toggle_training_status, name='toggle_training_status'),
+
+    # Training request API (user-facing)
+    path('api/request-training-update/', views.request_training_update, name='request_training_update'),
+    path('api/training-request-status/', views.training_request_status, name='training_request_status'),
+
     # Test page for FormProtector (remove in production)
     path('test-form-protector/', views.test_form_protector, name='test_form_protector'),
 ]

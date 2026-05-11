@@ -76,6 +76,34 @@
         </p>
     </div>
 
+    <div style="margin: 1.5rem 0; padding: 1rem; background-color: #f0f9f0; border-left: 4px solid #80c28f; border-radius: 4px;">
+        <h3 style="margin-top: 0; color: #2c3e50;">Training Status</h3>
+        <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+            <div>
+                <strong>Liquid Nitrogen (LN2):</strong>
+                {% if user.profile.ln2_trained %}
+                    <span style="color: #27ae60; font-weight: bold;">Trained</span>
+                    {% if user.profile.ln2_training_date %}
+                        <span style="color: #7f8c8d; font-size: 0.85rem;"> &mdash; {{ user.profile.ln2_training_date|date:"M d, Y" }}</span>
+                    {% endif %}
+                {% else %}
+                    <span style="color: #e74c3c; font-weight: bold;">Untrained</span>
+                {% endif %}
+            </div>
+            <div>
+                <strong>Quantify:</strong>
+                {% if user.profile.quantify_trained %}
+                    <span style="color: #27ae60; font-weight: bold;">Trained</span>
+                    {% if user.profile.quantify_training_date %}
+                        <span style="color: #7f8c8d; font-size: 0.85rem;"> &mdash; {{ user.profile.quantify_training_date|date:"M d, Y" }}</span>
+                    {% endif %}
+                {% else %}
+                    <span style="color: #e74c3c; font-weight: bold;">Untrained</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
     <h2 style="margin-top: 2rem;">Update Profile Information</h2>
 
     {% if form.errors %}

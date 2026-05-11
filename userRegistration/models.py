@@ -67,6 +67,17 @@ class UserProfile(models.Model):
     developer_promoted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='promoted_developers')
     developer_promoted_at = models.DateTimeField(null=True, blank=True)
 
+    # Lab Manager role (promoted by superusers)
+    is_lab_manager = models.BooleanField(default=False, help_text="Has lab manager access to training management")
+    lab_manager_promoted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='promoted_lab_managers')
+    lab_manager_promoted_at = models.DateTimeField(null=True, blank=True)
+
+    # Training status
+    ln2_trained = models.BooleanField(default=False, help_text="Liquid Nitrogen training completed")
+    ln2_training_date = models.DateTimeField(null=True, blank=True, help_text="Date LN2 training was last updated")
+    quantify_trained = models.BooleanField(default=False, help_text="Quantify training completed")
+    quantify_training_date = models.DateTimeField(null=True, blank=True, help_text="Date Quantify training was last updated")
+
     # Last login tracking (device info captured at login)
     last_login_ip = models.CharField(max_length=45, blank=True, help_text="IP address from last login")
     last_login_browser = models.CharField(max_length=50, blank=True, help_text="Browser from last login")

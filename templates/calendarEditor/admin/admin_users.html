@@ -148,6 +148,19 @@
                                         <button type="submit" class="btn btn-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Demote from developer to staff">↓</button>
                                     </form>
                                 {% endif %}
+
+                                <!-- Lab Manager promote/demote (separate from staff/dev hierarchy) -->
+                                {% if not user_item.profile.is_lab_manager %}
+                                    <form method="post" action="{% url 'promote_to_lab_manager' user_item.id %}" style="display: inline; margin: 0;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn" style="background-color: #80c28f; color: white; padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Promote to Lab Manager">&#8593;</button>
+                                    </form>
+                                {% else %}
+                                    <form method="post" action="{% url 'demote_from_lab_manager' user_item.id %}" style="display: inline; margin: 0;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn" style="background-color: #80c28f; color: white; padding: 0.15rem 0.4rem; font-size: 0.75rem;" title="Demote from Lab Manager">&#8595;</button>
+                                    </form>
+                                {% endif %}
                             {% endif %}
 
                             <div>
@@ -161,6 +174,9 @@
                                 {% endif %}
                                 {% if user_item.is_staff %}
                                     <span style="background-color: #f39c12; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">STAFF</span>
+                                {% endif %}
+                                {% if user_item.profile.is_lab_manager %}
+                                    <span style="background-color: #80c28f; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">LAB MANAGER</span>
                                 {% endif %}
                                 <div style="font-size: 0.85rem; color: #7f8c8d;">{{ user_item.email|default:"—" }}</div>
                             </div>

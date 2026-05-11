@@ -578,6 +578,10 @@ class Notification(models.Model):
         ('admin_rush_job', 'Rush Job/Special Request Submitted'),
         # Database management notifications
         ('database_restored', 'Database Restored'),
+        # Training notifications
+        ('training_request', 'Training Update Requested'),
+        ('training_approved', 'Training Request Approved'),
+        ('training_rejected', 'Training Request Rejected'),
     ]
 
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
@@ -648,6 +652,12 @@ class Notification(models.Model):
         elif self.notification_type == 'feedback_completed':
             return reverse('notifications_page')
 
+        # Training notifications
+        elif self.notification_type == 'training_request':
+            return reverse('lab_manager_trainings')
+        elif self.notification_type in ['training_approved', 'training_rejected']:
+            return reverse('profile')
+
         # Default fallback
         return reverse('my_queue')
 
@@ -706,6 +716,9 @@ class NotificationPreference(models.Model):
     # Developer-only notifications (only relevant for developer users with feedback permissions)
     notify_developer_feedback = models.BooleanField(default=True, help_text="[Developer] Notify when users submit feedback - CRITICAL")
 
+    # Lab Manager notifications
+    notify_training_request = models.BooleanField(default=True, help_text="[Lab Manager] Notify when users request training status updates - CRITICAL")
+
     # Delivery preferences
     email_notifications = models.BooleanField(default=True, help_text="Send notifications via email")
     in_app_notifications = models.BooleanField(default=True, help_text="Show notifications in the app")
@@ -762,7 +775,7 @@ class NotificationPreference(models.Model):
         """Ensure critical admin/developer notifications are always enabled."""
         # Force admin action notifications based on user type
         if self.user.is_superuser:
-            # Superusers have ALL admin/developer notifications OFF
+            # Superusers have ALL admin/developer/lab manager notifications OFF
             self.notify_admin_check_in = False
             self.notify_admin_checkout = False
             self.notify_admin_edit_entry = False
@@ -772,6 +785,7 @@ class NotificationPreference(models.Model):
             self.notify_admin_rush_job = False
             self.notify_database_restored = False
             self.notify_developer_feedback = False
+            self.notify_training_request = False
         else:
             # Regular users have admin action notifications ON
             self.notify_admin_check_in = True
@@ -786,6 +800,10 @@ class NotificationPreference(models.Model):
                 self.notify_admin_rush_job = True
                 self.notify_database_restored = True
                 self.notify_developer_feedback = True
+
+            # Force lab manager training request notifications ON for lab managers (but NOT superusers)
+            if hasattr(self.user, 'profile') and self.user.profile.is_lab_manager:
+                self.notify_training_request = True
 
         super().save(*args, **kwargs)
 
@@ -1094,3 +1112,26 @@ class ErrorLog(models.Model):
         return f"{self.status_code} {self.error_type} - {self.path} - {user_str}"
 
 
+class TrainingUpdateRequest(models.Model):
+    TRAINING_CHOICES = [
+        ('ln2', 'Liquid Nitrogen'),
+        ('quantify', 'Quantify'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='training_requests')
+    training_type = models.CharField(max_length=20, choices=TRAINING_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='resolved_training_requests')
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_training_type_display()} ({self.get_status_display()})"

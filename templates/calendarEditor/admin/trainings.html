@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Training Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 style="color: #80c28f;">User Training Management</h1>
+    <p style="color: #7f8c8d;">Manage user training certifications for Liquid Nitrogen and Quantify.</p>
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">&larr; Back to Dashboard</a>
+</div>
+
+<!-- Pending Training Update Requests -->
+<div class="card" style="margin-top: 1rem;">
+    <h2 style="border-bottom: 2px solid #f39c12; color: #f39c12; padding-bottom: 0.5rem;">
+        Pending Training Update Requests ({{ pending_requests|length }})
+    </h2>
+
+    {% if pending_requests %}
+        <div style="max-height: 500px; overflow-y: auto;">
+        {% regroup pending_requests by user as user_requests %}
+        {% for group in user_requests %}
+            <div style="border: 1px solid #eee; border-radius: 6px; padding: 1rem; margin: 0.75rem 0; background-color: #fefefe;">
+                <div style="margin-bottom: 0.5rem;">
+                    <strong>{{ group.grouper.username }}</strong>
+                    <span style="color: #7f8c8d; font-size: 0.85rem;">({{ group.grouper.email|default:"no email" }})</span>
+                </div>
+                {% for req in group.list %}
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin: 0.4rem 0; padding: 0.4rem 0; border-top: 1px solid #f0f0f0;">
+                        <span style="min-width: 140px;">{{ req.get_training_type_display }}</span>
+                        <span style="color: #7f8c8d; font-size: 0.85rem;">Requested {{ req.created_at|date:"M d, Y g:i A" }}</span>
+                        <div style="margin-left: auto; display: flex; gap: 0.5rem;">
+                            <form method="post" action="{% url 'approve_training_request' req.id %}" style="margin: 0;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn" style="background-color: #27ae60; color: white; padding: 0.3rem 0.75rem; font-size: 0.85rem;">Accept</button>
+                            </form>
+                            <form method="post" action="{% url 'reject_training_request' req.id %}" style="margin: 0;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn" style="background-color: #e74c3c; color: white; padding: 0.3rem 0.75rem; font-size: 0.85rem;">Reject</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p style="color: #7f8c8d; margin: 1rem 0;">No pending requests.</p>
+    {% endif %}
+</div>
+
+<!-- Trained Users -->
+<div class="card" style="margin-top: 1rem;">
+    <h2 style="border-bottom: 2px solid #2ecc71; color: #2ecc71; padding-bottom: 0.5rem;">
+        Trained Users ({{ trained_users|length }})
+    </h2>
+
+    {% if trained_users %}
+        <div style="max-height: 500px; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
+                <thead style="position: sticky; top: 0; background: white; z-index: 9;">
+                    <tr style="border-bottom: 2px solid #ddd; text-align: left;">
+                        <th style="padding: 0.5rem 0.75rem;">Username</th>
+                        <th style="padding: 0.5rem 0.75rem;">LN2 Status</th>
+                        <th style="padding: 0.5rem 0.75rem;">Quantify Status</th>
+                        <th style="padding: 0.5rem 0.75rem;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for profile in trained_users %}
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 0.5rem 0.75rem;">
+                            <strong>{{ profile.user.username }}</strong>
+                            <div style="font-size: 0.85rem; color: #7f8c8d;">{{ profile.user.email|default:"&mdash;" }}</div>
+                        </td>
+                        <td style="padding: 0.5rem 0.75rem;">
+                            <span style="color: #27ae60; font-weight: bold;">Trained</span>
+                            {% if profile.ln2_training_date %}
+                                <div style="font-size: 0.8rem; color: #7f8c8d;">{{ profile.ln2_training_date|date:"M d, Y" }}</div>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.5rem 0.75rem;">
+                            <span style="color: #27ae60; font-weight: bold;">Trained</span>
+                            {% if profile.quantify_training_date %}
+                                <div style="font-size: 0.8rem; color: #7f8c8d;">{{ profile.quantify_training_date|date:"M d, Y" }}</div>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.5rem 0.75rem;">
+                            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                                <form method="post" action="{% url 'toggle_training_status' profile.user.id %}" style="margin: 0;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="training_type" value="ln2">
+                                    <input type="hidden" name="action" value="untrain">
+                                    <button type="submit" class="btn" style="background-color: #e74c3c; color: white; padding: 0.25rem 0.5rem; font-size: 0.8rem;">Untrain LN2</button>
+                                </form>
+                                <form method="post" action="{% url 'toggle_training_status' profile.user.id %}" style="margin: 0;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="training_type" value="quantify">
+                                    <input type="hidden" name="action" value="untrain">
+                                    <button type="submit" class="btn" style="background-color: #e74c3c; color: white; padding: 0.25rem 0.5rem; font-size: 0.8rem;">Untrain Quantify</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p style="color: #7f8c8d; margin: 1rem 0;">No fully trained users.</p>
+    {% endif %}
+</div>
+
+<!-- Untrained Users -->
+<div class="card" style="margin-top: 1rem;">
+    <h2 style="border-bottom: 2px solid #e74c3c; color: #e74c3c; padding-bottom: 0.5rem;">
+        Untrained Users ({{ untrained_users|length }})
+    </h2>
+
+    {% if untrained_users %}
+        <div style="max-height: 500px; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
+                <thead style="position: sticky; top: 0; background: white; z-index: 9;">
+                    <tr style="border-bottom: 2px solid #ddd; text-align: left;">
+                        <th style="padding: 0.5rem 0.75rem;">Username</th>
+                        <th style="padding: 0.5rem 0.75rem;">LN2 Status</th>
+                        <th style="padding: 0.5rem 0.75rem;">Quantify Status</th>
+                        <th style="padding: 0.5rem 0.75rem;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for profile in untrained_users %}
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 0.5rem 0.75rem;">
+                            <strong>{{ profile.user.username }}</strong>
+                            <div style="font-size: 0.85rem; color: #7f8c8d;">{{ profile.user.email|default:"&mdash;" }}</div>
+                        </td>
+                        <td style="padding: 0.5rem 0.75rem;">
+                            {% if profile.ln2_trained %}
+                                <span style="color: #27ae60; font-weight: bold;">Trained</span>
+                                {% if profile.ln2_training_date %}
+                                    <div style="font-size: 0.8rem; color: #7f8c8d;">{{ profile.ln2_training_date|date:"M d, Y" }}</div>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: #e74c3c; font-weight: bold;">Untrained</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.5rem 0.75rem;">
+                            {% if profile.quantify_trained %}
+                                <span style="color: #27ae60; font-weight: bold;">Trained</span>
+                                {% if profile.quantify_training_date %}
+                                    <div style="font-size: 0.8rem; color: #7f8c8d;">{{ profile.quantify_training_date|date:"M d, Y" }}</div>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: #e74c3c; font-weight: bold;">Untrained</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.5rem 0.75rem;">
+                            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                                {% if not profile.ln2_trained %}
+                                    <form method="post" action="{% url 'toggle_training_status' profile.user.id %}" style="margin: 0;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="training_type" value="ln2">
+                                        <input type="hidden" name="action" value="train">
+                                        <button type="submit" class="btn" style="background-color: #27ae60; color: white; padding: 0.25rem 0.5rem; font-size: 0.8rem;">Train LN2</button>
+                                    </form>
+                                {% else %}
+                                    <form method="post" action="{% url 'toggle_training_status' profile.user.id %}" style="margin: 0;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="training_type" value="ln2">
+                                        <input type="hidden" name="action" value="untrain">
+                                        <button type="submit" class="btn" style="background-color: #e74c3c; color: white; padding: 0.25rem 0.5rem; font-size: 0.8rem;">Untrain LN2</button>
+                                    </form>
+                                {% endif %}
+                                {% if not profile.quantify_trained %}
+                                    <form method="post" action="{% url 'toggle_training_status' profile.user.id %}" style="margin: 0;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="training_type" value="quantify">
+                                        <input type="hidden" name="action" value="train">
+                                        <button type="submit" class="btn" style="background-color: #27ae60; color: white; padding: 0.25rem 0.5rem; font-size: 0.8rem;">Train Quantify</button>
+                                    </form>
+                                {% else %}
+                                    <form method="post" action="{% url 'toggle_training_status' profile.user.id %}" style="margin: 0;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="training_type" value="quantify">
+                                        <input type="hidden" name="action" value="untrain">
+                                        <button type="submit" class="btn" style="background-color: #e74c3c; color: white; padding: 0.25rem 0.5rem; font-size: 0.8rem;">Untrain Quantify</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p style="color: #7f8c8d; margin: 1rem 0;">All users are fully trained.</p>
+    {% endif %}
+</div>
+
+<div style="margin-top: 1rem;">
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">&larr; Back to Dashboard</a>
+</div>
+{% endblock %}

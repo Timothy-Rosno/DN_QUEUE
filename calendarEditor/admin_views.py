@@ -3738,3 +3738,216 @@ def demote_from_developer(request, user_id):
             messages.error(request, f'{user.username} does not have a profile.')
 
     return redirect('admin_users')
+
+
+# ==============================
+# Lab Manager Role Management
+# ==============================
+
+@staff_member_required
+def promote_to_lab_manager(request, user_id):
+    """Promote a user to lab manager (superuser only)."""
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can promote users to lab manager.')
+        return redirect('admin_users')
+
+    if request.method == 'POST':
+        user = get_object_or_404(User, id=user_id)
+
+        try:
+            profile = user.profile
+            if profile.is_lab_manager:
+                messages.info(request, f'{user.username} is already a lab manager.')
+            else:
+                profile.is_lab_manager = True
+                profile.lab_manager_promoted_by = request.user
+                profile.lab_manager_promoted_at = timezone.now()
+                profile.save()
+
+                notifications.create_notification(
+                    recipient=user,
+                    notification_type='account_promoted',
+                    title='You have been promoted to Lab Manager',
+                    message=f'Admin {request.user.username} has promoted you to Lab Manager. You now have access to the Training Management page.',
+                    triggering_user=request.user,
+                )
+
+                messages.success(request, f'{user.username} promoted to lab manager!')
+        except UserProfile.DoesNotExist:
+            messages.error(request, f'{user.username} does not have a profile.')
+
+    return redirect('admin_users')
+
+
+@staff_member_required
+def demote_from_lab_manager(request, user_id):
+    """Demote a user from lab manager (superuser only)."""
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can demote lab managers.')
+        return redirect('admin_users')
+
+    if request.method == 'POST':
+        user = get_object_or_404(User, id=user_id)
+
+        try:
+            profile = user.profile
+            if not profile.is_lab_manager:
+                messages.info(request, f'{user.username} is not a lab manager.')
+            else:
+                profile.is_lab_manager = False
+                profile.save()
+
+                notifications.create_notification(
+                    recipient=user,
+                    notification_type='account_demoted',
+                    title='Lab Manager role removed',
+                    message=f'Admin {request.user.username} has removed your Lab Manager role. You no longer have access to the Training Management page.',
+                    triggering_user=request.user,
+                )
+
+                messages.success(request, f'{user.username} demoted from lab manager.')
+        except UserProfile.DoesNotExist:
+            messages.error(request, f'{user.username} does not have a profile.')
+
+    return redirect('admin_users')
+
+
+# ==============================
+# Training Management (Lab Manager)
+# ==============================
+
+@login_required
+@never_cache
+def lab_manager_trainings(request):
+    """Training management page for lab managers."""
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager) and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('home')
+
+    from .models import TrainingUpdateRequest
+
+    pending_requests = TrainingUpdateRequest.objects.filter(
+        status='pending'
+    ).select_related('user', 'user__profile')
+
+    trained_users = UserProfile.objects.filter(
+        ln2_trained=True, quantify_trained=True
+    ).select_related('user')
+
+    untrained_users = UserProfile.objects.filter(
+        Q(ln2_trained=False) | Q(quantify_trained=False)
+    ).select_related('user')
+
+    context = {
+        'pending_requests': pending_requests,
+        'trained_users': trained_users,
+        'untrained_users': untrained_users,
+    }
+    return render(request, 'calendarEditor/admin/trainings.html', context)
+
+
+@login_required
+def approve_training_request(request, request_id):
+    """Approve a training update request."""
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager) and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('home')
+
+    if request.method == 'POST':
+        from .models import TrainingUpdateRequest
+
+        training_request = get_object_or_404(TrainingUpdateRequest, id=request_id, status='pending')
+        training_request.status = 'approved'
+        training_request.resolved_by = request.user
+        training_request.resolved_at = timezone.now()
+        training_request.save()
+
+        # Update user profile training status
+        profile = training_request.user.profile
+        training_name = training_request.get_training_type_display()
+
+        if training_request.training_type == 'ln2':
+            profile.ln2_trained = True
+            profile.ln2_training_date = timezone.now()
+        elif training_request.training_type == 'quantify':
+            profile.quantify_trained = True
+            profile.quantify_training_date = timezone.now()
+        profile.save()
+
+        # Notify the user
+        notifications.notify_training_approved(
+            training_request.user, training_name, request.user
+        )
+
+        messages.success(request, f'Approved {training_name} training for {training_request.user.username}.')
+
+    return redirect('lab_manager_trainings')
+
+
+@login_required
+def reject_training_request(request, request_id):
+    """Reject a training update request."""
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager) and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('home')
+
+    if request.method == 'POST':
+        from .models import TrainingUpdateRequest
+
+        training_request = get_object_or_404(TrainingUpdateRequest, id=request_id, status='pending')
+        training_request.status = 'rejected'
+        training_request.resolved_by = request.user
+        training_request.resolved_at = timezone.now()
+        training_request.save()
+
+        training_name = training_request.get_training_type_display()
+
+        # Notify the user
+        notifications.notify_training_rejected(
+            training_request.user, training_name, request.user
+        )
+
+        messages.success(request, f'Rejected {training_name} training request from {training_request.user.username}.')
+
+    return redirect('lab_manager_trainings')
+
+
+@login_required
+def toggle_training_status(request, user_id):
+    """Toggle a user's training status (lab manager or superuser only)."""
+    if not (hasattr(request.user, 'profile') and request.user.profile.is_lab_manager) and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('home')
+
+    if request.method == 'POST':
+        user = get_object_or_404(User, id=user_id)
+        training_type = request.POST.get('training_type')
+        action = request.POST.get('action')
+
+        try:
+            profile = user.profile
+
+            if training_type == 'ln2':
+                if action == 'train':
+                    profile.ln2_trained = True
+                    profile.ln2_training_date = timezone.now()
+                elif action == 'untrain':
+                    profile.ln2_trained = False
+                    profile.ln2_training_date = timezone.now()
+            elif training_type == 'quantify':
+                if action == 'train':
+                    profile.quantify_trained = True
+                    profile.quantify_training_date = timezone.now()
+                elif action == 'untrain':
+                    profile.quantify_trained = False
+                    profile.quantify_training_date = timezone.now()
+
+            profile.save()
+
+            training_name = 'Liquid Nitrogen' if training_type == 'ln2' else 'Quantify'
+            action_text = 'trained' if action == 'train' else 'untrained'
+            messages.success(request, f'{user.username} marked as {action_text} for {training_name}.')
+        except UserProfile.DoesNotExist:
+            messages.error(request, f'{user.username} does not have a profile.')
+
+    return redirect('lab_manager_trainings')

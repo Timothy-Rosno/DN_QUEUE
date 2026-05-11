@@ -446,7 +446,11 @@
             <ul>
                 <li><a href="{% url 'home' %}">Home</a></li>
                 {% if user.is_authenticated %}
-                    <li><a href="{% url 'submit_queue' %}">Submit Request</a></li>
+                    {% if user.profile.ln2_trained and user.profile.quantify_trained %}
+                        <li><a href="{% url 'submit_queue' %}">Submit Request</a></li>
+                    {% else %}
+                        <li><a href="#" onclick="openTrainingRequestDialog(); return false;" style="color: #e67e22;">Request Training Update</a></li>
+                    {% endif %}
                     <li><a href="{% url 'public_queue' %}">Public Queue</a></li>
                     <li><a href="{% url 'my_queue' %}">My Queue</a></li>
                     <li style="position: relative;">
@@ -497,6 +501,18 @@
                                 {% get_critical_errors_count as critical_errors_count %}
                                 {% if critical_errors_count > 0 %}
                                     <span class="notification-badge">{{ critical_errors_count }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                    {% endif %}
+                    {% if user.profile.is_lab_manager or user.is_superuser %}
+                        <li style="position: relative;">
+                            <a href="{% url 'lab_manager_trainings' %}" style="color: #80c28f; font-weight: bold; position: relative; display: inline-block; padding: 0.5rem 1rem;">
+                                Trainings
+                                {% load developer_tasks_tags %}
+                                {% get_pending_training_count as pending_training_count %}
+                                {% if pending_training_count > 0 %}
+                                    <span class="notification-badge">{{ pending_training_count }}</span>
                                 {% endif %}
                             </a>
                         </li>
@@ -1118,5 +1134,122 @@
 
     <!-- Reusable Confirmation Modal -->
     {% include 'calendarEditor/components/confirmation_modal.html' %}
+
+    {% if user.is_authenticated %}
+    <!-- Training Request Dialog Modal -->
+    <div id="trainingRequestModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:2rem; border-radius:10px; max-width:450px; width:90%; text-align:center; position:relative;">
+            <h2 style="margin-top:0; color:#2c3e50;">Request Training Update</h2>
+            <p style="color:#7f8c8d; font-size:0.9rem;">Select the trainings you need verified. A lab manager will review your request.</p>
+            <div id="trainingCheckboxes" style="text-align:left; margin:1.5rem 0;">
+                <!-- Populated dynamically -->
+            </div>
+            <div id="trainingRequestMessage" style="display:none; margin:1rem 0; padding:0.75rem; border-radius:4px; font-size:0.9rem;"></div>
+            <div style="display:flex; justify-content:center; gap:1rem; margin-top:1.5rem;">
+                <button type="button" onclick="submitTrainingRequest()" id="trainingNotifyBtn" class="btn" style="background-color:#80c28f; color:white; padding:0.5rem 1.5rem; border:none; border-radius:4px; cursor:pointer;">Notify</button>
+                <button type="button" onclick="closeTrainingRequestDialog()" class="btn btn-secondary" style="padding:0.5rem 1.5rem;">Cancel</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    function openTrainingRequestDialog() {
+        var modal = document.getElementById('trainingRequestModal');
+        var checkboxes = document.getElementById('trainingCheckboxes');
+        var msgDiv = document.getElementById('trainingRequestMessage');
+        msgDiv.style.display = 'none';
+        checkboxes.innerHTML = '<p style="color:#7f8c8d;">Loading...</p>';
+        modal.style.display = 'flex';
+
+        fetch('{% url "training_request_status" %}')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var html = '';
+                var anyCheckable = false;
+
+                if (!data.ln2_trained) {
+                    var disabled = data.ln2_pending ? ' disabled' : '';
+                    var checked = data.ln2_pending ? '' : ' checked';
+                    var label = data.ln2_pending ? 'Liquid Nitrogen (LN2) <span style="color:#f39c12; font-size:0.85rem;">(Request Pending)</span>' : 'Liquid Nitrogen (LN2)';
+                    html += '<label style="display:block; margin:0.5rem 0; cursor:pointer;"><input type="checkbox" name="training" value="ln2"' + checked + disabled + ' style="margin-right:0.5rem;"> ' + label + '</label>';
+                    if (!data.ln2_pending) anyCheckable = true;
+                }
+                if (!data.quantify_trained) {
+                    var disabled = data.quantify_pending ? ' disabled' : '';
+                    var checked = data.quantify_pending ? '' : ' checked';
+                    var label = data.quantify_pending ? 'Quantify <span style="color:#f39c12; font-size:0.85rem;">(Request Pending)</span>' : 'Quantify';
+                    html += '<label style="display:block; margin:0.5rem 0; cursor:pointer;"><input type="checkbox" name="training" value="quantify"' + checked + disabled + ' style="margin-right:0.5rem;"> ' + label + '</label>';
+                    if (!data.quantify_pending) anyCheckable = true;
+                }
+
+                if (!html) {
+                    html = '<p style="color:#27ae60;">All trainings are complete!</p>';
+                }
+
+                checkboxes.innerHTML = html;
+                document.getElementById('trainingNotifyBtn').disabled = !anyCheckable;
+            })
+            .catch(function() {
+                checkboxes.innerHTML = '<p style="color:#e74c3c;">Error loading training status.</p>';
+            });
+    }
+
+    function closeTrainingRequestDialog() {
+        document.getElementById('trainingRequestModal').style.display = 'none';
+    }
+
+    function submitTrainingRequest() {
+        var checked = document.querySelectorAll('#trainingCheckboxes input[name="training"]:checked:not(:disabled)');
+        var trainings = [];
+        checked.forEach(function(cb) { trainings.push(cb.value); });
+
+        if (trainings.length === 0) return;
+
+        var btn = document.getElementById('trainingNotifyBtn');
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+
+        fetch('{% url "request_training_update" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ trainings: trainings })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var msgDiv = document.getElementById('trainingRequestMessage');
+            if (data.success) {
+                msgDiv.style.display = 'block';
+                msgDiv.style.backgroundColor = '#d4edda';
+                msgDiv.style.color = '#155724';
+                msgDiv.textContent = 'Training update request sent! A lab manager will review it.';
+                setTimeout(function() { closeTrainingRequestDialog(); }, 2000);
+            } else {
+                msgDiv.style.display = 'block';
+                msgDiv.style.backgroundColor = '#f8d7da';
+                msgDiv.style.color = '#721c24';
+                msgDiv.textContent = data.error || 'An error occurred.';
+                btn.disabled = false;
+                btn.textContent = 'Notify';
+            }
+        })
+        .catch(function() {
+            btn.disabled = false;
+            btn.textContent = 'Notify';
+            var msgDiv = document.getElementById('trainingRequestMessage');
+            msgDiv.style.display = 'block';
+            msgDiv.style.backgroundColor = '#f8d7da';
+            msgDiv.style.color = '#721c24';
+            msgDiv.textContent = 'Network error. Please try again.';
+        });
+    }
+
+    // Close modal on background click
+    document.getElementById('trainingRequestModal').addEventListener('click', function(e) {
+        if (e.target === this) closeTrainingRequestDialog();
+    });
+    </script>
+    {% endif %}
 </body>
 </html>

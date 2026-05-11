@@ -233,6 +233,11 @@ def public_queue(request):
 @login_required
 def submit_queue_entry(request):
     """Submit a new queue entry."""
+    # Training guard: user must be trained in both LN2 and Quantify
+    if hasattr(request.user, 'profile') and not (request.user.profile.ln2_trained and request.user.profile.quantify_trained):
+        messages.error(request, 'You must complete all required trainings before submitting a queue request.')
+        return redirect('home')
+
     if request.method == 'POST':
         form = QueueEntryForm(request.POST)
         if form.is_valid():
@@ -3149,6 +3154,84 @@ def health_check(request):
 
     # ALWAYS return 200 - keeps Render awake without waking database
     return JsonResponse(health_status, status=200)
+
+
+# ==============================
+# Training Request API Endpoints
+# ==============================
+
+@login_required
+@require_http_methods(["POST"])
+def request_training_update(request):
+    """API endpoint for users to request training status updates."""
+    import json
+    from .models import TrainingUpdateRequest
+
+    try:
+        data = json.loads(request.body)
+        trainings = data.get('trainings', [])
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'success': False, 'error': 'Invalid request data.'}, status=400)
+
+    if not trainings:
+        return JsonResponse({'success': False, 'error': 'No trainings specified.'}, status=400)
+
+    valid_types = ['ln2', 'quantify']
+    created = []
+    profile = request.user.profile
+
+    for training_type in trainings:
+        if training_type not in valid_types:
+            continue
+
+        # Check user is actually untrained for this type
+        if training_type == 'ln2' and profile.ln2_trained:
+            continue
+        if training_type == 'quantify' and profile.quantify_trained:
+            continue
+
+        # Check no pending request already exists
+        if TrainingUpdateRequest.objects.filter(
+            user=request.user, training_type=training_type, status='pending'
+        ).exists():
+            continue
+
+        TrainingUpdateRequest.objects.create(
+            user=request.user,
+            training_type=training_type,
+        )
+        created.append(training_type)
+
+    if created:
+        # Build training names for notification
+        training_names = ', '.join(
+            dict(TrainingUpdateRequest.TRAINING_CHOICES).get(t, t) for t in created
+        )
+        notifications.notify_training_request(request.user, training_names)
+
+    return JsonResponse({'success': True, 'created': created})
+
+
+@login_required
+@require_http_methods(["GET"])
+def training_request_status(request):
+    """API endpoint to get user's current training and pending request status."""
+    from .models import TrainingUpdateRequest
+
+    profile = request.user.profile
+    ln2_pending = TrainingUpdateRequest.objects.filter(
+        user=request.user, training_type='ln2', status='pending'
+    ).exists()
+    quantify_pending = TrainingUpdateRequest.objects.filter(
+        user=request.user, training_type='quantify', status='pending'
+    ).exists()
+
+    return JsonResponse({
+        'ln2_trained': profile.ln2_trained,
+        'quantify_trained': profile.quantify_trained,
+        'ln2_pending': ln2_pending,
+        'quantify_pending': quantify_pending,
+    })
 
 
 def parse_user_agent(request):

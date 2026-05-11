@@ -68,6 +68,17 @@ def get_admin_actions_count():
 
 
 @register.simple_tag
+def get_pending_training_count():
+    """Get count of pending training update requests for lab manager badge"""
+    try:
+        from calendarEditor.models import TrainingUpdateRequest
+        count = TrainingUpdateRequest.objects.filter(status='pending').count()
+        return count
+    except Exception:
+        return 0
+
+
+@register.simple_tag
 def get_critical_errors_count():
     """
     Get count of critical errors (500s and exceptions) in last 24 hours.
