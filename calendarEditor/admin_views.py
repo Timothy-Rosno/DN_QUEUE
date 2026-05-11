@@ -1285,6 +1285,13 @@ def queue_next(request, entry_id):
             machine = entry.assigned_machine
             old_position = entry.queue_position if entry.queue_position is not None else "unknown"
 
+            # Find who is currently at position #1 (they will be bumped)
+            current_on_deck = QueueEntry.objects.filter(
+                assigned_machine=machine,
+                status='queued',
+                queue_position=1
+            ).exclude(id=entry.id).first()
+
             queued_entries = QueueEntry.objects.filter(
                 assigned_machine=machine,
                 status='queued'
@@ -1331,8 +1338,20 @@ def queue_next(request, entry_id):
             # Notify the moved entry with admin-specific notification
             notifications.notify_admin_moved_entry(entry, request.user, old_position, 1)
 
-            # Handle ON Deck transition: clear old notifications/reminders for displaced
-            # entry, set up notifications and check-in reminders for new position #1 entry
+            # Directly clean up the displaced entry (was at position #1)
+            if current_on_deck:
+                current_on_deck.refresh_from_db()
+                auto_clear_notifications(related_queue_entry=current_on_deck, notification_type='on_deck')
+                auto_clear_notifications(related_queue_entry=current_on_deck, notification_type='ready_for_check_in')
+                auto_clear_notifications(related_queue_entry=current_on_deck, notification_type='admin_moved_entry')
+                auto_clear_notifications(related_queue_entry=current_on_deck, notification_type='checkin_reminder')
+                current_on_deck.checkin_reminder_due_at = None
+                current_on_deck.last_checkin_reminder_sent_at = None
+                current_on_deck.checkin_reminder_snoozed_until = None
+                current_on_deck.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
+                notifications.notify_bumped_from_on_deck(current_on_deck, reason='priority request')
+
+            # Set up notifications and check-in reminders for new position #1 entry
             notifications.check_and_notify_on_deck_status(machine)
 
             messages.success(request, f'"{entry.title}" moved to position 1.')
@@ -1402,8 +1421,21 @@ def move_queue_up(request, entry_id):
                 # Notify only the moved entry with admin-specific notification
                 notifications.notify_admin_moved_entry(entry, request.user, current_pos, new_pos)
 
-                # If position 1 is involved, handle ON Deck notifications and check-in reminders
+                # If position 1 is involved, handle displaced entry and new ON Deck
                 if new_pos == 1:
+                    # entry_above was displaced from position #1 - clean up directly
+                    entry_above.refresh_from_db()
+                    auto_clear_notifications(related_queue_entry=entry_above, notification_type='on_deck')
+                    auto_clear_notifications(related_queue_entry=entry_above, notification_type='ready_for_check_in')
+                    auto_clear_notifications(related_queue_entry=entry_above, notification_type='admin_moved_entry')
+                    auto_clear_notifications(related_queue_entry=entry_above, notification_type='checkin_reminder')
+                    entry_above.checkin_reminder_due_at = None
+                    entry_above.last_checkin_reminder_sent_at = None
+                    entry_above.checkin_reminder_snoozed_until = None
+                    entry_above.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
+                    notifications.notify_bumped_from_on_deck(entry_above, reason='queue reordering')
+
+                    # Set up notifications and check-in reminders for new position #1 entry
                     notifications.check_and_notify_on_deck_status(machine)
 
                 messages.success(request, f'"{entry.title}" moved up.')
@@ -1475,8 +1507,20 @@ def move_queue_down(request, entry_id):
                 # Notify only the moved entry with admin-specific notification
                 notifications.notify_admin_moved_entry(entry, request.user, current_pos, new_pos)
 
-                # If position 1 is involved, handle ON Deck notifications and check-in reminders
+                # If position 1 is involved, handle displaced entry and new ON Deck
                 if current_pos == 1:
+                    # entry itself was displaced from position #1 - clean up directly
+                    auto_clear_notifications(related_queue_entry=entry, notification_type='on_deck')
+                    auto_clear_notifications(related_queue_entry=entry, notification_type='ready_for_check_in')
+                    auto_clear_notifications(related_queue_entry=entry, notification_type='admin_moved_entry')
+                    auto_clear_notifications(related_queue_entry=entry, notification_type='checkin_reminder')
+                    entry.checkin_reminder_due_at = None
+                    entry.last_checkin_reminder_sent_at = None
+                    entry.checkin_reminder_snoozed_until = None
+                    entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
+                    notifications.notify_bumped_from_on_deck(entry, reason='queue reordering')
+
+                    # Set up notifications and check-in reminders for new position #1 entry (entry_below)
                     notifications.check_and_notify_on_deck_status(machine)
 
                 messages.success(request, f'"{entry.title}" moved down.')
