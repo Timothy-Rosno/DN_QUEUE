@@ -646,13 +646,15 @@ def move_queue_entry_down(entry_id):
     return False
 
 
-def set_queue_position(entry_id, new_position):
+def set_queue_position(entry_id, new_position, notify=True):
     """
     Set a queue entry to a specific position in the queue.
 
     Args:
         entry_id: ID of the QueueEntry to reposition
         new_position: Desired queue position (1-based)
+        notify: If True (default), send position change and on-deck notifications.
+                If False, skip all notifications (caller handles them).
 
     Returns:
         True if successfully repositioned, False if invalid position or not found
@@ -704,13 +706,14 @@ def set_queue_position(entry_id, new_position):
         e.estimated_start_time = e.calculate_estimated_start_time()
         e.save()
 
-    # Notify user of position change
-    try:
-        notifications.notify_queue_position_change(entry, old_position, new_position)
-        # Check if someone is now ON DECK after the reposition
-        notifications.check_and_notify_on_deck_status(machine)
-    except Exception as e:
-        print(f"Notification failed: {e}")
+    # Notify user of position change (unless caller handles notifications)
+    if notify:
+        try:
+            notifications.notify_queue_position_change(entry, old_position, new_position)
+            # Check if someone is now ON DECK after the reposition
+            notifications.check_and_notify_on_deck_status(machine)
+        except Exception as e:
+            print(f"Notification failed: {e}")
 
     return True
 

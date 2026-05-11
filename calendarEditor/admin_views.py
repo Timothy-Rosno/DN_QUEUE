@@ -2223,7 +2223,7 @@ def admin_edit_entry(request, entry_id):
             # Handle queue position changes
             queue_position_action = request.POST.get('queue_position_action')
             manual_position = request.POST.get('manual_queue_position')
-            old_position = queue_entry.queue_position
+            old_position = original_values['queue_position']
             status_changed_from_running = False
 
             # Check if reassigning a running entry to a machine that already has a running job
@@ -2250,40 +2250,166 @@ def admin_edit_entry(request, entry_id):
                         old_machine.estimated_available_time = None
                         old_machine.save()
 
-            # If machine changed, set queue_position to NULL first to avoid UNIQUE constraint violations
-            # The reorder_queue function will assign the proper position
-            if old_machine != target_machine:
-                edited_entry.queue_position = None
-
-            # Save the entry
-            edited_entry.save()
-
-            # If machine changed, handle queue reassignment
-            if old_machine != target_machine:
-                # Remove from old machine's queue and reorder
-                if old_machine:
-                    reorder_queue(old_machine)
-                # Add to new machine's queue and reorder
-                reorder_queue(target_machine)
-
-            # Handle queue position changes (for queued entries, or entries that just became queued)
+            # Determine desired target position
+            desired_position = None
             if queue_entry.status == 'queued' or status_changed_from_running:
                 if queue_position_action == 'first':
-                    # Move to position 1
-                    set_queue_position(edited_entry.id, 1)
+                    desired_position = 1
                 elif queue_position_action == 'last':
-                    # Move to last position
+                    desired_position = 'last'
+                elif queue_position_action == 'custom' and manual_position:
+                    try:
+                        desired_position = int(manual_position)
+                    except (ValueError, TypeError):
+                        pass
+                # 'keep' or missing: desired_position stays None
+
+            machine_changed = (old_machine != target_machine)
+
+            if machine_changed:
+                # --- Cross-machine move (like approve_rush_job) ---
+
+                # Capture who is at position #1 on target machine BEFORE changes
+                current_on_deck = None
+                if desired_position == 1:
+                    current_on_deck = QueueEntry.objects.filter(
+                        assigned_machine=target_machine,
+                        status='queued',
+                        queue_position=1
+                    ).exclude(id=edited_entry.id).first()
+
+                # Step 1: Remove from old machine (NULL position to avoid conflicts)
+                edited_entry.queue_position = None
+                edited_entry.save()
+
+                # Reorder old machine queue to close gaps (no notifications)
+                if old_machine:
+                    reorder_queue(old_machine, notify=False)
+
+                # Step 2: Get target machine queue entries (excluding this entry)
+                queued_entries = QueueEntry.objects.filter(
+                    assigned_machine=target_machine,
+                    status='queued'
+                ).exclude(id=edited_entry.id).order_by('queue_position')
+                queued_list = list(queued_entries)
+
+                # Resolve target position
+                max_pos = len(queued_list) + 1
+                if desired_position == 'last' or desired_position is None:
+                    target_pos = max_pos
+                elif desired_position == 1:
+                    target_pos = 1
+                else:
+                    target_pos = max(1, min(desired_position, max_pos))
+
+                # Step 3: Shift entries to make room (reverse order to avoid UNIQUE conflicts)
+                affected_entries = []
+                for idx in range(len(queued_list) - 1, -1, -1):
+                    other_entry = queued_list[idx]
+                    if other_entry.queue_position is not None and other_entry.queue_position >= target_pos:
+                        other_old_pos = other_entry.queue_position
+                        other_entry.queue_position = other_old_pos + 1
+                        other_entry.save()
+                        affected_entries.append((other_entry, other_old_pos, other_entry.queue_position))
+
+                # Step 4: Set entry to target position
+                edited_entry.queue_position = target_pos
+                edited_entry.save(update_fields=['queue_position'])
+
+                # Notify affected entries of position changes
+                for other_entry, from_pos, to_pos in affected_entries:
+                    notifications.notify_queue_position_change(other_entry, from_pos, to_pos)
+
+                # Handle ON Deck displacement on target machine
+                if current_on_deck and target_pos == 1:
+                    current_on_deck.refresh_from_db()
+                    Notification.objects.filter(
+                        related_queue_entry=current_on_deck,
+                        notification_type__in=['on_deck', 'ready_for_check_in', 'admin_moved_entry', 'checkin_reminder']
+                    ).delete()
+                    current_on_deck.checkin_reminder_due_at = None
+                    current_on_deck.last_checkin_reminder_sent_at = None
+                    current_on_deck.checkin_reminder_snoozed_until = None
+                    current_on_deck.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
+                    notifications.notify_bumped_from_on_deck(current_on_deck, reason='admin edit')
+
+                # Initialize check-in reminders if entry is now at position #1
+                if target_pos == 1:
+                    edited_entry.refresh_from_db()
+                    if target_machine.current_status == 'idle':
+                        edited_entry.checkin_reminder_due_at = timezone.now() + timedelta(hours=12)
+                    else:
+                        edited_entry.checkin_reminder_due_at = None
+                    edited_entry.last_checkin_reminder_sent_at = None
+                    edited_entry.checkin_reminder_snoozed_until = None
+                    edited_entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
+
+            else:
+                # --- Same machine ---
+                # Save all form changes first
+                edited_entry.save()
+
+                # Handle position change if requested
+                if desired_position is not None:
+                    # Resolve target position
                     max_pos = QueueEntry.objects.filter(
                         assigned_machine=target_machine, status='queued'
                     ).count()
-                    set_queue_position(edited_entry.id, max_pos)
-                elif queue_position_action == 'custom' and manual_position:
-                    # Move to specific position
-                    try:
-                        new_pos = int(manual_position)
-                        set_queue_position(edited_entry.id, new_pos)
-                    except (ValueError, TypeError):
-                        pass  # Invalid position, ignore
+                    if desired_position == 'last':
+                        target_pos = max_pos
+                    else:
+                        target_pos = max(1, min(desired_position, max_pos))
+
+                    if target_pos != old_position:
+                        # Capture current ON Deck if we're displacing them
+                        current_on_deck = None
+                        if target_pos == 1 and old_position != 1:
+                            current_on_deck = QueueEntry.objects.filter(
+                                assigned_machine=target_machine,
+                                status='queued',
+                                queue_position=1
+                            ).exclude(id=edited_entry.id).first()
+
+                        was_on_deck = (old_position == 1)
+
+                        # Move to target position (notify=False — we handle notifications directly)
+                        set_queue_position(edited_entry.id, target_pos, notify=False)
+
+                        # Handle ON Deck displacement
+                        if current_on_deck and target_pos == 1:
+                            current_on_deck.refresh_from_db()
+                            Notification.objects.filter(
+                                related_queue_entry=current_on_deck,
+                                notification_type__in=['on_deck', 'ready_for_check_in', 'admin_moved_entry', 'checkin_reminder']
+                            ).delete()
+                            current_on_deck.checkin_reminder_due_at = None
+                            current_on_deck.last_checkin_reminder_sent_at = None
+                            current_on_deck.checkin_reminder_snoozed_until = None
+                            current_on_deck.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
+                            notifications.notify_bumped_from_on_deck(current_on_deck, reason='admin edit')
+
+                        # If entry moved TO position #1, initialize check-in reminders
+                        if target_pos == 1:
+                            edited_entry.refresh_from_db()
+                            if target_machine.current_status == 'idle':
+                                edited_entry.checkin_reminder_due_at = timezone.now() + timedelta(hours=12)
+                            else:
+                                edited_entry.checkin_reminder_due_at = None
+                            edited_entry.last_checkin_reminder_sent_at = None
+                            edited_entry.checkin_reminder_snoozed_until = None
+                            edited_entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
+
+                        # If entry moved FROM position #1, clean up its own ON Deck state
+                        if was_on_deck and target_pos != 1:
+                            Notification.objects.filter(
+                                related_queue_entry=edited_entry,
+                                notification_type__in=['on_deck', 'ready_for_check_in', 'admin_moved_entry', 'checkin_reminder']
+                            ).delete()
+                            edited_entry.refresh_from_db()
+                            edited_entry.checkin_reminder_due_at = None
+                            edited_entry.last_checkin_reminder_sent_at = None
+                            edited_entry.checkin_reminder_snoozed_until = None
+                            edited_entry.save(update_fields=['checkin_reminder_due_at', 'last_checkin_reminder_sent_at', 'checkin_reminder_snoozed_until'])
 
             # Track changes for notification
             changes = []
