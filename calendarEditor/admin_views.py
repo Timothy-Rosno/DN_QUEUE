@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.urls import reverse
 from django.db.models import Count, Q
+from django.db.models.functions import Upper
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import never_cache
@@ -1142,7 +1143,7 @@ def approve_rush_job(request, entry_id):
         notifications.notify_admins_rush_job_approved(entry, request.user)
 
         # Check on-deck status to initialize check-in reminders and notifications
-        notifications.check_on_deck(machine)
+        notifications.check_and_notify_on_deck_status(machine)
 
         # Broadcast queue update to all connected users via WebSocket
         try:
@@ -1409,6 +1410,10 @@ def move_queue_up(request, entry_id):
                 # Notify only the moved entry with admin-specific notification
                 notifications.notify_admin_moved_entry(entry, request.user, current_pos, new_pos)
 
+                # If position 1 is involved, handle ON Deck notifications and check-in reminders
+                if new_pos == 1:
+                    notifications.check_and_notify_on_deck_status(machine)
+
                 messages.success(request, f'"{entry.title}" moved up.')
             else:
                 messages.warning(request, 'Cannot move up.')
@@ -1477,6 +1482,10 @@ def move_queue_down(request, entry_id):
 
                 # Notify only the moved entry with admin-specific notification
                 notifications.notify_admin_moved_entry(entry, request.user, current_pos, new_pos)
+
+                # If position 1 is involved, handle ON Deck notifications and check-in reminders
+                if current_pos == 1:
+                    notifications.check_and_notify_on_deck_status(machine)
 
                 messages.success(request, f'"{entry.title}" moved down.')
             else:
@@ -3839,15 +3848,15 @@ def lab_manager_trainings(request):
         status='pending'
     ).select_related('user', 'user__profile')
 
-    all_users = UserProfile.objects.select_related('user').order_by('user__username')
+    all_users = UserProfile.objects.select_related('user').order_by(Upper('user__username'))
 
     trained_users = UserProfile.objects.filter(
         ln2_trained=True, quantify_trained=True
-    ).select_related('user').order_by('user__username')
+    ).select_related('user').order_by(Upper('user__username'))
 
     untrained_users = UserProfile.objects.filter(
         Q(ln2_trained=False) | Q(quantify_trained=False)
-    ).select_related('user').order_by('user__username')
+    ).select_related('user').order_by(Upper('user__username'))
 
     context = {
         'pending_requests': pending_requests,
