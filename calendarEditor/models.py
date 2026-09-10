@@ -326,6 +326,15 @@ class QueueEntry(models.Model):
     last_checkin_reminder_sent_at = models.DateTimeField(null=True, blank=True, help_text="When the last check-in reminder was sent (for repeat reminders every 12 hours)")
     checkin_reminder_snoozed_until = models.DateTimeField(null=True, blank=True, help_text="When the check-in reminder snooze expires (user clicked notification link)")
 
+    # Appeal reminder tracking (nags admins every 24 hours until an unreviewed appeal is resolved)
+    appeal_reminder_due_at = models.DateTimeField(null=True, blank=True, help_text="When the first 'appeal still unreviewed' nag should be sent")
+    last_appeal_reminder_sent_at = models.DateTimeField(null=True, blank=True, help_text="When the last 24-hour appeal reminder was sent")
+
+    # Appeal escalation tracking (hourly 'shame' nag once an admin has clicked but not resolved it)
+    appeal_clicked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='clicked_appeal_reminders', help_text="Admin who first clicked an appeal reminder link for this entry")
+    appeal_clicked_at = models.DateTimeField(null=True, blank=True, help_text="When appeal_clicked_by first clicked the reminder link")
+    last_appeal_escalation_sent_at = models.DateTimeField(null=True, blank=True, help_text="When the last hourly escalation was sent")
+
     # Additional info
     special_requirements = models.TextField(blank=True, default='', help_text="Any special requirements or notes", validators=[MaxLengthValidator(500)])
 
@@ -576,6 +585,8 @@ class Notification(models.Model):
         # Admin-specific notifications
         ('admin_new_user', 'New User Signup'),
         ('admin_rush_job', 'Rush Job/Special Request Submitted'),
+        ('admin_rush_job_reminder', 'Queue Appeal Still Unreviewed'),
+        ('admin_rush_job_escalation', 'Queue Appeal Shame Escalation'),
         # Database management notifications
         ('database_restored', 'Database Restored'),
         # Training notifications
@@ -615,7 +626,7 @@ class Notification(models.Model):
         # Admin notifications
         if self.notification_type == 'admin_new_user':
             return reverse('admin_users')
-        elif self.notification_type == 'admin_rush_job':
+        elif self.notification_type in ('admin_rush_job', 'admin_rush_job_reminder', 'admin_rush_job_escalation'):
             return reverse('admin_rush_jobs')
 
         # Preset notifications - go to submit queue with preset loaded
@@ -711,6 +722,7 @@ class NotificationPreference(models.Model):
     # Admin-only notifications (only relevant for staff users)
     notify_admin_new_user = models.BooleanField(default=True, help_text="[Admin] Notify when new users sign up - CRITICAL")
     notify_admin_rush_job = models.BooleanField(default=True, help_text="[Admin] Notify when rush jobs are submitted - CRITICAL")
+    notify_admin_appeal_shame = models.BooleanField(default=True, help_text="[Admin] Notify hourly when a clicked-but-unreviewed appeal is still pending - CRITICAL")
     notify_database_restored = models.BooleanField(default=True, help_text="[Admin] Notify when database is restored - CRITICAL")
 
     # Developer-only notifications (only relevant for developer users with feedback permissions)
@@ -783,6 +795,7 @@ class NotificationPreference(models.Model):
             self.notify_machine_status_change = False
             self.notify_admin_new_user = False
             self.notify_admin_rush_job = False
+            self.notify_admin_appeal_shame = False
             self.notify_database_restored = False
             self.notify_developer_feedback = False
             self.notify_training_request = False
@@ -910,6 +923,7 @@ class OneTimeLoginToken(models.Model):
     expires_at = models.DateTimeField()
     used_at = models.DateTimeField(null=True, blank=True)
     is_used = models.BooleanField(default=False)
+    first_accessed_at = models.DateTimeField(null=True, blank=True, help_text="When this link was first opened (click tracking; the token itself remains reusable)")
 
     class Meta:
         verbose_name = "One-Time Login Token"

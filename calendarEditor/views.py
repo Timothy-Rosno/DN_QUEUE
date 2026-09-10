@@ -248,6 +248,7 @@ def submit_queue_entry(request):
             # Handle rush job submission
             if queue_entry.is_rush_job:
                 queue_entry.rush_job_submitted_at = timezone.now()
+                queue_entry.appeal_reminder_due_at = queue_entry.rush_job_submitted_at + timedelta(hours=24)
 
             # Handle optical capabilities machine selection
             if queue_entry.requires_optical:
@@ -654,6 +655,8 @@ def appeal_queue_entry(request, pk):
         # Mark entry as rush job and save explanation
         queue_entry.is_rush_job = True
         queue_entry.special_requirements = appeal_explanation
+        queue_entry.rush_job_submitted_at = timezone.now()
+        queue_entry.appeal_reminder_due_at = queue_entry.rush_job_submitted_at + timedelta(hours=24)
         queue_entry.save()
 
         # Notify admins about the appeal
@@ -2621,6 +2624,20 @@ def token_login(request, token):
         intended_user = login_token.user
         redirect_url = login_token.redirect_url
 
+        # Record the first click on this link (token itself stays reusable - not "used up")
+        if login_token.first_accessed_at is None:
+            login_token.first_accessed_at = timezone.now()
+            login_token.save(update_fields=['first_accessed_at'])
+
+            # Appeal-specific: record which admin first opened an appeal reminder link
+            notif = login_token.notification
+            if notif and notif.notification_type in ('admin_rush_job_reminder', 'admin_rush_job_escalation'):
+                entry = notif.related_queue_entry
+                if entry and entry.is_rush_job and entry.appeal_clicked_by_id is None:
+                    entry.appeal_clicked_by = login_token.user
+                    entry.appeal_clicked_at = timezone.now()
+                    entry.save(update_fields=['appeal_clicked_by', 'appeal_clicked_at'])
+
         # Case 1: Already logged in as CORRECT user
         if request.user.is_authenticated and request.user.id == intended_user.id:
             # Perfect match! Direct redirect to intended page
@@ -2853,6 +2870,13 @@ def api_check_reminders(request):
     # Check and send reminders
     try:
         middleware._check_pending_reminders()
+
+        # Also check queue appeal reminders (24h nag) and escalations (hourly shame)
+        try:
+            middleware._check_pending_appeal_reminders()
+            middleware._check_pending_appeal_escalations()
+        except Exception as e:
+            print(f"Error checking appeal reminders/escalations: {e}")
 
         # Count what's left after (should be fewer if any were sent)
         # Recalculate since last_reminder_sent_at was updated

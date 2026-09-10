@@ -47,6 +47,8 @@ class CheckReminderMiddleware:
         if last_check is None or (now_timestamp - last_check) > 60:
             self._check_pending_reminders()
             self._check_pending_checkin_reminders()
+            self._check_pending_appeal_reminders()
+            self._check_pending_appeal_escalations()
             # Update cache with current timestamp
             cache.set('reminder_last_check', now_timestamp, 120)  # Cache for 2 minutes
 
@@ -195,6 +197,101 @@ class CheckReminderMiddleware:
         except Exception as e:
             # Don't break the request if reminder checking fails
             print(f"Error checking pending check-in reminders: {e}")
+
+    def _check_pending_appeal_reminders(self):
+        """
+        Check for and send the 24-hour 'appeal still unreviewed' nag to admins.
+
+        Sends reminders every 24 hours (except 12 AM - 6 AM Central Time) until the
+        appeal is approved or rejected (is_rush_job flips to False).
+        Uses select_for_update() to prevent race conditions.
+        """
+        now = timezone.now()
+
+        # Check if we're in the "do not disturb" hours (12 AM - 6 AM Central Time)
+        central_tz = ZoneInfo('America/Chicago')
+        now_central = now.astimezone(central_tz)
+        current_hour = now_central.hour
+        if 0 <= current_hour < 6:
+            return
+
+        try:
+            with transaction.atomic():
+                pending_appeals = QueueEntry.objects.select_for_update(skip_locked=True).filter(
+                    is_rush_job=True,
+                    status='queued',
+                    appeal_reminder_due_at__lte=now,
+                ).order_by()  # Clear Model.Meta.ordering to prevent JOIN
+
+                for entry in pending_appeals:
+                    try:
+                        should_send = False
+
+                        if entry.last_appeal_reminder_sent_at is None:
+                            should_send = True
+                        else:
+                            time_since_last = now - entry.last_appeal_reminder_sent_at
+                            if time_since_last >= timedelta(hours=24):
+                                should_send = True
+
+                        if should_send:
+                            notifications.notify_admins_appeal_reminder(entry)
+                            entry.last_appeal_reminder_sent_at = now
+                            entry.save(update_fields=['last_appeal_reminder_sent_at'])
+
+                    except Exception as e:
+                        print(f"Error sending appeal reminder for entry {entry.id}: {e}")
+
+        except Exception as e:
+            print(f"Error checking pending appeal reminders: {e}")
+
+    def _check_pending_appeal_escalations(self):
+        """
+        Check for and send the hourly 'shame' escalation once an admin has clicked
+        an appeal reminder link but the appeal is still unreviewed.
+
+        Sends every hour (except 12 AM - 6 AM Central Time) until the appeal is
+        approved or rejected (is_rush_job flips to False, clearing appeal_clicked_by).
+        Uses select_for_update() to prevent race conditions.
+        """
+        now = timezone.now()
+
+        # Check if we're in the "do not disturb" hours (12 AM - 6 AM Central Time)
+        central_tz = ZoneInfo('America/Chicago')
+        now_central = now.astimezone(central_tz)
+        current_hour = now_central.hour
+        if 0 <= current_hour < 6:
+            return
+
+        try:
+            with transaction.atomic():
+                clicked_appeals = QueueEntry.objects.select_for_update(skip_locked=True).filter(
+                    is_rush_job=True,
+                    status='queued',
+                    appeal_clicked_by__isnull=False,
+                ).order_by()  # Clear Model.Meta.ordering to prevent JOIN
+
+                for entry in clicked_appeals:
+                    try:
+                        should_send = False
+
+                        if entry.last_appeal_escalation_sent_at is None:
+                            should_send = True
+                        else:
+                            time_since_last = now - entry.last_appeal_escalation_sent_at
+                            if time_since_last >= timedelta(hours=1):
+                                should_send = True
+
+                        if should_send:
+                            notifications.notify_admins_appeal_escalation(entry)
+                            entry.last_appeal_escalation_sent_at = now
+                            entry.save(update_fields=['last_appeal_escalation_sent_at'])
+
+                    except Exception as e:
+                        print(f"Error sending appeal escalation for entry {entry.id}: {e}")
+
+        except Exception as e:
+            print(f"Error checking pending appeal escalations: {e}")
 
 
 class RenderUsageMiddleware:

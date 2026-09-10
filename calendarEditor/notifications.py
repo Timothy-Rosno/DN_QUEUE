@@ -7,7 +7,19 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.conf import settings
 import requests
+import random
 from .models import Notification, NotificationPreference, QueueEntry, QueuePreset, Machine, TrainingUpdateRequest
+
+
+MEME_FILES = [
+    'meme_disappointed_1.gif', 'meme_disappointed_2.gif', 'meme_disappointed_3.gif',
+    'meme_disappointed_4.jpg', 'meme_disappointed_5.gif', 'meme_disappointed_6.jpg',
+]
+
+
+def get_random_meme_url():
+    """Return a full URL to a random 'disappointed' meme asset in static/images/."""
+    return f"{settings.BASE_URL}/static/images/{random.choice(MEME_FILES)}"
 
 
 def lookup_slack_member_id(user):
@@ -86,7 +98,7 @@ def lookup_slack_member_id(user):
         return None
 
 
-def send_slack_dm(user, title, message, notification=None):
+def send_slack_dm(user, title, message, notification=None, image_url=None):
     """
     Send a Slack direct message to a user with a secure login link (non-blocking).
     Launches background thread to avoid blocking HTTP request cycle.
@@ -99,6 +111,7 @@ def send_slack_dm(user, title, message, notification=None):
         title: Notification title
         message: Notification message
         notification: Optional Notification object (for generating secure login link)
+        image_url: Optional public image/GIF URL to embed in the Slack message
 
     Returns:
         None (fires and forgets - errors logged in background)
@@ -118,14 +131,14 @@ def send_slack_dm(user, title, message, notification=None):
     import threading
     thread = threading.Thread(
         target=_send_slack_dm_worker,
-        args=(user.id, title, message, notification.id if notification else None),
+        args=(user.id, title, message, notification.id if notification else None, image_url),
         daemon=True
     )
     thread.start()
     # HTTP request completes here - Slack call happens in background
 
 
-def _send_slack_dm_worker(user_id, title, message, notification_id):
+def _send_slack_dm_worker(user_id, title, message, notification_id, image_url=None):
     """
     Background worker for sending Slack DM.
     Runs in separate thread to avoid blocking HTTP requests.
@@ -135,6 +148,7 @@ def _send_slack_dm_worker(user_id, title, message, notification_id):
         title: Notification title
         message: Notification message
         notification_id: Optional Notification ID for generating secure login link
+        image_url: Optional public image/GIF URL to embed in the Slack message
     """
     try:
         from django.contrib.auth.models import User
@@ -196,18 +210,26 @@ def _send_slack_dm_worker(user_id, title, message, notification_id):
             slack_text += f"\n\n<{full_url}|View Details>"
 
         # Send message via Slack API (now in background - doesn't block HTTP request)
+        payload = {
+            'channel': slack_member_id,  # DM using member ID
+            'text': slack_text,
+            'unfurl_links': False,
+            'unfurl_media': False,
+        }
+        if image_url:
+            # Slack still requires 'text' as fallback/notification text even when 'blocks' is present
+            payload['blocks'] = [
+                {'type': 'section', 'text': {'type': 'mrkdwn', 'text': slack_text}},
+                {'type': 'image', 'image_url': image_url, 'alt_text': 'reaction meme'},
+            ]
+
         response = requests.post(
             'https://slack.com/api/chat.postMessage',
             headers={
                 'Authorization': f'Bearer {settings.SLACK_BOT_TOKEN}',
                 'Content-Type': 'application/json'
             },
-            json={
-                'channel': slack_member_id,  # DM using member ID
-                'text': slack_text,
-                'unfurl_links': False,
-                'unfurl_media': False,
-            },
+            json=payload,
             timeout=5
         )
 
@@ -286,7 +308,7 @@ def create_notification(recipient, notification_type, title, message, **kwargs):
     try:
         # print(f"[CREATE_NOTIFICATION] Attempting Slack send (SLACK_ENABLED={settings.SLACK_ENABLED})...")
         if settings.SLACK_ENABLED:
-            send_slack_dm(recipient, title, message, notification)
+            send_slack_dm(recipient, title, message, notification, image_url=kwargs.get('image_url'))
             # print(f"[CREATE_NOTIFICATION] Slack send completed")
         # else:
             # print(f"[CREATE_NOTIFICATION] Slack disabled, skipping")
@@ -1033,6 +1055,71 @@ def notify_admins_rush_job(queue_entry):
                 related_queue_entry=queue_entry,
                 related_machine=queue_entry.assigned_machine,
                 triggering_user=queue_entry.user,
+            )
+
+
+APPEAL_REMINDER_MESSAGES = [
+    "{username}'s queue appeal is still unreviewed! Do I need to promote someone ELSE to admin?",
+    "Imagine waiting a full day to hit a button... {username} is still waiting on their appeal.",
+    "This appeal has been sitting for 24+ hours. At this point it's basically vintage.",
+]
+
+APPEAL_ESCALATION_MESSAGES = [
+    "{admin} CLICKED THE LINK AND DIDN'T DEAL WITH THE APPEAL YET! Shame.",
+    "{admin} looked right at it. Still nothing. Shame.",
+    "Well {admin} opened it... and then just closed the tab apparently. Shame.",
+]
+
+
+def notify_admins_appeal_reminder(queue_entry):
+    """
+    24-hour nag: remind all admins that a queue appeal is still unreviewed.
+
+    Args:
+        queue_entry: The QueueEntry that is still is_rush_job=True and unreviewed
+    """
+    admin_users = User.objects.filter(is_staff=True).exclude(is_superuser=True)
+    message = random.choice(APPEAL_REMINDER_MESSAGES).format(username=queue_entry.user.username)
+
+    for admin in admin_users:
+        prefs = NotificationPreference.get_or_create_for_user(admin)
+        if prefs.notify_admin_rush_job and prefs.in_app_notifications:
+            create_notification(
+                recipient=admin,
+                notification_type='admin_rush_job_reminder',
+                title='Queue Appeal Still Unreviewed',
+                message=message,
+                related_queue_entry=queue_entry,
+                related_machine=queue_entry.assigned_machine,
+            )
+
+
+def notify_admins_appeal_escalation(queue_entry):
+    """
+    Hourly nag once a specific admin has clicked an appeal reminder link but the
+    appeal is still unresolved. Calls out that admin by name to the whole admin group,
+    with a meme image attached.
+
+    Args:
+        queue_entry: The QueueEntry that is still is_rush_job=True, with appeal_clicked_by set
+    """
+    admin_users = User.objects.filter(is_staff=True).exclude(is_superuser=True)
+    clicked_admin = queue_entry.appeal_clicked_by
+    admin_name = (clicked_admin.first_name or clicked_admin.username) if clicked_admin else "Someone"
+    message = random.choice(APPEAL_ESCALATION_MESSAGES).format(admin=admin_name)
+    image_url = get_random_meme_url()
+
+    for admin in admin_users:
+        prefs = NotificationPreference.get_or_create_for_user(admin)
+        if prefs.notify_admin_appeal_shame and prefs.in_app_notifications:
+            create_notification(
+                recipient=admin,
+                notification_type='admin_rush_job_escalation',
+                title='Queue Appeal Still Not Handled',
+                message=message,
+                related_queue_entry=queue_entry,
+                related_machine=queue_entry.assigned_machine,
+                image_url=image_url,
             )
 
 

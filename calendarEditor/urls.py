@@ -57,6 +57,7 @@ urlpatterns = [
     path('admin-queue/edit/<int:entry_id>/', admin_views.admin_edit_entry, name='admin_edit_entry'),
     path('admin-queue/cancel/<int:entry_id>/', admin_views.admin_cancel_entry, name='admin_cancel_entry'),
     path('admin-rush-jobs-review/', admin_views.admin_rush_jobs, name='admin_rush_jobs'),
+    path('admin/test-meme-dm/', admin_views.test_meme_dm, name='test_meme_dm'),
     path('admin-presets/', admin_views.admin_presets, name='admin_presets'),
 
     # Storage & Database Management

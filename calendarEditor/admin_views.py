@@ -1044,6 +1044,48 @@ def admin_rush_jobs(request):
 
 
 @staff_member_required
+def test_meme_dm(request):
+    """
+    Manually trigger a test Slack DM with an embedded meme image/GIF.
+
+    Render's free tier has no Shell access, so `manage.py test_meme_dm` can't be run
+    there - this is the browser-triggerable equivalent. Defaults to sending to the
+    logged-in admin; pass ?email=someone@example.com to target a different user.
+    """
+    email = request.GET.get('email', '').strip()
+
+    if email:
+        try:
+            target_user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'error': f'No user found with email "{email}"'}, status=404)
+        except User.MultipleObjectsReturned:
+            return JsonResponse({'success': False, 'error': f'Multiple users found with email "{email}"'}, status=400)
+    else:
+        target_user = request.user
+
+    if not settings.SLACK_ENABLED:
+        return JsonResponse({'success': False, 'error': 'SLACK_ENABLED is False - SLACK_BOT_TOKEN is not set.'}, status=400)
+
+    image_url = notifications.get_random_meme_url()
+
+    notifications.send_slack_dm(
+        target_user,
+        title='Test Meme Delivery',
+        message='This is a test of image/GIF delivery via Slack Block Kit.',
+        image_url=image_url,
+    )
+
+    return JsonResponse({
+        'success': True,
+        'sent_to': target_user.username,
+        'email': target_user.email,
+        'image_url': image_url,
+        'note': 'Dispatched in a background thread - check Slack directly, or server logs for "Slack API error" if it failed.',
+    })
+
+
+@staff_member_required
 def approve_rush_job(request, entry_id):
     """Approve a queue appeal and queue it at specified position."""
     from . import notifications
@@ -1138,6 +1180,11 @@ def approve_rush_job(request, entry_id):
         entry.queue_position = queue_position
         entry.status = 'queued'  # Ensure entry is in queued status
         entry.is_rush_job = False  # Clear rush job flag (appeal approved)
+        entry.appeal_reminder_due_at = None
+        entry.last_appeal_reminder_sent_at = None
+        entry.appeal_clicked_by = None
+        entry.appeal_clicked_at = None
+        entry.last_appeal_escalation_sent_at = None
         entry.save()
 
         # Auto-clear queue appeal notifications
@@ -1251,6 +1298,11 @@ def reject_rush_job(request, entry_id):
             rejection_message = 'Insufficient justification'
 
         entry.is_rush_job = False
+        entry.appeal_reminder_due_at = None
+        entry.last_appeal_reminder_sent_at = None
+        entry.appeal_clicked_by = None
+        entry.appeal_clicked_at = None
+        entry.last_appeal_escalation_sent_at = None
         entry.save()
 
         # Auto-clear queue appeal notifications for this entry
