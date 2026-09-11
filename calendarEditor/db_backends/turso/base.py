@@ -402,9 +402,19 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
                     ]
                     # IMPORTANT: Do NOT ignore constraint failures - these are real errors!
                     # NOT NULL, UNIQUE, FOREIGN KEY constraints indicate data problems
-                    if any(err in error_msg.lower() for err in ignorable):
+                    #
+                    # CRITICAL: Only ignore these for actual schema-altering statements (DDL).
+                    # Previously this matched ANY query, including regular app INSERT/UPDATE/SELECT
+                    # traffic - so if a migration silently failed to apply (e.g. Render's build
+                    # command drifted from render.yaml and never ran `migrate`), every runtime
+                    # save() referencing the missing column would get a fake "success" with no
+                    # rows/no last_insert_rowid instead of a real error, silently dropping data
+                    # while the app looked fine. DDL statements are the only ones migrations issue.
+                    sql_upper = sql.strip().upper()
+                    is_ddl = sql_upper.startswith(('ALTER TABLE', 'CREATE TABLE', 'CREATE INDEX', 'DROP TABLE', 'DROP INDEX'))
+                    if is_ddl and any(err in error_msg.lower() for err in ignorable):
                         # Log ignorable errors for debugging (eventual consistency, schema mismatches)
-                        # print(f"[TURSO WARNING] Ignoring error: {error_msg}")
+                        # print(f"[TURSO WARNING] Ignoring DDL error: {error_msg}")
                         return {'rows': [], 'cols': []}
 
                     raise Exception(f"Turso query error: {error_msg}")
