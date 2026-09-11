@@ -2629,9 +2629,11 @@ def token_login(request, token):
             login_token.first_accessed_at = timezone.now()
             login_token.save(update_fields=['first_accessed_at'])
 
-            # Appeal-specific: record which admin first opened an appeal reminder link
+            # Appeal-specific: record which admin first opened an appeal-related link.
+            # Includes the original submission notice, not just the 24h reminder/escalation -
+            # any admin who opened any link about a still-pending appeal counts as "looked at it".
             notif = login_token.notification
-            if notif and notif.notification_type in ('admin_rush_job_reminder', 'admin_rush_job_escalation'):
+            if notif and notif.notification_type in ('admin_rush_job', 'admin_rush_job_reminder', 'admin_rush_job_escalation'):
                 entry = notif.related_queue_entry
                 if entry and entry.is_rush_job and entry.appeal_clicked_by_id is None:
                     entry.appeal_clicked_by = login_token.user
